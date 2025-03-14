@@ -14,8 +14,15 @@ const Index = () => {
 
   return (
     <div className="pb-20">
+      {/* App Name */}
+      <div className="p-4 pt-6 flex items-center justify-center">
+        <h1 className="text-2xl font-medium">
+          <span className="font-bold">i</span>mpulse
+        </h1>
+      </div>
+
       {/* Header */}
-      <header className="p-4 pt-6">
+      <header className="p-4">
         <h1 className="text-2xl font-bold">Discover Events</h1>
         <p className="text-muted-foreground">Find amazing events happening near you</p>
       </header>
@@ -38,9 +45,7 @@ const Index = () => {
           <Button
             variant={selectedCategory === null ? "default" : "outline"}
             className={`rounded-full text-xs ${
-              selectedCategory === null 
-                ? "bg-gradient-to-r from-event-primary to-event-secondary" 
-                : ""
+              selectedCategory === null ? "" : ""
             }`}
             onClick={() => setSelectedCategory(null)}
           >
@@ -50,11 +55,7 @@ const Index = () => {
             <Button
               key={category.id}
               variant={selectedCategory === category.id ? "default" : "outline"}
-              className={`rounded-full text-xs whitespace-nowrap ${
-                selectedCategory === category.id 
-                  ? "bg-gradient-to-r from-event-primary to-event-secondary" 
-                  : ""
-              }`}
+              className={`rounded-full text-xs whitespace-nowrap`}
               onClick={() => setSelectedCategory(category.id)}
             >
               {category.name}

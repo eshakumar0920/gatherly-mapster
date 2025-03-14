@@ -29,7 +29,7 @@ const EventCard = ({ event, featured = false }: EventCardProps) => {
         />
         <div className="event-card-gradient"></div>
         <div className="absolute bottom-3 left-3 z-20">
-          <span className="px-2 py-1 bg-event-primary/80 text-white text-xs rounded-full">
+          <span className="px-2 py-1 bg-primary/90 text-primary-foreground text-xs rounded-full">
             {event.category}
           </span>
         </div>
@@ -57,7 +57,7 @@ const EventCard = ({ event, featured = false }: EventCardProps) => {
         </div>
         
         <div className="mt-4">
-          <Button className="w-full bg-gradient-to-r from-event-primary to-event-secondary hover:opacity-90">
+          <Button className="w-full">
             View Details
           </Button>
         </div>

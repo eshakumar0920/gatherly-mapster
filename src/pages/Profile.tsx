@@ -12,8 +12,15 @@ const Profile = () => {
 
   return (
     <div className="pb-20">
+      {/* App Name */}
+      <div className="p-4 pt-6 flex items-center justify-center">
+        <h1 className="text-2xl font-medium">
+          <span className="font-bold">i</span>mpulse
+        </h1>
+      </div>
+
       {/* Header */}
-      <header className="p-4 pt-6 flex justify-between items-center">
+      <header className="p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Profile</h1>
         <Button variant="ghost" size="icon">
           <Settings className="h-5 w-5" />
@@ -44,7 +51,7 @@ const Profile = () => {
           </div>
         </div>
         
-        <Button className="mt-6 bg-gradient-to-r from-event-primary to-event-secondary">
+        <Button className="mt-6">
           Edit Profile
         </Button>
       </div>

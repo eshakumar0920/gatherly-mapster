@@ -20,8 +20,15 @@ const Maps = () => {
 
   return (
     <div className="pb-20 h-screen flex flex-col">
+      {/* App Name */}
+      <div className="p-4 pt-6 flex items-center justify-center">
+        <h1 className="text-2xl font-medium">
+          <span className="font-bold">i</span>mpulse
+        </h1>
+      </div>
+
       {/* Header */}
-      <header className="p-4 pt-6">
+      <header className="p-4">
         <h1 className="text-2xl font-bold">Event Map</h1>
         <p className="text-muted-foreground">Find events around you</p>
       </header>

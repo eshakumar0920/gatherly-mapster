@@ -22,11 +22,11 @@ const Navigation = () => {
               <Link 
                 to={item.path} 
                 className={cn(
-                  "nav-link",
-                  location.pathname === item.path && "active"
+                  "flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors",
+                  location.pathname === item.path && "text-primary"
                 )}
               >
-                <item.icon className="h-6 w-6 mb-1" />
+                <item.icon className="h-6 w-6" />
                 <span className="text-xs">{item.label}</span>
               </Link>
             </li>
