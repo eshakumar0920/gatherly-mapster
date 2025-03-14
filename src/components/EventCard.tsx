@@ -1,6 +1,7 @@
 
 import { CalendarDays, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export interface Event {
   id: string;
@@ -19,6 +20,12 @@ interface EventCardProps {
 }
 
 const EventCard = ({ event, featured = false }: EventCardProps) => {
+  const navigate = useNavigate();
+
+  const handleViewDetails = () => {
+    navigate(`/events/${event.id}`);
+  };
+  
   return (
     <div className={`event-card ${featured ? 'w-full' : 'w-full'} animate-fade-in`}>
       <div className="relative">
@@ -57,7 +64,7 @@ const EventCard = ({ event, featured = false }: EventCardProps) => {
         </div>
         
         <div className="mt-4">
-          <Button className="w-full">
+          <Button className="w-full" onClick={handleViewDetails}>
             View Details
           </Button>
         </div>
