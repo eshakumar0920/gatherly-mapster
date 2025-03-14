@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
@@ -12,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Mock attendees data
 const mockAttendees = [
@@ -28,7 +27,7 @@ const mockAttendees = [
 const EventLobby = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
   
