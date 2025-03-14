@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
@@ -37,6 +38,8 @@ const EventLobby = () => {
     const foundEvent = events.find(e => e.id === eventId);
     if (foundEvent) {
       setEvent(foundEvent);
+    } else {
+      console.log("Event not found for ID:", eventId);
     }
   }, [eventId]);
 
@@ -48,11 +51,22 @@ const EventLobby = () => {
   // If event is not found
   if (!event) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h2 className="text-xl">Event not found</h2>
-        <Button onClick={() => navigate("/events")} className="mt-4">
-          Back to Events
-        </Button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        {/* App Name */}
+        <div className="p-4 pt-6 w-full text-center">
+          <h1 className="text-2xl font-medium">
+            <span className="font-bold">i</span>mpulse
+          </h1>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <h2 className="text-xl mb-4">Event not found</h2>
+          <Button onClick={() => navigate("/events")} className="bg-primary text-primary-foreground">
+            Back to Events
+          </Button>
+        </div>
+        
+        <Navigation />
       </div>
     );
   }
@@ -105,7 +119,7 @@ const EventLobby = () => {
   );
 
   return (
-    <div className="pb-20 min-h-screen">
+    <div className="pb-20 min-h-screen bg-background">
       {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
@@ -220,7 +234,7 @@ const EventLobby = () => {
 
       {/* Action Buttons */}
       <div className="p-4 grid grid-cols-2 gap-3">
-        <Button className="w-full">
+        <Button className="w-full bg-primary text-primary-foreground">
           Attend
         </Button>
         <Button variant="outline" className="w-full">
