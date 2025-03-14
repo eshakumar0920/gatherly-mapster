@@ -23,8 +23,8 @@ const Index = () => {
 
       {/* Header */}
       <header className="p-4">
-        <h1 className="text-2xl font-bold">Discover Events</h1>
-        <p className="text-muted-foreground">Find amazing events happening near you</p>
+        <h1 className="text-2xl font-bold">UTD Events</h1>
+        <p className="text-muted-foreground">Discover student-led events around campus</p>
       </header>
 
       {/* Search bar */}

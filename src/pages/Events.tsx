@@ -38,8 +38,8 @@ const Events = () => {
 
       {/* Header */}
       <header className="p-4">
-        <h1 className="text-2xl font-bold">Events</h1>
-        <p className="text-muted-foreground">Browse all upcoming events</p>
+        <h1 className="text-2xl font-bold">UTD Events</h1>
+        <p className="text-muted-foreground">Browse student-led events across campus</p>
       </header>
 
       {/* Search bar */}
