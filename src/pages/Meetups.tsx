@@ -6,13 +6,40 @@ import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { getMeetups, useUserStore } from "@/services/meetupService";
 import { useToast } from "@/components/ui/use-toast";
+import MeetupCard from "@/components/MeetupCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+// Form schema
+const formSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  dateTime: z.string().min(3, "Date and time is required"),
+  location: z.string().min(3, "Location is required"),
+});
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const allMeetups = getMeetups();
   const { points, level, attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
-  
+
+  // Form setup
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      dateTime: "",
+      location: "",
+    },
+  });
+
   const filteredMeetups = allMeetups.filter(meetup => {
     // Filter by search query
     if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -47,6 +74,21 @@ const Meetups = () => {
         variant: "default",
       });
     }
+  };
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // In a real app, this would send the data to a backend
+    // For now, we'll just show a toast
+    toast({
+      title: "Meetup created!",
+      description: "Your meetup has been successfully created.",
+    });
+    
+    // Close the dialog
+    setIsDialogOpen(false);
+    
+    // Reset the form
+    form.reset();
   };
 
   return (
@@ -90,40 +132,97 @@ const Meetups = () => {
 
       {/* Create Meetup Button */}
       <div className="px-4 pb-4">
-        <Button className="w-full">
+        <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Create New Meetup
         </Button>
       </div>
 
       {/* Meetups List */}
       <div className="px-4">
-        <ul className="space-y-2">
+        <div className="space-y-4">
           {filteredMeetups.map(meetup => (
-            <li 
-              key={meetup.id} 
-              className="p-3 bg-yellow-100/80 rounded-lg flex justify-between items-center"
-            >
-              <div className="flex-1">
-                <p className="font-medium">{meetup.title}</p>
-                <p className="text-xs text-muted-foreground">{meetup.dateTime} • {meetup.location}</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="whitespace-nowrap"
-                onClick={() => handleAttendMeetup(meetup.id, meetup.points)}
-                disabled={attendedMeetups.includes(meetup.id)}
-              >
-                {attendedMeetups.includes(meetup.id) ? (
-                  "Joined"
-                ) : (
-                  <>+{meetup.points}</>
-                )}
-              </Button>
-            </li>
+            <MeetupCard key={meetup.id} meetup={meetup} />
           ))}
-        </ul>
+        </div>
       </div>
+
+      {/* Create Meetup Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Meetup</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Chess at the Student Union" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Looking for chess partners at the Student Union. All skill levels welcome!"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="dateTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date & Time</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Today @2pm" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Student Union" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button type="submit" className="w-full">Create Meetup</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Navigation */}
       <Navigation />
