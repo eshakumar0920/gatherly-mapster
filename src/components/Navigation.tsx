@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Users, User, Map } from "lucide-react";
+import { Home, Users, User, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/services/meetupService";
 
@@ -10,7 +10,6 @@ const Navigation = () => {
   
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
-    { path: "/events", icon: Calendar, label: "Events" },
     { path: "/meetups", icon: Users, label: "Meetups" },
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/maps", icon: Map, label: "Maps" },
