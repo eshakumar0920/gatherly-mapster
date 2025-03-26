@@ -1,15 +1,19 @@
 
-import { User, Settings, Heart, Calendar, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import EventCard from "@/components/EventCard";
+import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
-import { getFeaturedEvents } from "@/services/eventService";
 
 const Profile = () => {
-  const savedEvents = getFeaturedEvents().slice(0, 2);
-
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  
+  const handleLogout = () => {
+    logout();
+    navigate("/auth");
+  };
+  
   return (
     <div className="pb-20">
       {/* App Name */}
@@ -20,80 +24,43 @@ const Profile = () => {
       </div>
 
       {/* Header */}
-      <header className="p-4 flex justify-between items-center">
+      <header className="p-4">
         <h1 className="text-2xl font-bold">Profile</h1>
-        <Button variant="ghost" size="icon">
-          <Settings className="h-5 w-5" />
-        </Button>
+        <p className="text-muted-foreground">Manage your account</p>
       </header>
 
-      {/* Profile Info */}
-      <div className="px-4 py-6 flex flex-col items-center">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=256&q=80" />
-          <AvatarFallback>JD</AvatarFallback>
-        </Avatar>
-        <h2 className="mt-4 text-xl font-semibold">Jane Doe</h2>
-        <p className="text-muted-foreground">jane.doe@example.com</p>
-        
-        <div className="mt-6 w-full max-w-xs flex justify-around">
-          <div className="text-center">
-            <p className="text-2xl font-bold">12</p>
-            <p className="text-xs text-muted-foreground">Attended</p>
+      {/* Profile Content */}
+      <div className="p-4">
+        <div className="bg-card border rounded-lg p-6 space-y-8">
+          <div className="flex flex-col items-center">
+            <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+              <span className="text-4xl">👤</span>
+            </div>
+            <h2 className="text-xl font-semibold">UTD Student</h2>
+            <p className="text-muted-foreground">student@utdallas.edu</p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">5</p>
-            <p className="text-xs text-muted-foreground">Upcoming</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">8</p>
-            <p className="text-xs text-muted-foreground">Saved</p>
-          </div>
-        </div>
-        
-        <Button className="mt-6">
-          Edit Profile
-        </Button>
-      </div>
-
-      <Separator />
-
-      {/* Saved Events */}
-      <div className="px-4 py-4">
-        <div className="flex items-center mb-4">
-          <Heart className="h-5 w-5 text-event-primary mr-2" />
-          <h3 className="text-lg font-semibold">Saved Events</h3>
-        </div>
-        
-        <div className="space-y-4">
-          {savedEvents.map(event => (
-            <EventCard key={event.id} event={event} />
-          ))}
           
-          {savedEvents.length > 0 && (
-            <Button variant="outline" className="w-full">
-              View All Saved Events
-            </Button>
-          )}
-        </div>
-      </div>
-      
-      <Separator />
-      
-      {/* Account Options */}
-      <div className="px-4 py-4">
-        <div className="space-y-3">
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground">
-            <User className="h-5 w-5 mr-3" />
-            Account Settings
-          </Button>
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground">
-            <Calendar className="h-5 w-5 mr-3" />
-            My Calendar
-          </Button>
-          <Button variant="ghost" className="w-full justify-start text-destructive">
-            <LogOut className="h-5 w-5 mr-3" />
-            Sign Out
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Account Settings</h3>
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start" disabled>
+                Edit Profile
+              </Button>
+              <Button variant="outline" className="w-full justify-start" disabled>
+                Notification Settings
+              </Button>
+              <Button variant="outline" className="w-full justify-start" disabled>
+                Privacy Settings
+              </Button>
+            </div>
+          </div>
+          
+          <Button 
+            variant="destructive"
+            className="w-full"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Logout
           </Button>
         </div>
       </div>
