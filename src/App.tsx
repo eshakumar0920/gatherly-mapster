@@ -27,7 +27,14 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           
           {/* Protected routes */}
-          <Route path="/" element={<Navigate to="/events" replace />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/events" 
             element={

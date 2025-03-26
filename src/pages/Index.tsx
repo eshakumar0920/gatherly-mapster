@@ -7,10 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import EventCard from "@/components/EventCard";
 import Navigation from "@/components/Navigation";
 import { getFeaturedEvents, categories } from "@/services/eventService";
+import { getMeetups } from "@/services/meetupService";
+import MeetupCard from "@/components/MeetupCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const featuredEvents = getFeaturedEvents();
+  const meetups = getMeetups();
 
   return (
     <div className="pb-20">
@@ -24,7 +28,7 @@ const Index = () => {
       {/* Header */}
       <header className="p-4">
         <h1 className="text-2xl font-bold">UTD Events</h1>
-        <p className="text-muted-foreground">Discover student-led events around campus</p>
+        <p className="text-muted-foreground">Discover student-led events and meetups around campus</p>
       </header>
 
       {/* Search bar */}
@@ -32,65 +36,93 @@ const Index = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input 
-            placeholder="Search events..." 
+            placeholder="Search events & meetups..." 
             className="pl-10 rounded-full bg-muted/50"
           />
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="px-4 pb-4">
-        <h2 className="text-lg font-semibold mb-2">Categories</h2>
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <Button
-            variant={selectedCategory === null ? "default" : "outline"}
-            className={`rounded-full text-xs ${
-              selectedCategory === null ? "" : ""
-            }`}
-            onClick={() => setSelectedCategory(null)}
-          >
-            All
-          </Button>
-          {categories.map(category => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              className={`rounded-full text-xs whitespace-nowrap`}
-              onClick={() => setSelectedCategory(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Featured Events */}
-      <div className="px-4 pb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Featured Events</h2>
-          <Button variant="link" className="text-sm p-0">See all</Button>
-        </div>
-        <div className="space-y-4">
-          {featuredEvents.map(event => (
-            <EventCard key={event.id} event={event} featured />
-          ))}
-        </div>
-      </div>
-
-      {/* Upcoming Events */}
-      <div className="px-4 pb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Upcoming This Week</h2>
-          <Button variant="link" className="text-sm p-0">See all</Button>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-          {featuredEvents.map(event => (
-            <div key={event.id} className="min-w-[250px] max-w-[250px]">
-              <EventCard event={event} />
+      {/* Tabs for Events and Meetups */}
+      <Tabs defaultValue="all" className="w-full px-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="events">Events</TabsTrigger>
+          <TabsTrigger value="meetups">Meetups</TabsTrigger>
+        </TabsList>
+        
+        {/* All Content Tab */}
+        <TabsContent value="all">
+          {/* Categories */}
+          <div className="pb-4">
+            <h2 className="text-lg font-semibold mb-2">Categories</h2>
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              <Button
+                variant={selectedCategory === null ? "default" : "outline"}
+                className="rounded-full text-xs"
+                onClick={() => setSelectedCategory(null)}
+              >
+                All
+              </Button>
+              {categories.map(category => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  className="rounded-full text-xs whitespace-nowrap"
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  {category.name}
+                </Button>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+
+          {/* Featured Events */}
+          <div className="pb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">Featured Events</h2>
+              <Button variant="link" className="text-sm p-0">See all</Button>
+            </div>
+            <div className="space-y-4">
+              {featuredEvents.map(event => (
+                <EventCard key={event.id} event={event} featured />
+              ))}
+            </div>
+          </div>
+
+          {/* Student Meetups */}
+          <div className="pb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">Student Meetups</h2>
+              <Button variant="link" className="text-sm p-0">See all</Button>
+            </div>
+            <div className="space-y-4">
+              {meetups.slice(0, 3).map(meetup => (
+                <MeetupCard key={meetup.id} meetup={meetup} />
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+        
+        {/* Events Tab */}
+        <TabsContent value="events">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Campus Events</h2>
+            {featuredEvents.map(event => (
+              <EventCard key={event.id} event={event} featured />
+            ))}
+          </div>
+        </TabsContent>
+        
+        {/* Meetups Tab */}
+        <TabsContent value="meetups">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Student Meetups</h2>
+            {meetups.map(meetup => (
+              <MeetupCard key={meetup.id} meetup={meetup} />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Navigation */}
       <Navigation />
