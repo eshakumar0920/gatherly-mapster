@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
 import Index from "./pages/Index";
 import Events from "./pages/Events";
+import Meetups from "./pages/Meetups";
 import Profile from "./pages/Profile";
 import Maps from "./pages/Maps";
 import EventLobby from "./pages/EventLobby";
@@ -32,6 +33,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Events />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/meetups" 
+            element={
+              <ProtectedRoute>
+                <Meetups />
               </ProtectedRoute>
             } 
           />

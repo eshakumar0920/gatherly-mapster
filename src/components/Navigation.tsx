@@ -1,14 +1,17 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, User, Map } from "lucide-react";
+import { Home, Calendar, Users, User, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserStore } from "@/services/meetupService";
 
 const Navigation = () => {
   const location = useLocation();
+  const { points, level } = useUserStore();
   
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/events", icon: Calendar, label: "Events" },
+    { path: "/meetups", icon: Users, label: "Meetups" },
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/maps", icon: Map, label: "Maps" },
   ];
@@ -28,6 +31,11 @@ const Navigation = () => {
               >
                 <item.icon className="h-6 w-6" />
                 <span className="text-xs">{item.label}</span>
+                {item.path === "/profile" && (
+                  <span className="text-xs bg-primary/20 px-2 py-0.5 rounded-full">
+                    Lvl {level}
+                  </span>
+                )}
               </Link>
             </li>
           ))}

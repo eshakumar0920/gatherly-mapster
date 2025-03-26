@@ -1,13 +1,20 @@
 
 import { useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { LogOut, Award, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
+import { useUserStore } from "@/services/meetupService";
+import { Progress } from "@/components/ui/progress";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { points, level, attendedMeetups } = useUserStore();
+  
+  // Calculate progress to next level
+  const pointsToNextLevel = level * 10;
+  const progress = (points % 10) * 10; // 10 points per level, so progress is X out of 10
   
   const handleLogout = () => {
     logout();
@@ -38,6 +45,30 @@ const Profile = () => {
             </div>
             <h2 className="text-xl font-semibold">UTD Student</h2>
             <p className="text-muted-foreground">student@utdallas.edu</p>
+          </div>
+          
+          {/* Points & Level Section */}
+          <div className="bg-primary/5 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center">
+                <Award className="h-5 w-5 text-primary mr-2" />
+                <span className="font-semibold">Level {level}</span>
+              </div>
+              <div className="flex items-center">
+                <Star className="h-4 w-4 text-primary mr-1" />
+                <span>{points} points</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span>Progress to Level {level + 1}</span>
+                <span>{points % 10}/10 points</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              <span>Attended {attendedMeetups.length} meetups</span>
+            </div>
           </div>
           
           <div className="space-y-4">
