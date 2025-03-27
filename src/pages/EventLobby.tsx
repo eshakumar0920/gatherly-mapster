@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, ScanLine } from "lucide-react";
+import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, ScanLine, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
