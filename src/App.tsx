@@ -12,6 +12,7 @@ import Meetups from "./pages/Meetups";
 import Profile from "./pages/Profile";
 import Maps from "./pages/Maps";
 import EventLobby from "./pages/EventLobby";
+import MeetupLobby from "./pages/MeetupLobby";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <EventLobby />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/meetups/:meetupId" 
+            element={
+              <ProtectedRoute>
+                <MeetupLobby />
               </ProtectedRoute>
             } 
           />

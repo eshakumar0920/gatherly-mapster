@@ -64,9 +64,21 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				event: {
-					primary: '#6366f1',
-					secondary: '#06b6d4',
-				}
+					primary: '#FFCC00',
+					secondary: '#FFE066',
+				},
+				yellow: {
+					50: '#FFFDF2',
+					100: '#FFF9D9',
+					200: '#FFF3B3',
+					300: '#FFED8C',
+					400: '#FFE766',
+					500: '#FFDD40',
+					600: '#FFCC00',
+					700: '#D9AE00',
+					800: '#B38F00',
+					900: '#8C7000',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

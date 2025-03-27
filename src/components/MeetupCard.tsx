@@ -41,7 +41,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             {meetup.description}
           </p>
         </div>
-        <div className="flex items-center bg-primary/10 px-2 py-1 rounded-full text-primary text-xs">
+        <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full text-yellow-600 text-xs">
           +{meetup.points} pts
         </div>
       </div>
@@ -69,7 +69,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             <Button 
               className="w-full flex items-center justify-center" 
               onClick={handleAttend} 
-              variant={isAttended ? "outline" : "default"}
+              variant={isAttended ? "outline" : "yellow"}
               disabled={isAttended}
             >
               {isAttended ? (

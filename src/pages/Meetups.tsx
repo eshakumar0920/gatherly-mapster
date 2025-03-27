@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -12,12 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
   location: z.string().min(3, "Location is required"),
+  lobbySize: z.string().regex(/^\d+$/, "Lobby size must be a number").transform(Number)
+    .refine(size => size > 0, "Lobby size must be greater than 0"),
 });
 
 const Meetups = () => {
@@ -26,6 +30,7 @@ const Meetups = () => {
   const allMeetups = getMeetups();
   const { points, level, attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,6 +39,7 @@ const Meetups = () => {
       description: "",
       dateTime: "",
       location: "",
+      lobbySize: "5", // Default lobby size
     },
   });
 
@@ -55,6 +61,10 @@ const Meetups = () => {
     form.reset();
   };
 
+  const handleMeetupClick = (meetupId: string) => {
+    navigate(`/meetups/${meetupId}`);
+  };
+
   return (
     <div className="pb-20">
       <div className="p-4 pt-6 flex items-center justify-center">
@@ -69,11 +79,11 @@ const Meetups = () => {
           <p className="text-muted-foreground">Find student-organized meetups</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-primary/10 px-2 py-1 rounded-full">
-            <Star className="h-4 w-4 text-primary mr-1" />
+          <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full">
+            <Star className="h-4 w-4 text-yellow-500 mr-1" />
             <span className="font-medium">{points} pts</span>
           </div>
-          <div className="px-2 py-1 bg-primary/20 rounded-full">
+          <div className="px-2 py-1 bg-yellow-500/20 rounded-full">
             <span className="font-medium">Level {level}</span>
           </div>
         </div>
@@ -100,7 +110,13 @@ const Meetups = () => {
       <div className="px-4">
         <div className="space-y-4">
           {filteredMeetups.map(meetup => (
-            <MeetupCard key={meetup.id} meetup={meetup} />
+            <div 
+              key={meetup.id} 
+              onClick={() => handleMeetupClick(meetup.id)}
+              className="cursor-pointer"
+            >
+              <MeetupCard meetup={meetup} />
+            </div>
           ))}
         </div>
       </div>
@@ -173,6 +189,20 @@ const Meetups = () => {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="lobbySize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lobby Size (max participants)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" placeholder="5" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <DialogFooter>
                 <Button type="submit" className="w-full">Create Meetup</Button>
