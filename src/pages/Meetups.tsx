@@ -42,7 +42,7 @@ const Meetups = () => {
       description: "",
       dateTime: "",
       location: "",
-      lobbySize: "5", // Default lobby size as string
+      lobbySize: "5", // Default lobby size as string (will be transformed to number by Zod)
     },
   });
 
@@ -53,7 +53,7 @@ const Meetups = () => {
     return true;
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: FormValues) => {
     toast({
       title: "Meetup created!",
       description: "Your meetup has been successfully created.",

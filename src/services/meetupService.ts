@@ -10,6 +10,9 @@ export interface Meetup {
   location: string;
   points: number;
   createdBy: string;
+  creatorAvatar?: string;
+  lobbySize: number;
+  attendees?: string[]; // Array of user IDs who have joined
 }
 
 // Mock data for meetups
@@ -21,7 +24,10 @@ export const meetups: Meetup[] = [
     dateTime: "Today @2pm",
     location: "Student Union",
     points: 3,
-    createdBy: "ChessMaster101"
+    createdBy: "ChessMaster101",
+    creatorAvatar: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 4,
+    attendees: ["user1"]
   },
   {
     id: "2",
@@ -30,7 +36,10 @@ export const meetups: Meetup[] = [
     dateTime: "Monday @5pm",
     location: "Recreation Center East Courts",
     points: 3,
-    createdBy: "PickleballPro"
+    createdBy: "PickleballPro",
+    creatorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 2,
+    attendees: []
   },
   {
     id: "3",
@@ -39,7 +48,10 @@ export const meetups: Meetup[] = [
     dateTime: "Tuesday @3pm",
     location: "McDermott Library 3rd Floor",
     points: 3,
-    createdBy: "BookwormUTD"
+    createdBy: "BookwormUTD",
+    creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 3,
+    attendees: ["user3", "user4"]
   },
   {
     id: "4",
@@ -48,7 +60,10 @@ export const meetups: Meetup[] = [
     dateTime: "Friday @6pm",
     location: "Activity Center Pool",
     points: 3,
-    createdBy: "SwimTeamCaptain"
+    createdBy: "SwimTeamCaptain",
+    creatorAvatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 8,
+    attendees: ["user5"]
   },
   {
     id: "5",
@@ -57,7 +72,10 @@ export const meetups: Meetup[] = [
     dateTime: "Wednesday @4pm",
     location: "Science Building Room 2.410",
     points: 3,
-    createdBy: "BiologyMajor22"
+    createdBy: "BiologyMajor22",
+    creatorAvatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 6,
+    attendees: []
   },
   {
     id: "6",
@@ -66,7 +84,10 @@ export const meetups: Meetup[] = [
     dateTime: "Thursday @7pm",
     location: "Phase 8 Sand Courts",
     points: 6,
-    createdBy: "VolleyballFan"
+    createdBy: "VolleyballFan",
+    creatorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 12,
+    attendees: ["user2", "user7"]
   },
   {
     id: "7",
@@ -75,7 +96,10 @@ export const meetups: Meetup[] = [
     dateTime: "Friday @5pm",
     location: "Residence Hall West Common Area",
     points: 8,
-    createdBy: "PingPongChamp"
+    createdBy: "PingPongChamp",
+    creatorAvatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 16,
+    attendees: []
   },
   {
     id: "8",
@@ -84,7 +108,10 @@ export const meetups: Meetup[] = [
     dateTime: "Saturday @3pm",
     location: "ECSW 1.355",
     points: 1,
-    createdBy: "GamingComet"
+    createdBy: "GamingComet",
+    creatorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 10,
+    attendees: []
   },
   {
     id: "9",
@@ -93,7 +120,10 @@ export const meetups: Meetup[] = [
     dateTime: "Today @7pm",
     location: "McDermott Library 2nd Floor",
     points: 3,
-    createdBy: "MathWhiz"
+    createdBy: "MathWhiz",
+    creatorAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&auto=format&fit=crop",
+    lobbySize: 5,
+    attendees: ["user5", "user6", "user8", "user9", "user10"]
   }
 ];
 
@@ -128,6 +158,18 @@ export const useUserStore = create<UserState>()(
           if (state.attendedMeetups.includes(meetupId)) {
             return state; // Already attended
           }
+          
+          // Check if the meetup is full
+          const meetup = meetups.find(m => m.id === meetupId);
+          if (meetup && meetup.attendees && meetup.attendees.length >= meetup.lobbySize) {
+            return state; // Meetup is full
+          }
+          
+          // Add user to attendees (in a real app, we would use the user's ID)
+          if (meetup && meetup.attendees) {
+            meetup.attendees.push("currentUser");
+          }
+          
           const newPoints = state.points + points;
           const newLevel = Math.floor(newPoints / 10) + 1;
           return {
