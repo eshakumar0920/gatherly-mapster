@@ -25,6 +25,8 @@ const formSchema = z.object({
     .refine(size => size > 0, "Lobby size must be greater than 0"),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,7 +35,7 @@ const Meetups = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
