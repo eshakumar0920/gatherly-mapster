@@ -20,7 +20,8 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
   location: z.string().min(3, "Location is required"),
-  lobbySize: z.string().regex(/^\d+$/, "Lobby size must be a number").transform(Number)
+  lobbySize: z.string().regex(/^\d+$/, "Lobby size must be a number")
+    .transform(Number)
     .refine(size => size > 0, "Lobby size must be greater than 0"),
 });
 
@@ -39,7 +40,7 @@ const Meetups = () => {
       description: "",
       dateTime: "",
       location: "",
-      lobbySize: "5", // Default lobby size
+      lobbySize: "5", // Default lobby size as string
     },
   });
 
