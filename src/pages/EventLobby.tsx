@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,16 +9,17 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import QRScanner from "@/components/QRScanner";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Mock attendees data
 const mockAttendees = [
   { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
   { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
   { id: "3", name: "Esther Howard", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", status: "going" },
-  { id: "4", name: "Cameron Williamson", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop", status: "interested" },
+  { id: "4", name: "Cameron Williamson", avatar: "https://images.unsplash.com/photo-1507003211169-7472b28e22ac?w=200&h=200&auto=format&fit=crop", status: "interested" },
   { id: "5", name: "Brooklyn Simmons", avatar: "https://images.unsplash.com/photo-1507101105822-7472b28e22ac?w=200&h=200&auto=format&fit=crop", status: "interested" },
   { id: "6", name: "Jenny Wilson", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&auto=format&fit=crop", status: "interested" },
   { id: "7", name: "Robert Fox", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&h=200&auto=format&fit=crop", status: "interested" },
@@ -29,11 +29,13 @@ const EventLobby = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
   
   useEffect(() => {
-    // Find the event from the events list
     const events = getEvents();
     const foundEvent = events.find(e => e.id === eventId);
     if (foundEvent) {
@@ -48,11 +50,21 @@ const EventLobby = () => {
     return attendee.status === attendeeView;
   });
 
-  // If event is not found
+  const handleScanSuccess = (data: string) => {
+    if (data) {
+      setIsCheckedIn(true);
+      toast({
+        title: "Check-in successful!",
+        description: "You've checked in to this event",
+        variant: "default",
+      });
+      setIsScannerOpen(false);
+    }
+  };
+
   if (!event) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        {/* App Name */}
         <div className="p-4 pt-6 w-full text-center">
           <h1 className="text-2xl font-medium">
             <span className="font-bold">i</span>mpulse
@@ -120,14 +132,12 @@ const EventLobby = () => {
 
   return (
     <div className="pb-20 min-h-screen bg-background">
-      {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
           <span className="font-bold">i</span>mpulse
         </h1>
       </div>
 
-      {/* Header with back button */}
       <header className="p-4 flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
@@ -135,7 +145,6 @@ const EventLobby = () => {
         <h1 className="text-xl font-bold">Event Details</h1>
       </header>
 
-      {/* Event Image */}
       <div className="relative">
         <img 
           src={event.image} 
@@ -150,7 +159,6 @@ const EventLobby = () => {
         </div>
       </div>
 
-      {/* Event Details */}
       <div className="p-4">
         <h2 className="text-2xl font-bold">{event.title}</h2>
         <p className="text-muted-foreground mt-1">{event.description}</p>
@@ -175,7 +183,6 @@ const EventLobby = () => {
 
       <Separator />
 
-      {/* Attendees Section */}
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
@@ -214,7 +221,6 @@ const EventLobby = () => {
           )}
         </div>
 
-        {/* Attendee Avatars Preview */}
         <div className="flex -space-x-2 overflow-hidden">
           {mockAttendees.slice(0, 5).map((attendee) => (
             <Avatar key={attendee.id} className="border-2 border-background">
@@ -232,17 +238,36 @@ const EventLobby = () => {
 
       <Separator />
 
-      {/* Action Buttons */}
       <div className="p-4 grid grid-cols-2 gap-3">
-        <Button className="w-full bg-primary text-primary-foreground">
-          Attend
-        </Button>
+        {isCheckedIn ? (
+          <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
+            <Check className="mr-2 h-4 w-4" />
+            Checked In
+          </Button>
+        ) : (
+          <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full bg-primary text-primary-foreground">
+                <ScanLine className="mr-2 h-4 w-4" />
+                Check In
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Scan QR Code</DialogTitle>
+              </DialogHeader>
+              <QRScanner 
+                onSuccess={handleScanSuccess} 
+                onCancel={() => setIsScannerOpen(false)} 
+              />
+            </DialogContent>
+          </Dialog>
+        )}
         <Button variant="outline" className="w-full">
           Interested
         </Button>
       </div>
 
-      {/* Navigation */}
       <Navigation />
     </div>
   );

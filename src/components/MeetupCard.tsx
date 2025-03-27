@@ -1,8 +1,11 @@
 
-import { Clock, MapPin, User } from "lucide-react";
+import { Clock, MapPin, User, ScanLine, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Meetup, useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import QRScanner from "@/components/QRScanner";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -11,15 +14,22 @@ interface MeetupCardProps {
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   const isAttended = attendedMeetups?.includes(meetup.id);
   
   const handleAttend = () => {
+    setIsScannerOpen(true);
+  };
+  
+  const handleScanSuccess = (data: string) => {
+    // In a real app, we would validate the QR code data against the meetup ID
     attendMeetup(meetup.id, meetup.points);
     toast({
       title: "Meetup joined!",
       description: `You earned ${meetup.points} points for joining this meetup.`,
     });
+    setIsScannerOpen(false);
   };
   
   return (
@@ -54,14 +64,37 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       </div>
       
       <div className="mt-4">
-        <Button 
-          className="w-full" 
-          onClick={handleAttend} 
-          variant={isAttended ? "outline" : "default"}
-          disabled={isAttended}
-        >
-          {isAttended ? "Already Joined" : "Join Meetup"}
-        </Button>
+        <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              className="w-full flex items-center justify-center" 
+              onClick={handleAttend} 
+              variant={isAttended ? "outline" : "default"}
+              disabled={isAttended}
+            >
+              {isAttended ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Checked In
+                </>
+              ) : (
+                <>
+                  <ScanLine className="mr-2 h-4 w-4" />
+                  Scan QR Code
+                </>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Scan QR Code to Check In</DialogTitle>
+            </DialogHeader>
+            <QRScanner 
+              onSuccess={handleScanSuccess} 
+              onCancel={() => setIsScannerOpen(false)} 
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
