@@ -20,9 +20,10 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
   location: z.string().min(3, "Location is required"),
-  lobbySize: z.string().regex(/^\d+$/, "Lobby size must be a number")
-    .transform(Number)
-    .refine(size => size > 0, "Lobby size must be greater than 0"),
+  lobbySize: z.preprocess(
+    (val) => Number(val),
+    z.number().int().positive("Lobby size must be greater than 0")
+  ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,7 +43,7 @@ const Meetups = () => {
       description: "",
       dateTime: "",
       location: "",
-      lobbySize: "5", // Default lobby size as string (will be transformed to number by Zod)
+      lobbySize: 5, // This is now a number, not a string
     },
   });
 
@@ -200,7 +201,14 @@ const Meetups = () => {
                   <FormItem>
                     <FormLabel>Lobby Size (max participants)</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" placeholder="5" {...field} />
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        placeholder="5" 
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        value={field.value}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
