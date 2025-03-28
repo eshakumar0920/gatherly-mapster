@@ -2,7 +2,7 @@
 import { CalendarDays, Clock, MapPin, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Event {
@@ -55,13 +55,12 @@ const EventCard = ({ event, featured = false }: EventCardProps) => {
     }
   };
   
-  // Check if event is already saved
-  useState(() => {
+  useEffect(() => {
     const savedEvents = JSON.parse(localStorage.getItem("savedEvents") || "[]");
     if (savedEvents.includes(event.id)) {
       setIsAdded(true);
     }
-  });
+  }, [event.id]);
   
   return (
     <div className={`event-card ${featured ? 'w-full' : 'w-full'} animate-fade-in`}>

@@ -1,13 +1,11 @@
 
-import { Clock, MapPin, User, ScanLine, Check, Users } from "lucide-react";
+import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Meetup, useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import QRScanner from "@/components/QRScanner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -16,46 +14,37 @@ interface MeetupCardProps {
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const navigate = useNavigate();
   
-  const isAttended = attendedMeetups?.includes(meetup.id);
+  const isJoined = attendedMeetups?.includes(meetup.id);
   const currentAttendees = meetup.attendees?.length || 0;
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
   
-  const handleAttend = () => {
+  const handleJoinMeetup = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
     if (isLobbyFull) {
       toast({
         title: "Lobby is full",
         description: `This meetup has reached its maximum capacity of ${meetup.lobbySize} attendees.`,
         variant: "destructive",
       });
-      return;
-    }
-    setIsScannerOpen(true);
-  };
-  
-  const handleScanSuccess = (data: string) => {
-    // In a real app, we would validate the QR code data against the meetup ID
-    if (isLobbyFull) {
-      toast({
-        title: "Lobby is full",
-        description: `This meetup has reached its maximum capacity of ${meetup.lobbySize} attendees.`,
-        variant: "destructive",
-      });
-      setIsScannerOpen(false);
       return;
     }
     
     attendMeetup(meetup.id, meetup.points);
     toast({
       title: "Meetup joined!",
-      description: `You earned ${meetup.points} points for joining this meetup.`,
+      description: `You've joined this meetup and earned ${meetup.points} points!`,
     });
-    setIsScannerOpen(false);
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/meetups/${meetup.id}`);
   };
   
   return (
-    <div className="border rounded-lg p-4 bg-card animate-fade-in">
+    <div className="border rounded-lg p-4 bg-card animate-fade-in" onClick={handleViewDetails}>
       <div className="flex justify-between items-start">
         <div>
           <h3 className="font-semibold text-base line-clamp-1">{meetup.title}</h3>
@@ -99,42 +88,20 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       </div>
       
       <div className="mt-4">
-        <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              className="w-full flex items-center justify-center" 
-              onClick={handleAttend} 
-              variant={isAttended ? "outline" : "yellow"}
-              disabled={isAttended || isLobbyFull}
-            >
-              {isAttended ? (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Checked In
-                </>
-              ) : isLobbyFull ? (
-                <>
-                  <Users className="mr-2 h-4 w-4" />
-                  Lobby Full
-                </>
-              ) : (
-                <>
-                  <ScanLine className="mr-2 h-4 w-4" />
-                  Scan QR Code
-                </>
-              )}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Scan QR Code to Check In</DialogTitle>
-            </DialogHeader>
-            <QRScanner 
-              onSuccess={handleScanSuccess} 
-              onCancel={() => setIsScannerOpen(false)} 
-            />
-          </DialogContent>
-        </Dialog>
+        <Button 
+          className="w-full flex items-center justify-center" 
+          onClick={handleJoinMeetup} 
+          variant={isJoined ? "outline" : "yellow"}
+          disabled={isJoined || isLobbyFull}
+        >
+          {isJoined ? (
+            "Joined"
+          ) : isLobbyFull ? (
+            "Lobby Full"
+          ) : (
+            "Join Meetup"
+          )}
+        </Button>
       </div>
     </div>
   );
