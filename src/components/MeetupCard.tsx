@@ -32,7 +32,11 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       return;
     }
     
-    navigate(`/meetups/${meetup.id}?join=true`);
+    attendMeetup(meetup.id, meetup.points);
+    toast({
+      title: "Meetup joined!",
+      description: `You've joined this meetup and earned ${meetup.points} points!`,
+    });
   };
 
   const handleViewDetails = () => {

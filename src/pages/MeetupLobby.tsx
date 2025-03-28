@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, User, Users, Calendar, MapPin, QrCode } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, User, Users, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,19 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { getMeetups, useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import QRScanner from "@/components/QRScanner";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const MeetupLobby = () => {
   const { meetupId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [meetup, setMeetup] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
   const [isJoined, setIsJoined] = useState(false);
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const { attendMeetup, attendedMeetups } = useUserStore();
   
   useEffect(() => {
@@ -33,15 +28,10 @@ const MeetupLobby = () => {
     if (foundMeetup) {
       setMeetup(foundMeetup);
       setIsJoined(attendedMeetups?.includes(foundMeetup.id));
-      
-      // Open QR scanner if join parameter is present
-      if (searchParams.get('join') === 'true') {
-        setIsQrScannerOpen(true);
-      }
     } else {
       console.log("Meetup not found for ID:", meetupId);
     }
-  }, [meetupId, attendedMeetups, searchParams]);
+  }, [meetupId, attendedMeetups]);
 
   const mockAttendees = [
     { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -55,38 +45,14 @@ const MeetupLobby = () => {
   });
 
   const handleJoinLobby = () => {
-    setIsQrScannerOpen(true);
-  };
-  
-  const handleQrScanSuccess = (data: string) => {
     if (meetup) {
-      // Verify the QR code data matches the meetup ID
-      // In a real app, you would have a more secure verification mechanism
-      if (data.includes(meetupId)) {
-        attendMeetup(meetup.id, meetup.points);
-        setIsJoined(true);
-        toast({
-          title: "Meetup attendance confirmed!",
-          description: `You've successfully checked in and earned ${meetup.points} points!`,
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Invalid QR Code",
-          description: "This QR code doesn't match the current meetup.",
-          variant: "destructive",
-        });
-      }
-    }
-    setIsQrScannerOpen(false);
-  };
-  
-  const handleQrScanCancel = () => {
-    setIsQrScannerOpen(false);
-    
-    // Remove the join parameter from the URL
-    if (searchParams.get('join') === 'true') {
-      navigate(`/meetups/${meetupId}`, { replace: true });
+      attendMeetup(meetup.id, meetup.points);
+      setIsJoined(true);
+      toast({
+        title: "Joined meetup!",
+        description: `You've joined this meetup and earned ${meetup.points} points!`,
+        variant: "default",
+      });
     }
   };
 
@@ -258,25 +224,14 @@ const MeetupLobby = () => {
       <div className="p-4">
         {isJoined ? (
           <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-            Joined Meetup
+            Joined Lobby
           </Button>
         ) : (
           <Button className="w-full" onClick={handleJoinLobby}>
-            <QrCode className="mr-2 h-4 w-4" />
-            Scan QR Code to Join
+            Join Lobby
           </Button>
         )}
       </div>
-
-      <Dialog open={isQrScannerOpen} onOpenChange={setIsQrScannerOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Scan QR Code to Join Meetup</DialogTitle>
-          <QRScanner 
-            onSuccess={handleQrScanSuccess} 
-            onCancel={handleQrScanCancel} 
-          />
-        </DialogContent>
-      </Dialog>
 
       <Navigation />
     </div>
