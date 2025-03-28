@@ -1,16 +1,68 @@
 
 import { useNavigate } from "react-router-dom";
-import { LogOut, Award, Star } from "lucide-react";
+import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
-import { useUserStore } from "@/services/meetupService";
+import { Friend, Tag as TagType, useUserStore } from "@/services/meetupService";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { points, level, attendedMeetups } = useUserStore();
+  const { toast } = useToast();
+  const { 
+    points, 
+    level, 
+    attendedMeetups, 
+    name, 
+    email, 
+    friends, 
+    tags, 
+    addFriend, 
+    removeFriend, 
+    updateTags,
+    updateProfile 
+  } = useUserStore();
+  
+  const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
+  const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  
+  const [newFriend, setNewFriend] = useState<Partial<Friend>>({
+    name: "",
+    avatar: ""
+  });
+  
+  const [profileForm, setProfileForm] = useState({
+    name,
+    email
+  });
+  
+  const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
+  
+  // Available tags for selection
+  const availableTags: TagType[] = [
+    'Gaming', 'Sports', 'Academic', 'Arts', 'Music', 'Technology', 'Food', 'Outdoors'
+  ];
   
   // Calculate progress to next level
   const pointsToNextLevel = level * 10;
@@ -19,6 +71,69 @@ const Profile = () => {
   const handleLogout = () => {
     logout();
     navigate("/auth");
+  };
+  
+  const handleAddFriend = () => {
+    if (!newFriend.name) {
+      toast({
+        title: "Friend name required",
+        description: "Please enter a name for your friend.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const friend: Friend = {
+      id: `friend${Date.now()}`,
+      name: newFriend.name,
+      avatar: newFriend.avatar || undefined,
+      tags: []
+    };
+    
+    addFriend(friend);
+    setNewFriend({ name: "", avatar: "" });
+    setIsAddFriendDialogOpen(false);
+    
+    toast({
+      title: "Friend added!",
+      description: `${friend.name} has been added to your friends list.`
+    });
+  };
+  
+  const handleRemoveFriend = (friendId: string, friendName: string) => {
+    removeFriend(friendId);
+    toast({
+      title: "Friend removed",
+      description: `${friendName} has been removed from your friends list.`
+    });
+  };
+  
+  const handleUpdateTags = () => {
+    updateTags(selectedTags);
+    setIsTagDialogOpen(false);
+    
+    toast({
+      title: "Tags updated!",
+      description: "Your profile tags have been updated."
+    });
+  };
+  
+  const handleUpdateProfile = () => {
+    updateProfile(profileForm.name, profileForm.email);
+    setIsEditProfileDialogOpen(false);
+    
+    toast({
+      title: "Profile updated!",
+      description: "Your profile information has been updated."
+    });
+  };
+  
+  const toggleTag = (tag: TagType) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
   };
   
   return (
@@ -43,8 +158,26 @@ const Profile = () => {
             <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
               <span className="text-4xl">👤</span>
             </div>
-            <h2 className="text-xl font-semibold">UTD Student</h2>
-            <p className="text-muted-foreground">student@utdallas.edu</p>
+            <h2 className="text-xl font-semibold">{name}</h2>
+            <p className="text-muted-foreground">{email}</p>
+            
+            {/* Tags */}
+            <div className="flex flex-wrap gap-1 mt-2 justify-center">
+              {tags.map(tag => (
+                <span key={tag} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                  {tag}
+                </span>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full h-6 text-xs"
+                onClick={() => setIsTagDialogOpen(true)}
+              >
+                <Tag className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
           </div>
           
           {/* Points & Level Section */}
@@ -71,10 +204,72 @@ const Profile = () => {
             </div>
           </div>
           
+          {/* Friends Section */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium">Friends</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full"
+                onClick={() => setIsAddFriendDialogOpen(true)}
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              {friends.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">
+                  No friends added yet. Add your first friend!
+                </p>
+              ) : (
+                friends.map(friend => (
+                  <div key={friend.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        {friend.avatar ? (
+                          <AvatarImage src={friend.avatar} alt={friend.name} />
+                        ) : (
+                          <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{friend.name}</p>
+                        <div className="flex gap-1">
+                          {friend.tags?.map(tag => (
+                            <span key={tag} className="text-xs text-muted-foreground">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleRemoveFriend(friend.id, friend.name)}
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Remove</span>
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Account Settings</h3>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" disabled>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => setIsEditProfileDialogOpen(true)}
+              >
+                <User className="mr-2 h-4 w-4" />
                 Edit Profile
               </Button>
               <Button variant="outline" className="w-full justify-start" disabled>
@@ -95,6 +290,107 @@ const Profile = () => {
           </Button>
         </div>
       </div>
+
+      {/* Add Friend Dialog */}
+      <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a Friend</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="friendName" className="text-sm font-medium">Friend's Name</label>
+              <Input 
+                id="friendName"
+                placeholder="Enter friend's name"
+                value={newFriend.name || ''}
+                onChange={e => setNewFriend({...newFriend, name: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="friendAvatar" className="text-sm font-medium">Avatar URL (optional)</label>
+              <Input 
+                id="friendAvatar"
+                placeholder="https://example.com/avatar.jpg"
+                value={newFriend.avatar || ''}
+                onChange={e => setNewFriend({...newFriend, avatar: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={handleAddFriend}>Add Friend</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="profileName" className="text-sm font-medium">Name</label>
+              <Input 
+                id="profileName"
+                placeholder="Your name"
+                value={profileForm.name}
+                onChange={e => setProfileForm({...profileForm, name: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="profileEmail" className="text-sm font-medium">Email</label>
+              <Input 
+                id="profileEmail"
+                placeholder="Your email"
+                value={profileForm.email}
+                onChange={e => setProfileForm({...profileForm, email: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={handleUpdateProfile}>Update Profile</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tags Dialog */}
+      <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Your Interests</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-2">
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => (
+                <button
+                  key={tag}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    selectedTags.includes(tag) 
+                      ? 'bg-primary text-black' 
+                      : 'bg-muted hover:bg-muted/80'
+                  }`}
+                  onClick={() => toggleTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={handleUpdateTags}>Save Interests</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Navigation */}
       <Navigation />

@@ -15,6 +15,15 @@ export interface Meetup {
   attendees?: string[]; // Array of user IDs who have joined
 }
 
+export type Tag = 'Gaming' | 'Sports' | 'Academic' | 'Arts' | 'Music' | 'Technology' | 'Food' | 'Outdoors';
+
+export interface Friend {
+  id: string;
+  name: string;
+  avatar?: string;
+  tags?: Tag[];
+}
+
 // Mock data for meetups
 export const meetups: Meetup[] = [
   {
@@ -24,7 +33,7 @@ export const meetups: Meetup[] = [
     dateTime: "Today @2pm",
     location: "Student Union",
     points: 3,
-    createdBy: "ChessMaster101",
+    createdBy: "Alex Chen",
     creatorAvatar: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=200&h=200&auto=format&fit=crop",
     lobbySize: 4,
     attendees: ["user1"]
@@ -36,7 +45,7 @@ export const meetups: Meetup[] = [
     dateTime: "Monday @5pm",
     location: "Recreation Center East Courts",
     points: 3,
-    createdBy: "PickleballPro",
+    createdBy: "Jordan Smith",
     creatorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&auto=format&fit=crop",
     lobbySize: 2,
     attendees: []
@@ -48,7 +57,7 @@ export const meetups: Meetup[] = [
     dateTime: "Tuesday @3pm",
     location: "McDermott Library 3rd Floor",
     points: 3,
-    createdBy: "BookwormUTD",
+    createdBy: "Sofia Martinez",
     creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop",
     lobbySize: 3,
     attendees: ["user3", "user4"]
@@ -132,26 +141,54 @@ export const getMeetups = () => {
   return meetups;
 };
 
-// User store for points and level
+// User store for points, level, friends and tags
 interface UserState {
   points: number;
   level: number;
+  name: string;
+  email: string;
   attendedMeetups: string[];
+  friends: Friend[];
+  tags: Tag[];
   addPoints: (points: number) => void;
   attendMeetup: (meetupId: string, points: number) => void;
   getLevel: () => number;
+  addFriend: (friend: Friend) => void;
+  removeFriend: (friendId: string) => void;
+  updateTags: (tags: Tag[]) => void;
+  updateProfile: (name: string, email: string) => void;
 }
+
+// Sample friends data
+const sampleFriends: Friend[] = [
+  {
+    id: "friend1",
+    name: "Taylor Swift",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&auto=format&fit=crop",
+    tags: ['Music', 'Arts']
+  },
+  {
+    id: "friend2",
+    name: "Raj Patel",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop",
+    tags: ['Technology', 'Gaming']
+  }
+];
 
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
       points: 0,
       level: 1,
+      name: "UTD Student",
+      email: "student@utdallas.edu",
       attendedMeetups: [],
+      friends: sampleFriends,
+      tags: ['Academic', 'Technology'],
       addPoints: (points: number) => 
         set(state => ({ 
           points: state.points + points,
-          level: Math.floor(state.points / 10) + 1
+          level: Math.floor((state.points + points) / 10) + 1
         })),
       attendMeetup: (meetupId: string, points: number) => 
         set(state => {
@@ -181,7 +218,24 @@ export const useUserStore = create<UserState>()(
       getLevel: () => {
         const state = get();
         return Math.floor(state.points / 10) + 1;
-      }
+      },
+      addFriend: (friend: Friend) =>
+        set(state => ({
+          friends: [...state.friends, friend]
+        })),
+      removeFriend: (friendId: string) =>
+        set(state => ({
+          friends: state.friends.filter(friend => friend.id !== friendId)
+        })),
+      updateTags: (tags: Tag[]) =>
+        set(state => ({
+          tags: tags
+        })),
+      updateProfile: (name: string, email: string) =>
+        set(state => ({
+          name,
+          email
+        }))
     }),
     {
       name: 'user-points-storage'
