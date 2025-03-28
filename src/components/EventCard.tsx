@@ -1,7 +1,9 @@
 
-import { CalendarDays, Clock, MapPin } from "lucide-react";
+import { CalendarDays, Clock, MapPin, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Event {
   id: string;
@@ -21,10 +23,45 @@ interface EventCardProps {
 
 const EventCard = ({ event, featured = false }: EventCardProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isAdded, setIsAdded] = useState<boolean>(false);
 
   const handleViewDetails = () => {
     navigate(`/events/${event.id}`);
   };
+  
+  const handleAddToProfile = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    
+    // In a real app, this would connect to a backend
+    // For now, just store in localStorage
+    const savedEvents = JSON.parse(localStorage.getItem("savedEvents") || "[]");
+    
+    if (!savedEvents.includes(event.id)) {
+      savedEvents.push(event.id);
+      localStorage.setItem("savedEvents", JSON.stringify(savedEvents));
+      
+      toast({
+        title: "Event added to profile",
+        description: "This event has been added to your profile.",
+      });
+      
+      setIsAdded(true);
+    } else {
+      toast({
+        title: "Event already in profile",
+        description: "This event is already in your profile.",
+      });
+    }
+  };
+  
+  // Check if event is already saved
+  useState(() => {
+    const savedEvents = JSON.parse(localStorage.getItem("savedEvents") || "[]");
+    if (savedEvents.includes(event.id)) {
+      setIsAdded(true);
+    }
+  });
   
   return (
     <div className={`event-card ${featured ? 'w-full' : 'w-full'} animate-fade-in`}>
@@ -63,9 +100,18 @@ const EventCard = ({ event, featured = false }: EventCardProps) => {
           </div>
         </div>
         
-        <div className="mt-4">
-          <Button className="w-full" onClick={handleViewDetails}>
+        <div className="mt-4 flex gap-2">
+          <Button className="flex-1" onClick={handleViewDetails}>
             View Details
+          </Button>
+          <Button 
+            variant={isAdded ? "outline" : "secondary"} 
+            className="flex items-center" 
+            onClick={handleAddToProfile}
+            disabled={isAdded}
+          >
+            <PlusCircle className="h-4 w-4 mr-1" />
+            {isAdded ? "Added" : "Add"}
           </Button>
         </div>
       </div>
