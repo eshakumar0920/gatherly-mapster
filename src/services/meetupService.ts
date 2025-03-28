@@ -36,7 +36,7 @@ export const meetups: Meetup[] = [
     createdBy: "Alex Chen",
     creatorAvatar: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=200&h=200&auto=format&fit=crop",
     lobbySize: 4,
-    attendees: ["user1"]
+    attendees: ["Jane Cooper"]
   },
   {
     id: "2",
@@ -60,7 +60,7 @@ export const meetups: Meetup[] = [
     createdBy: "Sofia Martinez",
     creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop",
     lobbySize: 3,
-    attendees: ["user3", "user4"]
+    attendees: ["Wade Warren", "Esther Howard"]
   },
   {
     id: "4",
@@ -69,10 +69,10 @@ export const meetups: Meetup[] = [
     dateTime: "Friday @6pm",
     location: "Activity Center Pool",
     points: 3,
-    createdBy: "SwimTeamCaptain",
+    createdBy: "Michael Johnson",
     creatorAvatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&auto=format&fit=crop",
     lobbySize: 8,
-    attendees: ["user5"]
+    attendees: ["Cameron Williamson"]
   },
   {
     id: "5",
@@ -81,7 +81,7 @@ export const meetups: Meetup[] = [
     dateTime: "Wednesday @4pm",
     location: "Science Building Room 2.410",
     points: 3,
-    createdBy: "BiologyMajor22",
+    createdBy: "Emily Parker",
     creatorAvatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&auto=format&fit=crop",
     lobbySize: 6,
     attendees: []
@@ -93,10 +93,10 @@ export const meetups: Meetup[] = [
     dateTime: "Thursday @7pm",
     location: "Phase 8 Sand Courts",
     points: 6,
-    createdBy: "VolleyballFan",
+    createdBy: "David Thompson",
     creatorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop",
     lobbySize: 12,
-    attendees: ["user2", "user7"]
+    attendees: ["Brooklyn Simmons", "Robert Fox"]
   },
   {
     id: "7",
@@ -105,7 +105,7 @@ export const meetups: Meetup[] = [
     dateTime: "Friday @5pm",
     location: "Residence Hall West Common Area",
     points: 8,
-    createdBy: "PingPongChamp",
+    createdBy: "Sarah Wilson",
     creatorAvatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop",
     lobbySize: 16,
     attendees: []
@@ -117,7 +117,7 @@ export const meetups: Meetup[] = [
     dateTime: "Saturday @3pm",
     location: "ECSW 1.355",
     points: 1,
-    createdBy: "GamingComet",
+    createdBy: "Ryan Garcia",
     creatorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop",
     lobbySize: 10,
     attendees: []
@@ -129,10 +129,10 @@ export const meetups: Meetup[] = [
     dateTime: "Today @7pm",
     location: "McDermott Library 2nd Floor",
     points: 3,
-    createdBy: "MathWhiz",
+    createdBy: "Olivia Kim",
     creatorAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&auto=format&fit=crop",
     lobbySize: 5,
-    attendees: ["user5", "user6", "user8", "user9", "user10"]
+    attendees: ["Jenny Wilson", "Robert Fox", "Jane Cooper", "Wade Warren", "Esther Howard"]
   }
 ];
 

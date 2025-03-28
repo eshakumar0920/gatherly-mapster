@@ -1,18 +1,15 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, ScanLine, Check } from "lucide-react";
+import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
-import QRScanner from "@/components/QRScanner";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -33,7 +30,6 @@ const EventLobby = () => {
   const { toast } = useToast();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   
   useEffect(() => {
@@ -51,16 +47,13 @@ const EventLobby = () => {
     return attendee.status === attendeeView;
   });
 
-  const handleScanSuccess = (data: string) => {
-    if (data) {
-      setIsCheckedIn(true);
-      toast({
-        title: "Check-in successful!",
-        description: "You've checked in to this event",
-        variant: "default",
-      });
-      setIsScannerOpen(false);
-    }
+  const handleCheckIn = () => {
+    setIsCheckedIn(true);
+    toast({
+      title: "Check-in successful!",
+      description: "You've checked in to this event",
+      variant: "default",
+    });
   };
 
   if (!event) {
@@ -246,23 +239,13 @@ const EventLobby = () => {
             Checked In
           </Button>
         ) : (
-          <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full bg-primary text-primary-foreground">
-                <ScanLine className="mr-2 h-4 w-4" />
-                Check In
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Scan QR Code</DialogTitle>
-              </DialogHeader>
-              <QRScanner 
-                onSuccess={handleScanSuccess} 
-                onCancel={() => setIsScannerOpen(false)} 
-              />
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="w-full bg-primary text-primary-foreground"
+            onClick={handleCheckIn}
+          >
+            <Check className="mr-2 h-4 w-4" />
+            Check In
+          </Button>
         )}
         <Button variant="outline" className="w-full">
           Interested
