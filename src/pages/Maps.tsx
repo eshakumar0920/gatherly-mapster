@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, List, Layers } from "lucide-react";
+import { Search, List, Layers, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import MapView from "@/components/MapView";
@@ -9,14 +9,24 @@ import { getEvents } from "@/services/eventService";
 
 const Maps = () => {
   const events = getEvents();
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Convert events to map locations
   const mapLocations = events.map(event => ({
     id: event.id,
     title: event.title,
     lat: 0, // In a real app, we would have actual coordinates
-    lng: 0
+    lng: 0,
+    description: event.description
   }));
+
+  // Filter locations based on search query
+  const filteredLocations = searchQuery 
+    ? mapLocations.filter(location => 
+        location.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (location.description && location.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : mapLocations;
 
   return (
     <div className="pb-20 h-screen flex flex-col">
@@ -29,8 +39,8 @@ const Maps = () => {
 
       {/* Header */}
       <header className="p-4">
-        <h1 className="text-2xl font-bold">Event Map</h1>
-        <p className="text-muted-foreground">Find events around you</p>
+        <h1 className="text-2xl font-bold">UTD Campus Map</h1>
+        <p className="text-muted-foreground">Find events and locations at UT Dallas</p>
       </header>
 
       {/* Search bar */}
@@ -38,8 +48,10 @@ const Maps = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input 
-            placeholder="Search locations..." 
+            placeholder="Search UTD locations..." 
             className="pl-10 rounded-full bg-muted/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
@@ -48,17 +60,17 @@ const Maps = () => {
       <div className="px-4 pb-4 flex gap-2">
         <Button variant="outline" size="sm" className="flex-1">
           <Layers className="h-4 w-4 mr-2" />
-          Layers
+          Campus Buildings
         </Button>
         <Button variant="outline" size="sm" className="flex-1">
-          <List className="h-4 w-4 mr-2" />
-          List View
+          <MapPin className="h-4 w-4 mr-2" />
+          Points of Interest
         </Button>
       </div>
 
       {/* Map */}
       <div className="px-4 flex-1">
-        <MapView locations={mapLocations} />
+        <MapView locations={filteredLocations} />
       </div>
 
       {/* Navigation */}
