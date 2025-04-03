@@ -12,11 +12,11 @@ interface MeetupCardProps {
 }
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
-  const { attendMeetup, attendedMeetups } = useUserStore();
+  const { joinMeetupLobby, joinedLobbies } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const isJoined = attendedMeetups?.includes(meetup.id);
+  const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const currentAttendees = meetup.attendees?.length || 0;
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
   
@@ -32,7 +32,16 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       return;
     }
     
-    navigate(`/meetups/${meetup.id}?join=true`);
+    // Join the meetup lobby without QR code
+    joinMeetupLobby(meetup.id);
+    
+    toast({
+      title: "Joined lobby",
+      description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
+    });
+    
+    // Navigate to meetup details
+    navigate(`/meetups/${meetup.id}`);
   };
 
   const handleViewDetails = () => {
@@ -87,15 +96,15 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         <Button 
           className="w-full flex items-center justify-center" 
           onClick={handleJoinMeetup} 
-          variant={isJoined ? "outline" : "yellow"}
-          disabled={isJoined || isLobbyFull}
+          variant={isJoinedLobby ? "outline" : "yellow"}
+          disabled={isJoinedLobby || isLobbyFull}
         >
-          {isJoined ? (
-            "Joined"
+          {isJoinedLobby ? (
+            "In Lobby"
           ) : isLobbyFull ? (
             "Lobby Full"
           ) : (
-            "Join Meetup"
+            "Join Lobby"
           )}
         </Button>
       </div>

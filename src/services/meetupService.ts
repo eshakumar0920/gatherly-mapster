@@ -147,10 +147,12 @@ interface UserState {
   level: number;
   name: string;
   email: string;
-  attendedMeetups: string[];
+  joinedLobbies: string[]; // Meetups the user has joined the lobby for
+  attendedMeetups: string[]; // Meetups the user has checked into with QR code
   friends: Friend[];
   tags: Tag[];
   addPoints: (points: number) => void;
+  joinMeetupLobby: (meetupId: string) => void;
   attendMeetup: (meetupId: string, points: number) => void;
   getLevel: () => number;
   addFriend: (friend: Friend) => void;
@@ -182,6 +184,7 @@ export const useUserStore = create<UserState>()(
       level: 1,
       name: "UTD Student",
       email: "student@utdallas.edu",
+      joinedLobbies: [],
       attendedMeetups: [],
       friends: sampleFriends,
       tags: ['Academic', 'Technology'],
@@ -190,10 +193,10 @@ export const useUserStore = create<UserState>()(
           points: state.points + points,
           level: Math.floor((state.points + points) / 10) + 1
         })),
-      attendMeetup: (meetupId: string, points: number) => 
+      joinMeetupLobby: (meetupId: string) =>
         set(state => {
-          if (state.attendedMeetups.includes(meetupId)) {
-            return state; // Already attended
+          if (state.joinedLobbies.includes(meetupId)) {
+            return state; // Already in lobby
           }
           
           // Check if the meetup is full
@@ -205,6 +208,16 @@ export const useUserStore = create<UserState>()(
           // Add user to attendees (in a real app, we would use the user's ID)
           if (meetup && meetup.attendees) {
             meetup.attendees.push("currentUser");
+          }
+          
+          return {
+            joinedLobbies: [...state.joinedLobbies, meetupId]
+          };
+        }),
+      attendMeetup: (meetupId: string, points: number) => 
+        set(state => {
+          if (state.attendedMeetups.includes(meetupId)) {
+            return state; // Already checked in
           }
           
           const newPoints = state.points + points;
