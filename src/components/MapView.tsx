@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { MapPin, Navigation2 } from "lucide-react";
 import L from 'leaflet';
@@ -107,7 +108,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         markersLayerRef.current = null;
       }
     };
-  }, [mapContainerRef.current]); // Depend on the ref to ensure it exists
+  }, []); // Empty dependency array for initialization
 
   // Update markers when locations or selected location changes
   useEffect(() => {
