@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +18,6 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 const MeetupLobby = () => {
   const { meetupId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [meetup, setMeetup] = useState<any>(null);
@@ -70,7 +69,7 @@ const MeetupLobby = () => {
     if (meetup) {
       // Verify the QR code data matches the meetup ID
       // In a real app, you would have a more secure verification mechanism
-      if (data.includes(meetupId)) {
+      if (data.includes(meetupId as string)) {
         attendMeetup(meetup.id, meetup.points);
         setIsCheckedIn(true);
         toast({
@@ -284,7 +283,8 @@ const MeetupLobby = () => {
           </DialogDescription>
           <QRScanner 
             onSuccess={handleQrScanSuccess} 
-            onCancel={handleQrScanCancel} 
+            onCancel={handleQrScanCancel}
+            meetupId={meetupId}
           />
         </DialogContent>
       </Dialog>

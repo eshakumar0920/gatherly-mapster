@@ -3,7 +3,6 @@ import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Meetup, useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 

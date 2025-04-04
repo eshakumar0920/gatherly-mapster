@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Camera, Ban, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 interface QRScannerProps {
   onSuccess: (data: string) => void;
   onCancel: () => void;
+  meetupId?: string;
 }
 
-const QRScanner = ({ onSuccess, onCancel }: QRScannerProps) => {
+const QRScanner = ({ onSuccess, onCancel, meetupId }: QRScannerProps) => {
   const [scanning, setScanning] = useState(false);
   const { toast } = useToast();
   
@@ -23,14 +23,18 @@ const QRScanner = ({ onSuccess, onCancel }: QRScannerProps) => {
     setTimeout(() => {
       setScanning(false);
       
-      // Simulate successful scan with event ID
-      const eventId = Math.random().toString(36).substring(2, 8);
+      // Simulate successful scan with meetup ID if provided,
+      // otherwise generate a random ID
+      const scannedData = meetupId 
+        ? `meetup_${meetupId}`
+        : `meetup_${Math.random().toString(36).substring(2, 8)}`;
+      
       toast({
         title: "QR Code Scanned",
         description: "Event check-in successful!",
       });
       
-      onSuccess(eventId);
+      onSuccess(scannedData);
     }, 1500);
   };
   
