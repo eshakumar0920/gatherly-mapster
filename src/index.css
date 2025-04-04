@@ -86,3 +86,24 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
 }
+
+/* Leaflet custom styles */
+.custom-map-marker {
+  background-color: transparent;
+  border: none;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
+
+.leaflet-popup-content {
+  margin: 0.5rem;
+  max-width: 200px;
+  font-size: 0.875rem;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}

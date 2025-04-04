@@ -11,12 +11,16 @@ const Maps = () => {
   const events = getEvents();
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Convert events to map locations
+  // Convert events to map locations with random coordinates around UTD
+  const UTD_CENTER_LAT = 32.9886;
+  const UTD_CENTER_LNG = -96.7479;
+  
   const mapLocations = events.map(event => ({
     id: event.id,
     title: event.title,
-    lat: 0, // In a real app, we would have actual coordinates
-    lng: 0,
+    // Generate random coordinates near UTD for demonstration
+    lat: UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01,
+    lng: UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01,
     description: event.description
   }));
 

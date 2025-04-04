@@ -1,6 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPin, Navigation2 } from "lucide-react";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface MapLocation {
   id: string;
@@ -10,48 +12,51 @@ interface MapLocation {
   description?: string;
 }
 
-// UTD campus key locations
+// UTD campus coordinates
+const UTD_CENTER = [32.9886, -96.7479]; // Latitude and longitude of UTD center
+
+// UTD campus key locations with actual coordinates
 const utdLocations: MapLocation[] = [
   {
     id: "src",
     title: "Student Union",
-    lat: 32.7563,
-    lng: -96.7695,
+    lat: 32.9899,
+    lng: -96.7501,
     description: "Campus hub with dining options and study spaces"
   },
   {
     id: "library",
     title: "McDermott Library",
-    lat: 32.7573,
-    lng: -96.7683,
+    lat: 32.9886,
+    lng: -96.7491,
     description: "Main campus library with study spaces"
   },
   {
     id: "ecss",
     title: "ECSS Building",
-    lat: 32.7565,
-    lng: -96.7675,
+    lat: 32.9879,
+    lng: -96.7511,
     description: "Engineering and Computer Science buildings"
   },
   {
     id: "ssom",
     title: "School of Management",
-    lat: 32.7585,
-    lng: -96.7665,
+    lat: 32.9869,
+    lng: -96.7456,
     description: "Business school with classrooms and offices"
   },
   {
     id: "residence",
     title: "Residence Halls",
-    lat: 32.7590,
-    lng: -96.7705,
+    lat: 32.9922,
+    lng: -96.7489,
     description: "On-campus student housing"
   },
   {
     id: "activity",
     title: "Activity Center",
-    lat: 32.7555,
-    lng: -96.7710,
+    lat: 32.9874,
+    lng: -96.7524,
     description: "Recreation center with gym and athletic facilities"
   }
 ];
@@ -60,39 +65,109 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [showUTDLocations, setShowUTDLocations] = useState(true);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
   
   // Combine UTD locations with event locations
   const allLocations = showUTDLocations 
     ? [...utdLocations, ...locations]
     : locations;
 
-  // Simulate map loading
+  // Initialize the map when component mounts
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (!mapRef.current) {
+      // Create map instance
+      const map = L.map('map').setView(UTD_CENTER as L.LatLngExpression, 16);
+      
+      // Add OpenStreetMap tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      
+      // Store map instance in ref
+      mapRef.current = map;
+      
+      // Create a layer group for markers
+      markersLayerRef.current = L.layerGroup().addTo(map);
+      
       setMapLoaded(true);
-    }, 1000);
+    }
     
-    return () => clearTimeout(timer);
+    return () => {
+      // Clean up map when component unmounts
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markersLayerRef.current = null;
+      }
+    };
   }, []);
-  
-  const handleLocationClick = (location: MapLocation) => {
-    setSelectedLocation(location === selectedLocation ? null : location);
-  };
+
+  // Update markers when locations or selected location changes
+  useEffect(() => {
+    if (mapLoaded && mapRef.current && markersLayerRef.current) {
+      // Clear existing markers
+      markersLayerRef.current.clearLayers();
+      
+      // Add markers for all locations
+      allLocations.forEach(location => {
+        const isSelected = selectedLocation && selectedLocation.id === location.id;
+        
+        // Create marker
+        const marker = L.marker([location.lat, location.lng], {
+          icon: L.divIcon({
+            className: 'custom-map-marker',
+            html: `<div class="flex flex-col items-center">
+                    <div class="${isSelected ? 'text-green-500' : 'text-event-primary'} 
+                      ${utdLocations.find(l => l.id === location.id) ? '' : 'animate-bounce'}">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                    </div>
+                    <div class="mt-1 bg-white px-2 py-1 rounded-md shadow-md text-xs ${isSelected ? 'font-bold' : ''}">
+                      ${location.title}
+                    </div>
+                   </div>`,
+            iconSize: [40, 60],
+            iconAnchor: [20, 60],
+          })
+        });
+        
+        // Add popup for description if available
+        if (location.description) {
+          marker.bindPopup(location.description);
+          
+          if (isSelected) {
+            marker.openPopup();
+          }
+        }
+        
+        // Add click handler
+        marker.on('click', () => {
+          setSelectedLocation(location === selectedLocation ? null : location);
+        });
+        
+        // Add marker to layer group
+        markersLayerRef.current?.addLayer(marker);
+      });
+    }
+  }, [mapLoaded, allLocations, selectedLocation]);
 
   const toggleUTDLocations = () => {
     setShowUTDLocations(!showUTDLocations);
   };
   
   return (
-    <div className="relative w-full h-full min-h-[400px] bg-gray-100 rounded-lg overflow-hidden">
+    <div className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden">
       {!mapLoaded ? (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="animate-pulse">Loading UTD campus map...</div>
         </div>
       ) : (
-        <div className="w-full h-full relative">
-          {/* UTD Campus Map Background */}
-          <div className="absolute inset-0 bg-[url('https://www.utdallas.edu/maps/img/campus-map.jpg')] bg-cover bg-center"></div>
+        <>
+          <div id="map" className="w-full h-full z-0"></div>
           
           {/* Map controls */}
           <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow-md z-10">
@@ -104,40 +179,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
               {showUTDLocations ? "Hide Campus Locations" : "Show Campus Locations"}
             </button>
           </div>
-          
-          {/* Map pins */}
-          {allLocations.map((location) => (
-            <div 
-              key={location.id}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-              style={{ 
-                left: `${20 + Math.random() * 60}%`, 
-                top: `${20 + Math.random() * 60}%` 
-              }}
-              onClick={() => handleLocationClick(location)}
-            >
-              <div className="flex flex-col items-center">
-                <MapPin 
-                  className={`h-6 w-6 ${location === selectedLocation ? 'text-green-500' : 'text-event-primary'} 
-                  ${utdLocations.find(l => l.id === location.id) ? '' : 'animate-bounce'}`} 
-                />
-                <div 
-                  className={`mt-1 bg-white px-2 py-1 rounded-md shadow-md text-xs transition-all duration-200
-                  ${location === selectedLocation ? 'opacity-100 scale-100' : 'opacity-80 scale-95'}`}
-                >
-                  {location.title}
-                </div>
-                
-                {/* Location details */}
-                {location === selectedLocation && location.description && (
-                  <div className="mt-2 bg-white p-2 rounded-md shadow-md text-xs max-w-[200px] z-10">
-                    {location.description}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        </>
       )}
     </div>
   );
