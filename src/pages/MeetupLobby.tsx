@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
@@ -67,8 +66,6 @@ const MeetupLobby = () => {
   
   const handleQrScanSuccess = (data: string) => {
     if (meetup) {
-      // Verify the QR code data matches the meetup ID
-      // In a real app, you would have a more secure verification mechanism
       if (data.includes(meetupId as string)) {
         attendMeetup(meetup.id, meetup.points);
         setIsCheckedIn(true);
@@ -279,7 +276,9 @@ const MeetupLobby = () => {
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Scan QR Code to Check In</DialogTitle>
           <DialogDescription>
-            Scan the QR code at the meetup location to check in and earn {meetup.points} points.
+            At the actual meetup location, the organizer will display a unique QR code 
+            for this event. Scan it with your camera to check in and earn {meetup.points} points.
+            This confirms your attendance and prevents earning points without being physically present.
           </DialogDescription>
           <QRScanner 
             onSuccess={handleQrScanSuccess} 

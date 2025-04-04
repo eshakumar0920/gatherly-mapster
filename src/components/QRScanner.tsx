@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Camera, Ban, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,8 @@ const QRScanner = ({ onSuccess, onCancel, meetupId }: QRScannerProps) => {
       </div>
       
       <p className="text-center text-sm text-muted-foreground">
-        Position the QR code in the center of the scanner
+        In a real event, the meetup organizer would display a unique QR code 
+        at the physical location for you to scan.
       </p>
       
       <div className="flex gap-3 w-full">
