@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { MapPin, Navigation2 } from "lucide-react";
 import L from 'leaflet';
@@ -66,6 +65,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [showUTDLocations, setShowUTDLocations] = useState(true);
   const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   
   // Combine UTD locations with event locations
@@ -75,23 +75,28 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
 
   // Initialize the map when component mounts
   useEffect(() => {
-    if (!mapRef.current) {
-      // Create map instance
-      const map = L.map('map').setView(UTD_CENTER as L.LatLngExpression, 16);
-      
-      // Add OpenStreetMap tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-      
-      // Store map instance in ref
-      mapRef.current = map;
-      
-      // Create a layer group for markers
-      markersLayerRef.current = L.layerGroup().addTo(map);
-      
-      setMapLoaded(true);
+    // Make sure the map container exists before initializing
+    if (!mapRef.current && mapContainerRef.current) {
+      try {
+        // Create map instance
+        const map = L.map(mapContainerRef.current).setView(UTD_CENTER as L.LatLngExpression, 16);
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Store map instance in ref
+        mapRef.current = map;
+        
+        // Create a layer group for markers
+        markersLayerRef.current = L.layerGroup().addTo(map);
+        
+        setMapLoaded(true);
+      } catch (error) {
+        console.error("Error initializing map:", error);
+      }
     }
     
     return () => {
@@ -102,7 +107,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         markersLayerRef.current = null;
       }
     };
-  }, []);
+  }, [mapContainerRef.current]); // Depend on the ref to ensure it exists
 
   // Update markers when locations or selected location changes
   useEffect(() => {
@@ -119,7 +124,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
           icon: L.divIcon({
             className: 'custom-map-marker',
             html: `<div class="flex flex-col items-center">
-                    <div class="${isSelected ? 'text-green-500' : 'text-event-primary'} 
+                    <div class="${isSelected ? 'text-green-500' : 'text-primary'} 
                       ${utdLocations.find(l => l.id === location.id) ? '' : 'animate-bounce'}">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
@@ -167,7 +172,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         </div>
       ) : (
         <>
-          <div id="map" className="w-full h-full z-0"></div>
+          <div ref={mapContainerRef} className="w-full h-full z-0"></div>
           
           {/* Map controls */}
           <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow-md z-10">
