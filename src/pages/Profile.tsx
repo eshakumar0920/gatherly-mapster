@@ -1,4 +1,4 @@
-
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
