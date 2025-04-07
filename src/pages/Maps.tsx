@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, List, Layers, MapPin } from "lucide-react";
@@ -14,6 +15,21 @@ interface MapLocation {
   lat: number;
   lng: number;
   description?: string;
+}
+
+// Define the type for the data returned from Supabase
+interface MeetupRow {
+  meetup_id: number;
+  title: string;
+  description: string | null;
+  location: string;
+  lat: number | null;
+  lng: number | null;
+  event_time: string;
+  created_at: string | null;
+  creator_id: number;
+  image: string | null;
+  category: string | null;
 }
 
 const Maps = () => {
@@ -47,7 +63,7 @@ const Maps = () => {
         
         if (data && data.length > 0) {
           // Convert the meetup data to map locations
-          const locations: MapLocation[] = data.map(meetup => ({
+          const locations: MapLocation[] = (data as MeetupRow[]).map(meetup => ({
             id: meetup.meetup_id.toString(),
             title: meetup.title,
             // If lat/lng are null, generate random coordinates near UTD

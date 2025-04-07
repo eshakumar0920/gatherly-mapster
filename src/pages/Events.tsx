@@ -21,6 +21,21 @@ interface Event {
   category: string;
 }
 
+// Define the type for the data returned from Supabase
+interface MeetupRow {
+  meetup_id: number;
+  title: string;
+  description: string | null;
+  event_time: string;
+  location: string;
+  image: string | null;
+  category: string | null;
+  created_at: string | null;
+  creator_id: number;
+  lat: number | null;
+  lng: number | null;
+}
+
 const Events = () => {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +66,7 @@ const Events = () => {
         
         if (data && data.length > 0) {
           // Map Supabase data to event structure
-          const mappedEvents: Event[] = data.map(item => ({
+          const mappedEvents: Event[] = (data as MeetupRow[]).map(item => ({
             id: item.meetup_id.toString(),
             title: item.title,
             description: item.description || "No description available",
