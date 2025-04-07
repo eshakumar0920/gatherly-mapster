@@ -1,6 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,91 +9,10 @@ import Navigation from "@/components/Navigation";
 import { getEvents, categories } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  date: string;
-  time: string;
-  location: string;
-  category: string;
-}
-
-// Define the type for the data returned from Supabase
-interface MeetupRow {
-  meetup_id: number;
-  title: string;
-  description: string | null;
-  event_time: string;
-  location: string;
-  image: string | null;
-  category: string | null;
-  created_at: string | null;
-  creator_id: number;
-  lat: number | null;
-  lng: number | null;
-}
-
 const Events = () => {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  
-  // Fetch events from Supabase
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setIsLoading(true);
-        // Query the meetups table in Supabase
-        const { data, error } = await supabase.from('meetups').select('*');
-        
-        if (error) {
-          console.error("Error fetching events:", error);
-          toast({
-            title: "Error fetching events",
-            description: "Could not load event data from the database",
-            variant: "destructive"
-          });
-          
-          // Fall back to mock data if there's an error
-          setEvents(getEvents());
-          return;
-        }
-        
-        if (data && data.length > 0) {
-          // Map Supabase data to event structure
-          const mappedEvents: Event[] = (data as MeetupRow[]).map(item => ({
-            id: item.meetup_id.toString(),
-            title: item.title,
-            description: item.description || "No description available",
-            // Use a placeholder image if none is provided
-            image: item.image || "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80",
-            date: new Date(item.event_time).toLocaleDateString(),
-            time: new Date(item.event_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            location: item.location,
-            // Default to a generic category if none specified
-            category: item.category || "Event" 
-          }));
-          
-          setEvents(mappedEvents);
-        } else {
-          // Fall back to mock data if no data is returned
-          setEvents(getEvents());
-        }
-      } catch (error) {
-        console.error("Error in event fetching:", error);
-        // Fall back to mock data on any error
-        setEvents(getEvents());
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchEvents();
-  }, []);
+  const [events, setEvents] = useState(getEvents());
   
   // Filter events by category and search query
   const filteredEvents = events.filter(event => {
@@ -155,31 +73,25 @@ const Events = () => {
 
       {/* Events List */}
       <div className="px-4">
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p>Loading events...</p>
+        {filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {filteredEvents.map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {filteredEvents.length > 0 ? (
-              filteredEvents.map(event => (
-                <EventCard key={event.id} event={event} />
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No events found matching your criteria.</p>
-                <Button 
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => {
-                    setFilter("all");
-                    setSearchQuery("");
-                  }}
-                >
-                  Clear filters
-                </Button>
-              </div>
-            )}
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No events found matching your criteria.</p>
+            <Button 
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setFilter("all");
+                setSearchQuery("");
+              }}
+            >
+              Clear filters
+            </Button>
           </div>
         )}
       </div>
