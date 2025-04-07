@@ -1,4 +1,4 @@
-
+import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Search, List, Layers, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
