@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
@@ -14,6 +15,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+
+// Define the type for the data returned from Supabase
+interface MeetupRow {
+  meetup_id: number;
+  title: string;
+  description: string | null;
+  location: string;
+  event_time: string;
+  created_at: string | null;
+  creator_id: number;
+  image: string | null;
+  category: string | null;
+  lat: number | null;
+  lng: number | null;
+}
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -31,10 +48,55 @@ type FormValues = z.infer<typeof formSchema>;
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const allMeetups = getMeetups();
+  const [allMeetups, setAllMeetups] = useState(getMeetups());
+  const [isLoading, setIsLoading] = useState(true);
   const { points, level, attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Fetch meetups from Supabase
+  useEffect(() => {
+    const fetchMeetups = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase.from('meetups').select('*');
+        
+        if (error) {
+          console.error("Error fetching meetups:", error);
+          toast({
+            title: "Error fetching meetups",
+            description: "Could not load meetups from the database",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          // Convert Supabase data to the Meetup type
+          const supabaseMeetups = (data as MeetupRow[]).map(meetup => ({
+            id: meetup.meetup_id.toString(),
+            title: meetup.title,
+            description: meetup.description || "No description available",
+            dateTime: new Date(meetup.event_time).toLocaleString(),
+            location: meetup.location,
+            points: 3, // Default value
+            createdBy: "Student", // Default value
+            creatorAvatar: meetup.image || undefined,
+            lobbySize: 5, // Default value
+            attendees: []
+          }));
+          
+          setAllMeetups(supabaseMeetups);
+        }
+      } catch (error) {
+        console.error("Error in fetching meetups:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchMeetups();
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -43,7 +105,7 @@ const Meetups = () => {
       description: "",
       dateTime: "",
       location: "",
-      lobbySize: 5, // This is now a number, not a string
+      lobbySize: 5,
     },
   });
 
@@ -54,15 +116,73 @@ const Meetups = () => {
     return true;
   });
 
-  const onSubmit = (values: FormValues) => {
-    toast({
-      title: "Meetup created!",
-      description: "Your meetup has been successfully created.",
-    });
-    
-    setIsDialogOpen(false);
-    
-    form.reset();
+  const onSubmit = async (values: FormValues) => {
+    try {
+      // Generate random coordinates near UTD for the new meetup
+      const UTD_CENTER_LAT = 32.9886;
+      const UTD_CENTER_LNG = -96.7479;
+      const randomLat = UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01;
+      const randomLng = UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01;
+      
+      // Format the date string to ISO format
+      const eventTime = new Date().toISOString();
+      
+      // Insert the new meetup into Supabase
+      const { data, error } = await supabase.from('meetups').insert({
+        title: values.title,
+        description: values.description,
+        location: values.location,
+        event_time: eventTime,
+        creator_id: 1, // Using a default creator_id of 1
+        lat: randomLat,
+        lng: randomLng,
+        category: "Other" // Default category
+      }).select();
+      
+      if (error) {
+        console.error("Error creating meetup:", error);
+        toast({
+          title: "Error creating meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Meetup created!",
+        description: "Your meetup has been successfully created.",
+      });
+      
+      setIsDialogOpen(false);
+      form.reset();
+      
+      // Refresh the meetups list
+      const { data: updatedMeetups } = await supabase.from('meetups').select('*');
+      if (updatedMeetups) {
+        const supabaseMeetups = (updatedMeetups as MeetupRow[]).map(meetup => ({
+          id: meetup.meetup_id.toString(),
+          title: meetup.title,
+          description: meetup.description || "No description available",
+          dateTime: new Date(meetup.event_time).toLocaleString(),
+          location: meetup.location,
+          points: 3,
+          createdBy: "Student",
+          creatorAvatar: meetup.image || undefined,
+          lobbySize: 5,
+          attendees: []
+        }));
+        
+        setAllMeetups(supabaseMeetups);
+      }
+    } catch (error) {
+      console.error("Error in meetup creation:", error);
+      toast({
+        title: "Error creating meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleMeetupClick = (meetupId: string) => {
@@ -112,17 +232,27 @@ const Meetups = () => {
       </div>
 
       <div className="px-4">
-        <div className="space-y-4">
-          {filteredMeetups.map(meetup => (
-            <div 
-              key={meetup.id} 
-              onClick={() => handleMeetupClick(meetup.id)}
-              className="cursor-pointer"
-            >
-              <MeetupCard meetup={meetup} />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <p>Loading meetups...</p>
+          </div>
+        ) : filteredMeetups.length === 0 ? (
+          <div className="py-8 text-center">
+            <p>No meetups found. Create one!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredMeetups.map(meetup => (
+              <div 
+                key={meetup.id} 
+                onClick={() => handleMeetupClick(meetup.id)}
+                className="cursor-pointer"
+              >
+                <MeetupCard meetup={meetup} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
