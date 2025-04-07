@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -10,17 +11,47 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
-import { getMeetups, useUserStore } from "@/services/meetupService";
+import { useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
+// Define the type for meetup data from Supabase
+interface MeetupRow {
+  meetup_id: number;
+  title: string;
+  description: string | null;
+  location: string;
+  event_time: string;
+  created_at: string | null;
+  creator_id: number;
+  image: string | null;
+  category: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
+// Define a type for our frontend meetup
+interface Meetup {
+  id: string;
+  title: string;
+  description: string;
+  dateTime: string;
+  location: string;
+  points: number;
+  createdBy: string;
+  creatorAvatar?: string;
+  lobbySize: number;
+  attendees?: string[];
+}
 
 const MeetupLobby = () => {
   const { meetupId } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const [meetup, setMeetup] = useState<any>(null);
+  const [meetup, setMeetup] = useState<Meetup | null>(null);
+  const [loading, setLoading] = useState(true);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
   const [isJoinedLobby, setIsJoinedLobby] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -28,16 +59,60 @@ const MeetupLobby = () => {
   const { attendMeetup, joinMeetupLobby, joinedLobbies, attendedMeetups } = useUserStore();
   
   useEffect(() => {
-    const meetups = getMeetups();
-    const foundMeetup = meetups.find(e => e.id === meetupId);
-    if (foundMeetup) {
-      setMeetup(foundMeetup);
-      setIsJoinedLobby(joinedLobbies?.includes(foundMeetup.id));
-      setIsCheckedIn(attendedMeetups?.includes(foundMeetup.id));
-    } else {
-      console.log("Meetup not found for ID:", meetupId);
-    }
-  }, [meetupId, joinedLobbies, attendedMeetups]);
+    const fetchMeetupData = async () => {
+      setLoading(true);
+      try {
+        // Fetch meetup details from Supabase
+        const { data: meetupData, error } = await supabase
+          .from('meetups')
+          .select('*')
+          .eq('meetup_id', meetupId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching meetup:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load meetup details",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (meetupData) {
+          // Convert Supabase data to our frontend Meetup format
+          const formattedMeetup: Meetup = {
+            id: meetupData.meetup_id.toString(),
+            title: meetupData.title,
+            description: meetupData.description || "No description available",
+            dateTime: new Date(meetupData.event_time).toLocaleString(),
+            location: meetupData.location,
+            points: 3, // Default value
+            createdBy: "Student", // Default value, could fetch user name in the future
+            creatorAvatar: meetupData.image,
+            lobbySize: 5, // Default value
+            attendees: []
+          };
+
+          setMeetup(formattedMeetup);
+          setIsJoinedLobby(joinedLobbies?.includes(formattedMeetup.id));
+          setIsCheckedIn(attendedMeetups?.includes(formattedMeetup.id));
+        }
+      } catch (error) {
+        console.error("Error in fetching meetup:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load meetup details",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeetupData();
+  }, [meetupId, joinedLobbies, attendedMeetups, toast]);
 
   const mockAttendees = [
     { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -89,6 +164,25 @@ const MeetupLobby = () => {
   const handleQrScanCancel = () => {
     setIsQrScannerOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="p-4 pt-6 w-full text-center">
+          <h1 className="text-2xl font-medium">
+            <span className="font-bold">i</span>mpulse
+          </h1>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+          <p className="mt-4">Loading meetup details...</p>
+        </div>
+        
+        <Navigation />
+      </div>
+    );
+  }
 
   if (!meetup) {
     return (
@@ -293,5 +387,53 @@ const MeetupLobby = () => {
     </div>
   );
 };
+
+// AttendeesList component definition (kept from the original implementation)
+const AttendeesList = () => (
+  <div className="space-y-4">
+    <div className="flex gap-2 mb-4">
+      <Button 
+        variant={attendeeView === "all" ? "yellow" : "outline"} 
+        size="sm" 
+        onClick={() => setAttendeeView("all")}
+      >
+        All ({mockAttendees.length})
+      </Button>
+      <Button 
+        variant={attendeeView === "going" ? "yellow" : "outline"} 
+        size="sm" 
+        onClick={() => setAttendeeView("going")}
+      >
+        Going ({mockAttendees.filter(a => a.status === "going").length})
+      </Button>
+      <Button 
+        variant={attendeeView === "interested" ? "yellow" : "outline"} 
+        size="sm" 
+        onClick={() => setAttendeeView("interested")}
+      >
+        Interested ({mockAttendees.filter(a => a.status === "interested").length})
+      </Button>
+    </div>
+
+    <div className="space-y-3">
+      {filteredAttendees.map(attendee => (
+        <div key={attendee.id} className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src={attendee.avatar} />
+              <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium">{attendee.name}</p>
+              <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
+                {attendee.status === "going" ? "Going" : "Interested"}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 export default MeetupLobby;
