@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, List, Layers, MapPin } from "lucide-react";
@@ -28,8 +27,7 @@ const Maps = () => {
     const fetchLocations = async () => {
       try {
         setIsLoading(true);
-        // Ideally, you would have a 'locations' table in Supabase
-        // For now, we'll use the existing events data from Supabase if available
+        // Query the meetups table in Supabase
         const { data, error } = await supabase.from('meetups').select('*');
         
         if (error) {
@@ -52,7 +50,7 @@ const Maps = () => {
           const locations: MapLocation[] = data.map(meetup => ({
             id: meetup.meetup_id.toString(),
             title: meetup.title,
-            // Generate coordinates around UTD if not present in data
+            // If lat/lng are null, generate random coordinates near UTD
             lat: meetup.lat || generateRandomCoordinateNear(32.9886),
             lng: meetup.lng || generateRandomCoordinateNear(-96.7479),
             description: meetup.description || undefined

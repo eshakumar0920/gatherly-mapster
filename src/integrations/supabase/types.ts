@@ -41,28 +41,40 @@ export type Database = {
       }
       meetups: {
         Row: {
+          category: string | null
           created_at: string | null
           creator_id: number
           description: string | null
           event_time: string
+          image: string | null
+          lat: number | null
+          lng: number | null
           location: string
           meetup_id: number
           title: string
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           creator_id: number
           description?: string | null
           event_time: string
+          image?: string | null
+          lat?: number | null
+          lng?: number | null
           location: string
           meetup_id?: number
           title: string
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           creator_id?: number
           description?: string | null
           event_time?: string
+          image?: string | null
+          lat?: number | null
+          lng?: number | null
           location?: string
           meetup_id?: number
           title?: string
