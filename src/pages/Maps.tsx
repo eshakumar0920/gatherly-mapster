@@ -1,28 +1,102 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, List, Layers, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import MapView from "@/components/MapView";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
+import { useToast } from "@/hooks/use-toast";
+
+interface MapLocation {
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  description?: string;
+}
 
 const Maps = () => {
-  const events = getEvents();
   const [searchQuery, setSearchQuery] = useState("");
+  const [mapLocations, setMapLocations] = useState<MapLocation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
-  // Convert events to map locations with random coordinates around UTD
-  const UTD_CENTER_LAT = 32.9886;
-  const UTD_CENTER_LNG = -96.7479;
+  // Fetch locations from Supabase
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        setIsLoading(true);
+        // Ideally, you would have a 'locations' table in Supabase
+        // For now, we'll use the existing events data from Supabase if available
+        const { data, error } = await supabase.from('meetups').select('*');
+        
+        if (error) {
+          console.error("Error fetching locations:", error);
+          toast({
+            title: "Error fetching locations",
+            description: "Could not load location data from the database",
+            variant: "destructive"
+          });
+          
+          // Fall back to mock data if there's an error or no meetups table yet
+          const events = getEvents();
+          const mockLocations = generateMockLocations(events);
+          setMapLocations(mockLocations);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          // Convert the meetup data to map locations
+          const locations: MapLocation[] = data.map(meetup => ({
+            id: meetup.meetup_id.toString(),
+            title: meetup.title,
+            // Generate coordinates around UTD if not present in data
+            lat: meetup.lat || generateRandomCoordinateNear(32.9886),
+            lng: meetup.lng || generateRandomCoordinateNear(-96.7479),
+            description: meetup.description || undefined
+          }));
+          
+          setMapLocations(locations);
+        } else {
+          // Fall back to mock data if no data is returned
+          const events = getEvents();
+          const mockLocations = generateMockLocations(events);
+          setMapLocations(mockLocations);
+        }
+      } catch (error) {
+        console.error("Error in location fetching:", error);
+        // Fall back to mock data on any other error
+        const events = getEvents();
+        const mockLocations = generateMockLocations(events);
+        setMapLocations(mockLocations);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchLocations();
+  }, []);
   
-  const mapLocations = events.map(event => ({
-    id: event.id,
-    title: event.title,
-    // Generate random coordinates near UTD for demonstration
-    lat: UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01,
-    lng: UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01,
-    description: event.description
-  }));
+  // Generate mock locations from events (fallback function)
+  const generateMockLocations = (events: any[]) => {
+    const UTD_CENTER_LAT = 32.9886;
+    const UTD_CENTER_LNG = -96.7479;
+    
+    return events.map(event => ({
+      id: event.id,
+      title: event.title,
+      lat: UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01,
+      lng: UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01,
+      description: event.description
+    }));
+  };
+  
+  // Helper function to generate random coordinates near a center point
+  const generateRandomCoordinateNear = (center: number) => {
+    return center + (Math.random() - 0.5) * 0.01;
+  };
 
   // Filter locations based on search query
   const filteredLocations = searchQuery 
@@ -74,7 +148,13 @@ const Maps = () => {
 
       {/* Map */}
       <div className="px-4 flex-1">
-        <MapView locations={filteredLocations} />
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <p>Loading map locations...</p>
+          </div>
+        ) : (
+          <MapView locations={filteredLocations} />
+        )}
       </div>
 
       {/* Navigation */}

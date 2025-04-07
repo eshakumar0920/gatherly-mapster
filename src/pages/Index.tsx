@@ -1,5 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,11 +11,98 @@ import { getFeaturedEvents, categories } from "@/services/eventService";
 import { getMeetups } from "@/services/meetupService";
 import MeetupCard from "@/components/MeetupCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  date: string;
+  time: string;
+  location: string;
+  category: string;
+}
+
+interface Meetup {
+  id: string;
+  title: string;
+  description: string;
+  dateTime: string;
+  location: string;
+  points: number;
+  createdBy: string;
+  creatorAvatar?: string;
+  lobbySize: number;
+  attendees?: string[];
+}
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const featuredEvents = getFeaturedEvents();
-  const meetups = getMeetups();
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch meetups from Supabase
+        const { data: meetupsData, error: meetupsError } = await supabase
+          .from('meetups')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (meetupsError) {
+          console.error("Error fetching meetups:", meetupsError);
+          // Fall back to mock data for meetups
+          setMeetups(getMeetups());
+        } else if (meetupsData && meetupsData.length > 0) {
+          // Map Supabase meetups data to our app structure
+          const mappedMeetups: Meetup[] = meetupsData.map(item => ({
+            id: item.meetup_id.toString(),
+            title: item.title,
+            description: item.description || "No description available",
+            dateTime: new Date(item.event_time).toLocaleString(),
+            location: item.location,
+            points: 3, // Default points value
+            createdBy: "Student", // Default creator
+            lobbySize: 5, // Default lobby size
+            attendees: []
+          }));
+          
+          setMeetups(mappedMeetups);
+        } else {
+          // Fall back to mock data if no meetups found
+          setMeetups(getMeetups());
+        }
+        
+        // For now, continue using mock data for featured events
+        // In a full implementation, you'd fetch these from Supabase too
+        setFeaturedEvents(getFeaturedEvents());
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Error loading data",
+          description: "Could not load from database, using mock data instead",
+          variant: "destructive"
+        });
+        
+        // Fall back to mock data on errors
+        setFeaturedEvents(getFeaturedEvents());
+        setMeetups(getMeetups());
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   return (
     <div className="pb-20">
@@ -76,40 +164,52 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Featured Events */}
-          <div className="pb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">Featured Events</h2>
-              <Button variant="link" className="text-sm p-0">See all</Button>
+          {isLoading ? (
+            <div className="py-20 text-center">
+              <p>Loading content...</p>
             </div>
-            <div className="space-y-4">
-              {featuredEvents.map(event => (
-                <EventCard key={event.id} event={event} featured />
-              ))}
-            </div>
-          </div>
+          ) : (
+            <>
+              {/* Featured Events */}
+              <div className="pb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-lg font-semibold">Featured Events</h2>
+                  <Button variant="link" className="text-sm p-0">See all</Button>
+                </div>
+                <div className="space-y-4">
+                  {featuredEvents.map(event => (
+                    <EventCard key={event.id} event={event} featured />
+                  ))}
+                </div>
+              </div>
 
-          {/* Student Meetups */}
-          <div className="pb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">Student Meetups</h2>
-              <Button variant="link" className="text-sm p-0">See all</Button>
-            </div>
-            <div className="space-y-4">
-              {meetups.slice(0, 3).map(meetup => (
-                <MeetupCard key={meetup.id} meetup={meetup} />
-              ))}
-            </div>
-          </div>
+              {/* Student Meetups */}
+              <div className="pb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-lg font-semibold">Student Meetups</h2>
+                  <Button variant="link" className="text-sm p-0">See all</Button>
+                </div>
+                <div className="space-y-4">
+                  {meetups.slice(0, 3).map(meetup => (
+                    <MeetupCard key={meetup.id} meetup={meetup} />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </TabsContent>
         
         {/* Events Tab */}
         <TabsContent value="events">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Campus Events</h2>
-            {featuredEvents.map(event => (
-              <EventCard key={event.id} event={event} featured />
-            ))}
+            {isLoading ? (
+              <p className="text-center py-8">Loading events...</p>
+            ) : (
+              featuredEvents.map(event => (
+                <EventCard key={event.id} event={event} featured />
+              ))
+            )}
           </div>
         </TabsContent>
         
@@ -117,9 +217,13 @@ const Index = () => {
         <TabsContent value="meetups">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Student Meetups</h2>
-            {meetups.map(meetup => (
-              <MeetupCard key={meetup.id} meetup={meetup} />
-            ))}
+            {isLoading ? (
+              <p className="text-center py-8">Loading meetups...</p>
+            ) : (
+              meetups.map(meetup => (
+                <MeetupCard key={meetup.id} meetup={meetup} />
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>
