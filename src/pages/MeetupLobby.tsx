@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,7 +15,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
-// Define the type for meetup data from Supabase
 interface MeetupRow {
   meetup_id: number;
   title: string;
@@ -31,7 +29,6 @@ interface MeetupRow {
   lng: number | null;
 }
 
-// Define a type for our frontend meetup
 interface Meetup {
   id: string;
   title: string;
@@ -43,6 +40,13 @@ interface Meetup {
   creatorAvatar?: string;
   lobbySize: number;
   attendees?: string[];
+}
+
+interface Attendee {
+  id: string;
+  name: string;
+  avatar: string;
+  status: "going" | "interested";
 }
 
 const MeetupLobby = () => {
@@ -58,15 +62,20 @@ const MeetupLobby = () => {
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const { attendMeetup, joinMeetupLobby, joinedLobbies, attendedMeetups } = useUserStore();
   
+  const mockAttendees: Attendee[] = [
+    { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
+    { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
+    { id: "3", name: "Esther Howard", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", status: "going" },
+  ];
+  
   useEffect(() => {
     const fetchMeetupData = async () => {
       setLoading(true);
       try {
-        // Fetch meetup details from Supabase
         const { data: meetupData, error } = await supabase
           .from('meetups')
           .select('*')
-          .eq('meetup_id', meetupId)
+          .eq('meetup_id', parseInt(meetupId as string))
           .single();
 
         if (error) {
@@ -81,17 +90,16 @@ const MeetupLobby = () => {
         }
 
         if (meetupData) {
-          // Convert Supabase data to our frontend Meetup format
           const formattedMeetup: Meetup = {
             id: meetupData.meetup_id.toString(),
             title: meetupData.title,
             description: meetupData.description || "No description available",
             dateTime: new Date(meetupData.event_time).toLocaleString(),
             location: meetupData.location,
-            points: 3, // Default value
-            createdBy: "Student", // Default value, could fetch user name in the future
+            points: 3,
+            createdBy: "Student",
             creatorAvatar: meetupData.image,
-            lobbySize: 5, // Default value
+            lobbySize: 5,
             attendees: []
           };
 
@@ -113,12 +121,6 @@ const MeetupLobby = () => {
 
     fetchMeetupData();
   }, [meetupId, joinedLobbies, attendedMeetups, toast]);
-
-  const mockAttendees = [
-    { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
-    { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
-    { id: "3", name: "Esther Howard", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", status: "going" },
-  ];
 
   const filteredAttendees = mockAttendees.filter(attendee => {
     if (attendeeView === "all") return true;
@@ -164,46 +166,6 @@ const MeetupLobby = () => {
   const handleQrScanCancel = () => {
     setIsQrScannerOpen(false);
   };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium">
-            <span className="font-bold">i</span>mpulse
-          </h1>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-          <p className="mt-4">Loading meetup details...</p>
-        </div>
-        
-        <Navigation />
-      </div>
-    );
-  }
-
-  if (!meetup) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium">
-            <span className="font-bold">i</span>mpulse
-          </h1>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <h2 className="text-xl mb-4">Meetup not found</h2>
-          <Button onClick={() => navigate("/meetups")} className="bg-yellow-500 text-white">
-            Back to Meetups
-          </Button>
-        </div>
-        
-        <Navigation />
-      </div>
-    );
-  }
 
   const AttendeesList = () => (
     <div className="space-y-4">
@@ -251,6 +213,46 @@ const MeetupLobby = () => {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="p-4 pt-6 w-full text-center">
+          <h1 className="text-2xl font-medium">
+            <span className="font-bold">i</span>mpulse
+          </h1>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+          <p className="mt-4">Loading meetup details...</p>
+        </div>
+        
+        <Navigation />
+      </div>
+    );
+  }
+
+  if (!meetup) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="p-4 pt-6 w-full text-center">
+          <h1 className="text-2xl font-medium">
+            <span className="font-bold">i</span>mpulse
+          </h1>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <h2 className="text-xl mb-4">Meetup not found</h2>
+          <Button onClick={() => navigate("/meetups")} className="bg-yellow-500 text-white">
+            Back to Meetups
+          </Button>
+        </div>
+        
+        <Navigation />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-20 min-h-screen bg-background">
@@ -387,53 +389,5 @@ const MeetupLobby = () => {
     </div>
   );
 };
-
-// AttendeesList component definition (kept from the original implementation)
-const AttendeesList = () => (
-  <div className="space-y-4">
-    <div className="flex gap-2 mb-4">
-      <Button 
-        variant={attendeeView === "all" ? "yellow" : "outline"} 
-        size="sm" 
-        onClick={() => setAttendeeView("all")}
-      >
-        All ({mockAttendees.length})
-      </Button>
-      <Button 
-        variant={attendeeView === "going" ? "yellow" : "outline"} 
-        size="sm" 
-        onClick={() => setAttendeeView("going")}
-      >
-        Going ({mockAttendees.filter(a => a.status === "going").length})
-      </Button>
-      <Button 
-        variant={attendeeView === "interested" ? "yellow" : "outline"} 
-        size="sm" 
-        onClick={() => setAttendeeView("interested")}
-      >
-        Interested ({mockAttendees.filter(a => a.status === "interested").length})
-      </Button>
-    </div>
-
-    <div className="space-y-3">
-      {filteredAttendees.map(attendee => (
-        <div key={attendee.id} className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={attendee.avatar} />
-              <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{attendee.name}</p>
-              <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
-                {attendee.status === "going" ? "Going" : "Interested"}
-              </Badge>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
 
 export default MeetupLobby;
