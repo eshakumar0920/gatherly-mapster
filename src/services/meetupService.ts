@@ -15,7 +15,8 @@ export interface Meetup {
   attendees?: string[]; // Array of user IDs who have joined
 }
 
-export type Tag = 'Gaming' | 'Sports' | 'Academic' | 'Arts' | 'Music' | 'Technology' | 'Food' | 'Outdoors';
+export type Tag = 'Gaming' | 'Sports' | 'Academic' | 'Arts' | 'Music' | 'Technology' | 'Food' | 'Outdoors' | 
+                  'Reading' | 'Photography' | 'Fitness' | 'Movies' | 'Science' | 'Cooking' | 'Fashion' | 'Design' | 'Travel';
 
 export interface Friend {
   id: string;

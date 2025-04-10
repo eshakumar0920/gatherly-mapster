@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
@@ -30,9 +31,9 @@ import { ProfileSticker } from "@/components/ProfileStickers";
 
 // Define the available tags array
 const availableTags: TagType[] = [
-  "Technology", "Art", "Music", "Sports", "Food", "Travel", 
+  "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
   "Gaming", "Reading", "Photography", "Fitness", "Movies",
-  "Science", "Outdoors", "Cooking", "Fashion", "Design"
+  "Science", "Cooking", "Fashion", "Design", "Travel", "Academic"
 ];
 
 const Profile = () => {
