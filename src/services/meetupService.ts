@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -189,10 +188,15 @@ export const useUserStore = create<UserState>()(
       friends: sampleFriends,
       tags: ['Academic', 'Technology'],
       addPoints: (points: number) => 
-        set(state => ({ 
-          points: state.points + points,
-          level: Math.floor((state.points + points) / 10) + 1
-        })),
+        set(state => {
+          const newPoints = state.points + points;
+          const newLevel = Math.floor(newPoints / 10) + 1;
+          
+          return { 
+            points: newPoints,
+            level: newLevel
+          };
+        }),
       joinMeetupLobby: (meetupId: string) =>
         set(state => {
           if (state.joinedLobbies.includes(meetupId)) {
@@ -222,6 +226,7 @@ export const useUserStore = create<UserState>()(
           
           const newPoints = state.points + points;
           const newLevel = Math.floor(newPoints / 10) + 1;
+          
           return {
             points: newPoints,
             level: newLevel,

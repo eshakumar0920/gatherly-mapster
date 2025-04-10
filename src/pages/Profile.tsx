@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
@@ -8,7 +9,7 @@ import { Friend, Tag as TagType, useUserStore } from "@/services/meetupService";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -24,6 +25,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import LootBoxPopup from "@/components/LootBoxPopup";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -46,6 +48,8 @@ const Profile = () => {
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [isLootBoxOpen, setIsLootBoxOpen] = useState(false);
+  const [previousLevel, setPreviousLevel] = useState(level);
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -58,6 +62,14 @@ const Profile = () => {
   });
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
+  
+  // Check for level up
+  useEffect(() => {
+    if (previousLevel < level && previousLevel > 0) {
+      setIsLootBoxOpen(true);
+    }
+    setPreviousLevel(level);
+  }, [level, previousLevel]);
   
   // Available tags for selection
   const availableTags: TagType[] = [
@@ -375,7 +387,7 @@ const Profile = () => {
                   key={tag}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     selectedTags.includes(tag) 
-                      ? 'bg-primary text-black' 
+                      ? 'bg-primary text-primary-foreground' 
                       : 'bg-muted hover:bg-muted/80'
                   }`}
                   onClick={() => toggleTag(tag)}
@@ -391,6 +403,13 @@ const Profile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Level Up Loot Box Popup */}
+      <LootBoxPopup 
+        level={level}
+        isOpen={isLootBoxOpen}
+        onClose={() => setIsLootBoxOpen(false)}
+      />
 
       {/* Navigation */}
       <Navigation />
