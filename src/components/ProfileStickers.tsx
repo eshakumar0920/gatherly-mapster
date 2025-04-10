@@ -13,6 +13,8 @@ import { useLevelUp } from '@/contexts/LevelUpContext';
 import { useUserStore } from '@/services/meetupService';
 import { useToast } from '@/hooks/use-toast';
 import { stickers, StickerType } from '@/utils/badgeData';
+import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProfileStickerProps {
   level: number;
@@ -60,6 +62,7 @@ const ProfileStickers: React.FC = () => {
   const { showStickers, setShowStickers, selectedSticker, setSelectedSticker } = useLevelUp();
   const { level } = useUserStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const availableStickers = stickers.filter(sticker => sticker.level <= level);
   
@@ -72,10 +75,15 @@ const ProfileStickers: React.FC = () => {
       description: `You've added the ${stickers[index].name} to your profile.`
     });
   };
+
+  const goToBadgesPage = () => {
+    setShowStickers(false);
+    navigate('/badges');
+  };
   
   return (
     <Dialog open={showStickers} onOpenChange={setShowStickers}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Choose Your Profile Sticker</DialogTitle>
           <DialogDescription>
@@ -88,46 +96,48 @@ const ProfileStickers: React.FC = () => {
             Select a sticker to display on your profile picture. You've unlocked {availableStickers.length} out of {stickers.length} stickers!
           </p>
           
-          <div className="grid grid-cols-4 gap-4">
-            {stickers.map((sticker, index) => {
-              const isUnlocked = sticker.level <= level;
-              const IconComponent = sticker.icon;
-              
-              return (
-                <div 
-                  key={index}
-                  onClick={() => isUnlocked && handleSelectSticker(index)}
-                  className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg border 
-                    ${isUnlocked 
-                      ? `${sticker.color} cursor-pointer hover:bg-muted transition-colors` 
-                      : 'opacity-40 bg-muted/50 cursor-not-allowed'}
-                    ${selectedSticker === index ? 'ring-2 ring-primary' : ''}
-                  `}
-                >
-                  <IconComponent 
-                    className={`h-12 w-12 ${isUnlocked ? sticker.color : 'text-gray-400'}`}
-                    fill={isUnlocked ? "currentColor" : "none"}
-                  />
-                  <p className="text-xs mt-2 text-center font-medium">
-                    {sticker.name}
-                  </p>
-                  {!isUnlocked && (
-                    <span className="text-xs mt-1">
-                      Level {sticker.level}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <ScrollArea className="h-[50vh] pr-4">
+            <div className="grid grid-cols-4 gap-4 pb-4">
+              {stickers.map((sticker, index) => {
+                const isUnlocked = sticker.level <= level;
+                const IconComponent = sticker.icon;
+                
+                return (
+                  <div 
+                    key={index}
+                    onClick={() => isUnlocked && handleSelectSticker(index)}
+                    className={`
+                      flex flex-col items-center justify-center p-3 rounded-lg border 
+                      ${isUnlocked 
+                        ? `${sticker.color} cursor-pointer hover:bg-muted transition-colors` 
+                        : 'opacity-40 bg-muted/50 cursor-not-allowed'}
+                      ${selectedSticker === index ? 'ring-2 ring-primary' : ''}
+                    `}
+                  >
+                    <IconComponent 
+                      className={`h-12 w-12 ${isUnlocked ? sticker.color : 'text-gray-400'}`}
+                      fill={isUnlocked ? "currentColor" : "none"}
+                    />
+                    <p className="text-xs mt-2 text-center font-medium">
+                      {sticker.name}
+                    </p>
+                    {!isUnlocked && (
+                      <span className="text-xs mt-1">
+                        Level {sticker.level}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </div>
         
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowStickers(false)}>
             Close
           </Button>
-          <Button variant="secondary" onClick={() => window.location.href = "/badges"}>
+          <Button variant="secondary" onClick={goToBadgesPage}>
             View All Badges
           </Button>
         </DialogFooter>
