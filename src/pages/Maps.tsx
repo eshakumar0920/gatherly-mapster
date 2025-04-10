@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, List, Layers, MapPin } from "lucide-react";
@@ -137,7 +136,7 @@ const Maps = () => {
   };
 
   return (
-    <div className="pb-20 h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
@@ -167,32 +166,32 @@ const Maps = () => {
       {/* Map controls */}
       <div className="px-4 pb-4 flex gap-2">
         <Button 
-          variant={showBuildings ? "default" : "outline"} 
+          variant="yellow" 
           size="sm" 
           className="flex-1"
           onClick={toggleBuildings}
         >
-          <Layers className="h-4 w-4 mr-2" />
+          <Layers className="h-4 w-4" />
           Campus Buildings
         </Button>
         <Button 
-          variant={showPOI ? "default" : "outline"} 
+          variant="yellow" 
           size="sm" 
           className="flex-1"
           onClick={togglePOI}
         >
-          <MapPin className="h-4 w-4 mr-2" />
+          <MapPin className="h-4 w-4" />
           Events
         </Button>
       </div>
 
-      {/* Map */}
-      <div className="px-4 flex-1 overflow-hidden">
-        <div className="w-full h-full flex items-center justify-center">
+      {/* Map container - explicit height */}
+      <div className="px-4 flex-1 pb-20 min-h-[400px]">
+        <div className="w-full h-full">
           {isLoading ? (
             <Skeleton className="w-full h-full rounded-lg" />
           ) : (
-            <div className="w-full h-full border rounded-lg overflow-hidden">
+            <div className="w-full h-full">
               <MapView locations={filteredLocations} />
             </div>
           )}

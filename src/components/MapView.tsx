@@ -116,8 +116,22 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
     ? [...utdLocations, ...locations]
     : locations;
 
+  // Fix Leaflet icon issue
+  useEffect(() => {
+    // This fixes the missing icon issue in Leaflet
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    });
+  }, []);
+
   // Initialize the map when component mounts
   useEffect(() => {
+    console.log("Map initialization effect running");
+    console.log("Map container exists:", !!mapContainerRef.current);
+    
     // Cleanup function to remove the map when component unmounts
     const cleanupMap = () => {
       if (mapRef.current) {
@@ -128,12 +142,27 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
       }
     };
 
+    // Function to initialize the map with a delay
+    const initMapWithDelay = () => {
+      console.log("Attempting to initialize map with delay");
+      setTimeout(() => {
+        initMap();
+      }, 300);
+    };
+
     // Function to initialize the map
     const initMap = () => {
       // Make sure the map container exists and the map hasn't been initialized yet
       if (!mapRef.current && mapContainerRef.current) {
         try {
           console.log("Initializing map... Container exists:", !!mapContainerRef.current);
+          console.log("Container dimensions:", mapContainerRef.current.offsetWidth, "x", mapContainerRef.current.offsetHeight);
+          
+          if (mapContainerRef.current.offsetWidth === 0 || mapContainerRef.current.offsetHeight === 0) {
+            console.log("Container has zero dimension, retrying later");
+            initMapWithDelay();
+            return;
+          }
           
           // Create map instance
           const map = L.map(mapContainerRef.current, {
@@ -170,15 +199,20 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
           console.log("Map initialized successfully");
           
           // Force a resize event to make sure the map loads correctly
-          map.invalidateSize();
+          setTimeout(() => {
+            if (mapRef.current) {
+              mapRef.current.invalidateSize(true);
+              console.log("Map resized after initial timeout");
+            }
+          }, 300);
           
           // Additional resize after a delay
           setTimeout(() => {
             if (mapRef.current) {
-              mapRef.current.invalidateSize();
-              console.log("Map resized after timeout");
+              mapRef.current.invalidateSize(true);
+              console.log("Map resized after second timeout");
             }
-          }, 500);
+          }, 1000);
         } catch (error) {
           console.error("Error initializing map:", error);
         }
@@ -186,12 +220,15 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
     };
     
     // Attempt to initialize the map
-    initMap();
+    if (mapContainerRef.current && !mapRef.current) {
+      console.log("Initial map initialization attempt");
+      initMap();
+    }
     
     // Set up resize handler
     const handleResize = () => {
       if (mapRef.current) {
-        mapRef.current.invalidateSize();
+        mapRef.current.invalidateSize(true);
         console.log("Map resized due to window resize");
       }
     };
@@ -205,7 +242,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         cleanupMap(); // Clean up any partial initialization
         initMap();
       }
-    }, 500);
+    }, 1000);
     
     return () => {
       clearTimeout(retryTimer);
@@ -268,7 +305,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
       
       // Force map update to display markers
       if (mapRef.current) {
-        mapRef.current.invalidateSize();
+        mapRef.current.invalidateSize(true);
       }
     }
   }, [mapLoaded, allLocations, selectedLocation]);
@@ -278,27 +315,38 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
   };
   
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden border border-gray-200">
-      {!mapLoaded ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="animate-pulse">Loading UTD campus map...</div>
-        </div>
-      ) : (
-        <>
-          <div ref={mapContainerRef} className="w-full h-full z-0"></div>
-          
-          {/* Map controls */}
-          <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow-md z-10">
-            <button 
-              onClick={toggleUTDLocations} 
-              className="text-xs flex items-center gap-1 text-blue-600"
-            >
-              <Navigation2 className="h-3 w-3" />
-              {showUTDLocations ? "Hide Campus Buildings" : "Show Campus Buildings"}
-            </button>
+    <div className="relative w-full h-full flex flex-col">
+      <div className="flex-1 rounded-lg overflow-hidden border border-gray-200">
+        {!mapLoaded ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
+            <div className="text-center">
+              <div className="animate-pulse">Loading UTD campus map...</div>
+              <div className="text-xs text-gray-500 mt-2">
+                If the map doesn't load, please refresh the page
+              </div>
+            </div>
           </div>
-        </>
-      )}
+        ) : (
+          <div className="relative w-full h-full">
+            <div 
+              ref={mapContainerRef} 
+              className="absolute inset-0 z-0"
+              style={{ minHeight: "400px", border: "2px solid #cbd5e1" }}
+            ></div>
+            
+            {/* Map controls */}
+            <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow-md z-10">
+              <button 
+                onClick={toggleUTDLocations} 
+                className="text-xs flex items-center gap-1 text-blue-600"
+              >
+                <Navigation2 className="h-3 w-3" />
+                {showUTDLocations ? "Hide Campus Buildings" : "Show Campus Buildings"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
