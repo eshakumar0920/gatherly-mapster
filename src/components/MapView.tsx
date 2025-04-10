@@ -22,28 +22,35 @@ const utdLocations: MapLocation[] = [
     title: "Student Union",
     lat: 32.9899,
     lng: -96.7501,
-    description: "Campus hub with dining options and study spaces"
+    description: "Student Union with dining options, study spaces and recreation areas"
   },
   {
     id: "library",
     title: "McDermott Library",
     lat: 32.9886,
     lng: -96.7491,
-    description: "Main campus library with study spaces"
+    description: "Main campus library with study spaces and resources"
   },
   {
     id: "ecss",
     title: "ECSS Building",
     lat: 32.9879,
     lng: -96.7511,
-    description: "Engineering and Computer Science buildings"
+    description: "Engineering and Computer Science South building with classrooms and labs"
+  },
+  {
+    id: "ecsn",
+    title: "ECSN Building",
+    lat: 32.9884,
+    lng: -96.7517,
+    description: "Engineering and Computer Science North building"
   },
   {
     id: "ssom",
     title: "School of Management",
     lat: 32.9869,
     lng: -96.7456,
-    description: "Business school with classrooms and offices"
+    description: "Naveen Jindal School of Management with classrooms and offices"
   },
   {
     id: "residence",
@@ -58,6 +65,41 @@ const utdLocations: MapLocation[] = [
     lat: 32.9874,
     lng: -96.7524,
     description: "Recreation center with gym and athletic facilities"
+  },
+  {
+    id: "arts",
+    title: "Arts & Humanities",
+    lat: 32.9855,
+    lng: -96.7501,
+    description: "Arts and Humanities buildings and performance spaces"
+  },
+  {
+    id: "sciences",
+    title: "Natural Sciences",
+    lat: 32.9866,
+    lng: -96.7476,
+    description: "Science buildings with classrooms and laboratories"
+  },
+  {
+    id: "founders",
+    title: "Founders Building",
+    lat: 32.9875,
+    lng: -96.7491,
+    description: "One of the original campus buildings"
+  },
+  {
+    id: "callier",
+    title: "Callier Center",
+    lat: 32.9892,
+    lng: -96.7463,
+    description: "Center for communication disorders research and treatment"
+  },
+  {
+    id: "visitors",
+    title: "Visitor Center",
+    lat: 32.9854,
+    lng: -96.7513,
+    description: "Campus visitor center and admissions office"
   }
 ];
 
@@ -85,7 +127,20 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         // Add OpenStreetMap tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          attribution: '© OpenStreetMap contributors'
+          attribution: '© OpenStreetMap contributors | UTD Campus Map'
+        }).addTo(map);
+        
+        // Add UTD campus boundary (approximate polygon)
+        const utdBoundary = L.polygon([
+          [32.9935, -96.7535],
+          [32.9935, -96.7435],
+          [32.9835, -96.7435],
+          [32.9835, -96.7535]
+        ], {
+          color: '#E87500', // UTD orange
+          fillColor: '#E87500',
+          fillOpacity: 0.1,
+          weight: 2
         }).addTo(map);
         
         // Store map instance in ref
@@ -119,14 +174,15 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
       // Add markers for all locations
       allLocations.forEach(location => {
         const isSelected = selectedLocation && selectedLocation.id === location.id;
+        const isUTDLocation = utdLocations.some(l => l.id === location.id);
         
         // Create marker
         const marker = L.marker([location.lat, location.lng], {
           icon: L.divIcon({
             className: 'custom-map-marker',
             html: `<div class="flex flex-col items-center">
-                    <div class="${isSelected ? 'text-green-500' : 'text-primary'} 
-                      ${utdLocations.find(l => l.id === location.id) ? '' : 'animate-bounce'}">
+                    <div class="${isSelected ? 'text-green-500' : isUTDLocation ? 'text-orange-500' : 'text-primary'} 
+                      ${!isUTDLocation ? 'animate-bounce' : ''}">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
                         <circle cx="12" cy="10" r="3"></circle>
@@ -143,7 +199,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         
         // Add popup for description if available
         if (location.description) {
-          marker.bindPopup(location.description);
+          marker.bindPopup(`<b>${location.title}</b><br>${location.description}`);
           
           if (isSelected) {
             marker.openPopup();
@@ -182,7 +238,7 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
               className="text-xs flex items-center gap-1 text-blue-600"
             >
               <Navigation2 className="h-3 w-3" />
-              {showUTDLocations ? "Hide Campus Locations" : "Show Campus Locations"}
+              {showUTDLocations ? "Hide Campus Buildings" : "Show Campus Buildings"}
             </button>
           </div>
         </>

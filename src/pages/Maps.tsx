@@ -36,6 +36,8 @@ const Maps = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mapLocations, setMapLocations] = useState<MapLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBuildings, setShowBuildings] = useState(true);
+  const [showPOI, setShowPOI] = useState(true);
   const { toast } = useToast();
   
   // Fetch locations from Supabase
@@ -120,6 +122,16 @@ const Maps = () => {
       )
     : mapLocations;
 
+  // Toggle building visibility
+  const toggleBuildings = () => {
+    setShowBuildings(!showBuildings);
+  };
+  
+  // Toggle POI visibility
+  const togglePOI = () => {
+    setShowPOI(!showPOI);
+  };
+
   return (
     <div className="pb-20 h-screen flex flex-col">
       {/* App Name */}
@@ -150,13 +162,23 @@ const Maps = () => {
 
       {/* Map controls */}
       <div className="px-4 pb-4 flex gap-2">
-        <Button variant="outline" size="sm" className="flex-1">
+        <Button 
+          variant={showBuildings ? "default" : "outline"} 
+          size="sm" 
+          className="flex-1"
+          onClick={toggleBuildings}
+        >
           <Layers className="h-4 w-4 mr-2" />
           Campus Buildings
         </Button>
-        <Button variant="outline" size="sm" className="flex-1">
+        <Button 
+          variant={showPOI ? "default" : "outline"} 
+          size="sm" 
+          className="flex-1"
+          onClick={togglePOI}
+        >
           <MapPin className="h-4 w-4 mr-2" />
-          Points of Interest
+          Events
         </Button>
       </div>
 
@@ -164,7 +186,7 @@ const Maps = () => {
       <div className="px-4 flex-1">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <p>Loading map locations...</p>
+            <p>Loading UTD campus map...</p>
           </div>
         ) : (
           <MapView locations={filteredLocations} />
