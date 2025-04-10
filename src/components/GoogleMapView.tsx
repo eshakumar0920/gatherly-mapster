@@ -55,8 +55,8 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
       
-      // Add UTD campus boundary (approximate polygon)
-      const utdBoundaryCoords = [
+      // Add UTD campus boundary (approximate polygon) - Fix the type by using LatLngTuple
+      const utdBoundaryCoords: L.LatLngTuple[] = [
         [32.9935, -96.7535],
         [32.9935, -96.7435],
         [32.9835, -96.7435],
