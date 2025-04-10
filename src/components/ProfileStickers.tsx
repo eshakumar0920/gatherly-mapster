@@ -1,6 +1,26 @@
 
 import React from 'react';
-import { Badge, Gift, Star, Award, Medal, Trophy, Crown } from 'lucide-react';
+import { 
+  Badge, 
+  Gift, 
+  Star, 
+  Award, 
+  Medal, 
+  Trophy, 
+  Crown,
+  Heart,
+  Diamond,
+  Rocket,
+  Zap,
+  Shield,
+  Target,
+  Flag,
+  Sparkles,
+  Flame,
+  Lightning,
+  Aperture,
+  Compass
+} from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -22,6 +42,19 @@ const stickers = [
   { level: 5, icon: Medal, color: 'text-pink-400', name: 'Medal Badge' },
   { level: 6, icon: Trophy, color: 'text-amber-500', name: 'Trophy Badge' },
   { level: 7, icon: Crown, color: 'text-yellow-500', name: 'Crown Badge' },
+  { level: 8, icon: Heart, color: 'text-red-500', name: 'Heart Badge' },
+  { level: 9, icon: Diamond, color: 'text-blue-500', name: 'Diamond Badge' },
+  { level: 10, icon: Rocket, color: 'text-orange-500', name: 'Rocket Badge' },
+  { level: 12, icon: Zap, color: 'text-yellow-400', name: 'Zap Badge' },
+  { level: 14, icon: Shield, color: 'text-slate-600', name: 'Shield Badge' },
+  { level: 16, icon: Target, color: 'text-red-600', name: 'Target Badge' },
+  { level: 18, icon: Flame, color: 'text-orange-600', name: 'Flame Badge' },
+  { level: 20, icon: Sparkles, color: 'text-indigo-500', name: 'Sparkles Badge' },
+  { level: 21, icon: Lightning, color: 'text-yellow-600', name: 'Lightning Badge' },
+  { level: 22, icon: Flag, color: 'text-green-600', name: 'Flag Badge' },
+  { level: 23, icon: Aperture, color: 'text-purple-600', name: 'Aperture Badge' },
+  { level: 24, icon: Compass, color: 'text-blue-600', name: 'Compass Badge' },
+  { level: 25, icon: Crown, color: 'text-yellow-600', name: 'Gold Crown Badge' },
 ];
 
 interface ProfileStickerProps {
