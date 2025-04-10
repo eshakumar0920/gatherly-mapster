@@ -17,7 +17,7 @@ import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface MeetupRow {
-  event_id: number;  // Updated from meetup_id
+  meetup_id: number;  // Using meetup_id instead of event_id
   title: string;
   description: string | null;
   location: string;
@@ -74,9 +74,9 @@ const MeetupLobby = () => {
       setLoading(true);
       try {
         const { data: meetupData, error } = await supabase
-          .from('events')  // Updated table name
+          .from('meetups')  // Using 'meetups' instead of 'events'
           .select('*')
-          .eq('event_id', parseInt(meetupId as string))  // Updated column name
+          .eq('meetup_id', parseInt(meetupId as string))  // Using meetup_id instead of event_id
           .single();
 
         if (error) {
@@ -92,7 +92,7 @@ const MeetupLobby = () => {
 
         if (meetupData) {
           const formattedMeetup: Meetup = {
-            id: meetupData.event_id.toString(),  // Updated field name
+            id: meetupData.meetup_id.toString(),  // Using meetup_id instead of event_id
             title: meetupData.title,
             description: meetupData.description || "No description available",
             dateTime: new Date(meetupData.event_time).toLocaleString(),
@@ -375,7 +375,7 @@ const MeetupLobby = () => {
           <DialogTitle>Scan QR Code to Check In</DialogTitle>
           <DialogDescription>
             At the actual meetup location, the organizer will display a unique QR code 
-            for this event. Scan it with your camera to check in and earn {meetup.points} points.
+            for this event. Scan it with your camera to check in and earn {meetup?.points} points.
             This confirms your attendance and prevents earning points without being physically present.
           </DialogDescription>
           <QRScanner 

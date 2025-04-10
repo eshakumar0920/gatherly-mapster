@@ -19,7 +19,7 @@ import { useEffect } from "react";
 
 // Define the type for the data returned from Supabase
 interface MeetupRow {
-  event_id: number;  // Updated from meetup_id
+  meetup_id: number;  // Using meetup_id instead of event_id
   title: string;
   description: string | null;
   location: string;
@@ -59,7 +59,7 @@ const Meetups = () => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase.from('events').select('*');  // Updated table name
+        const { data, error } = await supabase.from('meetups').select('*');  // Using 'meetups' instead of 'events'
         
         if (error) {
           console.error("Error fetching meetups:", error);
@@ -74,7 +74,7 @@ const Meetups = () => {
         if (data && data.length > 0) {
           // Convert Supabase data to the Meetup type
           const supabaseMeetups = (data as MeetupRow[]).map(meetup => ({
-            id: meetup.event_id.toString(),  // Updated field name
+            id: meetup.meetup_id.toString(),  // Using meetup_id instead of event_id
             title: meetup.title,
             description: meetup.description || "No description available",
             dateTime: new Date(meetup.event_time).toLocaleString(),
@@ -128,7 +128,7 @@ const Meetups = () => {
       const eventTime = new Date().toISOString();
       
       // Insert the new meetup into Supabase
-      const { data, error } = await supabase.from('events').insert({  // Updated table name
+      const { data, error } = await supabase.from('meetups').insert({  // Using 'meetups' instead of 'events'
         title: values.title,
         description: values.description,
         location: values.location,
@@ -158,10 +158,10 @@ const Meetups = () => {
       form.reset();
       
       // Refresh the meetups list
-      const { data: updatedMeetups } = await supabase.from('events').select('*');  // Updated table name
+      const { data: updatedMeetups } = await supabase.from('meetups').select('*');  // Using 'meetups' instead of 'events'
       if (updatedMeetups) {
         const supabaseMeetups = (updatedMeetups as MeetupRow[]).map(meetup => ({
-          id: meetup.event_id.toString(),  // Updated field name
+          id: meetup.meetup_id.toString(),  // Using meetup_id instead of event_id
           title: meetup.title,
           description: meetup.description || "No description available",
           dateTime: new Date(meetup.event_time).toLocaleString(),
