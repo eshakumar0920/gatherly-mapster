@@ -15,6 +15,9 @@ interface GoogleMapViewProps {
   locations: MapLocation[];
 }
 
+// Define libraries outside of the component to prevent performance warnings
+const libraries = ["places"];
+
 const mapContainerStyle = {
   width: "100%",
   height: "100%",
@@ -31,10 +34,10 @@ const UTD_CENTER = {
 const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   
-  // Load the Google Maps script
+  // Load the Google Maps script with a restricted API key
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: "AIzaSyBNLrJhOMSuJbMN4UPoqXw3CFH-1XBjCFA", // Using a public API key with restrictions
-    libraries: ["places"]
+    googleMapsApiKey: "AIzaSyBNLrJhOMSuJbMN4UPoqXw3CFH-1XBjCFA",
+    libraries: libraries as ["places"]
   });
   
   const onMapClick = useCallback(() => {
@@ -45,25 +48,36 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   
   const onLoad = useCallback((map: google.maps.Map) => {
-    // Add UTD campus boundary (approximate polygon)
-    const utdBoundaryCoords = [
-      { lat: 32.9935, lng: -96.7535 },
-      { lat: 32.9935, lng: -96.7435 },
-      { lat: 32.9835, lng: -96.7435 },
-      { lat: 32.9835, lng: -96.7535 }
-    ];
-    
-    const utdBoundary = new google.maps.Polygon({
-      paths: utdBoundaryCoords,
-      strokeColor: "#E87500", // UTD orange
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: "#E87500",
-      fillOpacity: 0.1,
-    });
-    
-    utdBoundary.setMap(map);
-    setMap(map);
+    try {
+      // Add UTD campus boundary (approximate polygon)
+      const utdBoundaryCoords = [
+        { lat: 32.9935, lng: -96.7535 },
+        { lat: 32.9935, lng: -96.7435 },
+        { lat: 32.9835, lng: -96.7435 },
+        { lat: 32.9835, lng: -96.7535 }
+      ];
+      
+      const utdBoundary = new google.maps.Polygon({
+        paths: utdBoundaryCoords,
+        strokeColor: "#E87500", // UTD orange
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#E87500",
+        fillOpacity: 0.1,
+      });
+      
+      utdBoundary.setMap(map);
+      setMap(map);
+      
+      // Ensure map is centered
+      map.setCenter(UTD_CENTER);
+      
+      // Trigger resize to ensure proper rendering
+      google.maps.event.trigger(map, "resize");
+      
+    } catch (error) {
+      console.error("Error during map initialization:", error);
+    }
   }, []);
   
   const onUnmount = useCallback(() => {
@@ -76,11 +90,14 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       if (map) {
         const center = map.getCenter();
         google.maps.event.trigger(map, "resize");
-        map.setCenter(center);
+        if (center) map.setCenter(center);
       }
     };
     
     window.addEventListener("resize", handleResize);
+    
+    // Call resize initially to ensure map renders correctly
+    setTimeout(handleResize, 100);
     
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -89,9 +106,13 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   
   if (loadError) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
-        <div className="text-center text-red-500">
-          Error loading Google Maps. Please check your internet connection or try again later.
+      <div className="w-full h-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4">
+        <div className="text-center">
+          <p className="text-red-500 font-medium mb-2">Error loading Google Maps</p>
+          <p className="text-sm text-gray-600">
+            Please check your internet connection or try again later.
+            {loadError.message && <span className="block mt-1 text-xs">{loadError.message}</span>}
+          </p>
         </div>
       </div>
     );
