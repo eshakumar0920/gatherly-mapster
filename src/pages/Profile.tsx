@@ -25,6 +25,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import LootBoxPopup from "@/components/LootBoxPopup";
+import { useLevelUp } from "@/contexts/LevelUpContext";
+import { ProfileSticker } from "@/components/ProfileStickers";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -38,17 +40,16 @@ const Profile = () => {
     email, 
     friends, 
     tags, 
+    selectedSticker,
     addFriend, 
     removeFriend, 
     updateTags,
-    updateProfile 
+    updateProfile,
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
-  const [isLootBoxOpen, setIsLootBoxOpen] = useState(false);
-  const [previousLevel, setPreviousLevel] = useState(0); // Start with 0 instead of level
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -61,33 +62,6 @@ const Profile = () => {
   });
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
-  
-  // Initialize previousLevel after first render
-  useEffect(() => {
-    // Only set previous level once on initial load
-    if (previousLevel === 0) {
-      setPreviousLevel(level);
-      // For testing, you can uncomment this to force show the popup:
-      // setIsLootBoxOpen(true);
-    }
-  }, []);
-  
-  // Check for level up - separate from initialization
-  useEffect(() => {
-    console.log("Level changed:", level, "Previous:", previousLevel);
-    if (previousLevel > 0 && level > previousLevel) {
-      console.log("Level up detected! Opening loot box.");
-      setIsLootBoxOpen(true);
-    }
-    if (previousLevel !== level && previousLevel !== 0) {
-      setPreviousLevel(level);
-    }
-  }, [level, previousLevel]);
-  
-  // Available tags for selection
-  const availableTags: TagType[] = [
-    'Gaming', 'Sports', 'Academic', 'Arts', 'Music', 'Technology', 'Food', 'Outdoors'
-  ];
   
   // Calculate progress to next level
   const pointsToNextLevel = level * 10;
@@ -160,10 +134,12 @@ const Profile = () => {
       setSelectedTags([...selectedTags, tag]);
     }
   };
-  
+
+  const { setShowStickers } = useLevelUp();
+
   // For debugging - add a button to manually trigger level up popup
-  const triggerLootBox = () => {
-    setIsLootBoxOpen(true);
+  const triggerStickers = () => {
+    setShowStickers(true);
   };
   
   return (
@@ -185,8 +161,27 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
-              <span className="text-4xl">👤</span>
+            <div className="relative">
+              <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+                <span className="text-4xl">👤</span>
+              </div>
+              {/* Profile sticker */}
+              {selectedSticker !== null && (
+                <ProfileSticker level={level} selectedSticker={selectedSticker} />
+              )}
+              {/* Add sticker button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
+                onClick={triggerStickers}
+              >
+                {selectedSticker !== null ? (
+                  <User className="h-4 w-4" />
+                ) : (
+                  <Star className="h-4 w-4" />
+                )}
+              </Button>
             </div>
             <h2 className="text-xl font-semibold">{name}</h2>
             <p className="text-muted-foreground">{email}</p>
@@ -229,16 +224,8 @@ const Profile = () => {
               </div>
               <Progress value={progress} className="h-2" />
             </div>
-            <div className="mt-2 text-xs text-muted-foreground flex justify-between">
+            <div className="mt-2 text-xs text-muted-foreground">
               <span>Attended {attendedMeetups.length} meetups</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 text-xs"
-                onClick={triggerLootBox}
-              >
-                Test Loot Box
-              </Button>
             </div>
           </div>
           
@@ -429,13 +416,6 @@ const Profile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Level Up Loot Box Popup */}
-      <LootBoxPopup 
-        level={level}
-        isOpen={isLootBoxOpen}
-        onClose={() => setIsLootBoxOpen(false)}
-      />
 
       {/* Navigation */}
       <Navigation />

@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -150,6 +151,7 @@ interface UserState {
   attendedMeetups: string[]; // Meetups the user has checked into with QR code
   friends: Friend[];
   tags: Tag[];
+  selectedSticker: number | null;
   addPoints: (points: number) => void;
   joinMeetupLobby: (meetupId: string) => void;
   attendMeetup: (meetupId: string, points: number) => void;
@@ -158,6 +160,7 @@ interface UserState {
   removeFriend: (friendId: string) => void;
   updateTags: (tags: Tag[]) => void;
   updateProfile: (name: string, email: string) => void;
+  setSelectedSticker: (stickerIndex: number | null) => void;
 }
 
 // Sample friends data
@@ -187,6 +190,7 @@ export const useUserStore = create<UserState>()(
       attendedMeetups: [],
       friends: sampleFriends,
       tags: ['Academic', 'Technology'],
+      selectedSticker: null,
       addPoints: (points: number) => 
         set(state => {
           const newPoints = state.points + points;
@@ -253,6 +257,10 @@ export const useUserStore = create<UserState>()(
         set(state => ({
           name,
           email
+        })),
+      setSelectedSticker: (stickerIndex: number | null) =>
+        set(state => ({
+          selectedSticker: stickerIndex
         }))
     }),
     {
