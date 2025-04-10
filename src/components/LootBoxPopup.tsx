@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Package, Star, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import confetti from "canvas-confetti";
 
 interface LootBoxPopupProps {
   level: number;
@@ -17,6 +18,13 @@ const LootBoxPopup: React.FC<LootBoxPopupProps> = ({ level, isOpen, onClose }) =
       const timer = setTimeout(() => {
         onClose();
       }, 8000);
+      
+      // Trigger confetti when popup opens
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
       
       return () => clearTimeout(timer);
     }

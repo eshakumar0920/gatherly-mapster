@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
@@ -49,7 +48,7 @@ const Profile = () => {
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
   const [isLootBoxOpen, setIsLootBoxOpen] = useState(false);
-  const [previousLevel, setPreviousLevel] = useState(level);
+  const [previousLevel, setPreviousLevel] = useState(0); // Start with 0 instead of level
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -63,12 +62,26 @@ const Profile = () => {
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
   
-  // Check for level up
+  // Initialize previousLevel after first render
   useEffect(() => {
-    if (previousLevel < level && previousLevel > 0) {
+    // Only set previous level once on initial load
+    if (previousLevel === 0) {
+      setPreviousLevel(level);
+      // For testing, you can uncomment this to force show the popup:
+      // setIsLootBoxOpen(true);
+    }
+  }, []);
+  
+  // Check for level up - separate from initialization
+  useEffect(() => {
+    console.log("Level changed:", level, "Previous:", previousLevel);
+    if (previousLevel > 0 && level > previousLevel) {
+      console.log("Level up detected! Opening loot box.");
       setIsLootBoxOpen(true);
     }
-    setPreviousLevel(level);
+    if (previousLevel !== level && previousLevel !== 0) {
+      setPreviousLevel(level);
+    }
   }, [level, previousLevel]);
   
   // Available tags for selection
@@ -148,6 +161,11 @@ const Profile = () => {
     }
   };
   
+  // For debugging - add a button to manually trigger level up popup
+  const triggerLootBox = () => {
+    setIsLootBoxOpen(true);
+  };
+  
   return (
     <div className="pb-20">
       {/* App Name */}
@@ -211,8 +229,16 @@ const Profile = () => {
               </div>
               <Progress value={progress} className="h-2" />
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-2 text-xs text-muted-foreground flex justify-between">
               <span>Attended {attendedMeetups.length} meetups</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 text-xs"
+                onClick={triggerLootBox}
+              >
+                Test Loot Box
+              </Button>
             </div>
           </div>
           
