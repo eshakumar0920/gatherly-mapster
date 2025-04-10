@@ -41,6 +41,25 @@ const Maps = () => {
   const [showPOI, setShowPOI] = useState(true);
   const { toast } = useToast();
   
+  // Helper function to generate random coordinates near a center point
+  const generateRandomCoordinateNear = (center: number) => {
+    return center + (Math.random() - 0.5) * 0.01;
+  };
+  
+  // Generate mock locations from events (fallback function)
+  const generateMockLocations = (events: any[]) => {
+    const UTD_CENTER_LAT = 32.9886;
+    const UTD_CENTER_LNG = -96.7479;
+    
+    return events.map(event => ({
+      id: event.id,
+      title: event.title,
+      lat: UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01,
+      lng: UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01,
+      description: event.description
+    }));
+  };
+  
   // Fetch locations from Supabase
   useEffect(() => {
     const fetchLocations = async () => {
@@ -58,7 +77,7 @@ const Maps = () => {
             variant: "destructive"
           });
           
-          // Fall back to mock data if there's an error or no meetups table yet
+          // Fall back to mock data if there's an error
           const events = getEvents();
           const mockLocations = generateMockLocations(events);
           setMapLocations(mockLocations);
@@ -97,26 +116,7 @@ const Maps = () => {
     };
     
     fetchLocations();
-  }, []);
-  
-  // Generate mock locations from events (fallback function)
-  const generateMockLocations = (events: any[]) => {
-    const UTD_CENTER_LAT = 32.9886;
-    const UTD_CENTER_LNG = -96.7479;
-    
-    return events.map(event => ({
-      id: event.id,
-      title: event.title,
-      lat: UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01,
-      lng: UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01,
-      description: event.description
-    }));
-  };
-  
-  // Helper function to generate random coordinates near a center point
-  const generateRandomCoordinateNear = (center: number) => {
-    return center + (Math.random() - 0.5) * 0.01;
-  };
+  }, [toast]);
 
   // Filter locations based on search query
   const filteredLocations = searchQuery 
@@ -188,15 +188,15 @@ const Maps = () => {
 
       {/* Map */}
       <div className="px-4 flex-1 overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
+        <div className="w-full h-full flex items-center justify-center">
+          {isLoading ? (
             <Skeleton className="w-full h-full rounded-lg" />
-          </div>
-        ) : (
-          <div className="w-full h-full">
-            <MapView locations={filteredLocations} />
-          </div>
-        )}
+          ) : (
+            <div className="w-full h-full border rounded-lg overflow-hidden">
+              <MapView locations={filteredLocations} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}

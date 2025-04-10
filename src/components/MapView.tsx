@@ -118,69 +118,101 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
 
   // Initialize the map when component mounts
   useEffect(() => {
-    // Make sure the map container exists before initializing
-    if (!mapRef.current && mapContainerRef.current) {
-      try {
-        console.log("Initializing map...");
-        // Create map instance with a timeout to ensure container is ready
-        setTimeout(() => {
-          // Double-check that the component is still mounted
-          if (mapContainerRef.current) {
-            const map = L.map(mapContainerRef.current, {
-              zoomControl: true,
-              attributionControl: true
-            }).setView(UTD_CENTER as L.LatLngExpression, 16);
-            
-            // Add OpenStreetMap tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-              attribution: '© OpenStreetMap contributors | UTD Campus Map'
-            }).addTo(map);
-            
-            // Add UTD campus boundary (approximate polygon)
-            const utdBoundary = L.polygon([
-              [32.9935, -96.7535],
-              [32.9935, -96.7435],
-              [32.9835, -96.7435],
-              [32.9835, -96.7535]
-            ], {
-              color: '#E87500', // UTD orange
-              fillColor: '#E87500',
-              fillOpacity: 0.1,
-              weight: 2
-            }).addTo(map);
-            
-            // Store map instance in ref
-            mapRef.current = map;
-            
-            // Create a layer group for markers
-            markersLayerRef.current = L.layerGroup().addTo(map);
-            
-            setMapLoaded(true);
-            console.log("Map initialized successfully");
-            
-            // Force a resize event to make sure the map loads correctly
-            setTimeout(() => {
-              if (mapRef.current) {
-                mapRef.current.invalidateSize();
-              }
-            }, 500);
-          }
-        }, 100);
-      } catch (error) {
-        console.error("Error initializing map:", error);
-      }
-    }
-    
-    return () => {
-      // Clean up map when component unmounts
+    // Cleanup function to remove the map when component unmounts
+    const cleanupMap = () => {
       if (mapRef.current) {
+        console.log("Cleaning up map");
         mapRef.current.remove();
         mapRef.current = null;
         markersLayerRef.current = null;
       }
     };
-  }, []); // Empty dependency array for initialization
+
+    // Function to initialize the map
+    const initMap = () => {
+      // Make sure the map container exists and the map hasn't been initialized yet
+      if (!mapRef.current && mapContainerRef.current) {
+        try {
+          console.log("Initializing map... Container exists:", !!mapContainerRef.current);
+          
+          // Create map instance
+          const map = L.map(mapContainerRef.current, {
+            zoomControl: true,
+            attributionControl: true
+          }).setView(UTD_CENTER as L.LatLngExpression, 16);
+          
+          // Add OpenStreetMap tile layer
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors | UTD Campus Map'
+          }).addTo(map);
+          
+          // Add UTD campus boundary (approximate polygon)
+          const utdBoundary = L.polygon([
+            [32.9935, -96.7535],
+            [32.9935, -96.7435],
+            [32.9835, -96.7435],
+            [32.9835, -96.7535]
+          ], {
+            color: '#E87500', // UTD orange
+            fillColor: '#E87500',
+            fillOpacity: 0.1,
+            weight: 2
+          }).addTo(map);
+          
+          // Store map instance in ref
+          mapRef.current = map;
+          
+          // Create a layer group for markers
+          markersLayerRef.current = L.layerGroup().addTo(map);
+          
+          setMapLoaded(true);
+          console.log("Map initialized successfully");
+          
+          // Force a resize event to make sure the map loads correctly
+          map.invalidateSize();
+          
+          // Additional resize after a delay
+          setTimeout(() => {
+            if (mapRef.current) {
+              mapRef.current.invalidateSize();
+              console.log("Map resized after timeout");
+            }
+          }, 500);
+        } catch (error) {
+          console.error("Error initializing map:", error);
+        }
+      }
+    };
+    
+    // Attempt to initialize the map
+    initMap();
+    
+    // Set up resize handler
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+        console.log("Map resized due to window resize");
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Try again after a short delay if initial attempt fails
+    const retryTimer = setTimeout(() => {
+      if (!mapLoaded && mapContainerRef.current) {
+        console.log("Retrying map initialization...");
+        cleanupMap(); // Clean up any partial initialization
+        initMap();
+      }
+    }, 500);
+    
+    return () => {
+      clearTimeout(retryTimer);
+      window.removeEventListener('resize', handleResize);
+      cleanupMap();
+    };
+  }, []); 
 
   // Update markers when locations or selected location changes
   useEffect(() => {
@@ -241,27 +273,12 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
     }
   }, [mapLoaded, allLocations, selectedLocation]);
 
-  // Add a resize event listener to update the map when window size changes
-  useEffect(() => {
-    const handleResize = () => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   const toggleUTDLocations = () => {
     setShowUTDLocations(!showUTDLocations);
   };
   
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden">
+    <div className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden border border-gray-200">
       {!mapLoaded ? (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="animate-pulse">Loading UTD campus map...</div>
