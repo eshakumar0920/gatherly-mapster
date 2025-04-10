@@ -9,26 +9,26 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      meetup_tags: {
+      event_tags: {
         Row: {
-          meetup_id: number
+          event_id: number
           tag_id: number
         }
         Insert: {
-          meetup_id: number
+          event_id: number
           tag_id: number
         }
         Update: {
-          meetup_id?: number
+          event_id?: number
           tag_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "meetup_tags_meetup_id_fkey"
-            columns: ["meetup_id"]
+            foreignKeyName: "event_tags_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "meetups"
-            referencedColumns: ["meetup_id"]
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
           },
           {
             foreignKeyName: "meetup_tags_tag_id_fkey"
@@ -39,18 +39,18 @@ export type Database = {
           },
         ]
       }
-      meetups: {
+      events: {
         Row: {
           category: string | null
           created_at: string | null
           creator_id: number
           description: string | null
+          event_id: number
           event_time: string
           image: string | null
           lat: number | null
           lng: number | null
           location: string
-          meetup_id: number
           title: string
         }
         Insert: {
@@ -58,12 +58,12 @@ export type Database = {
           created_at?: string | null
           creator_id: number
           description?: string | null
+          event_id?: number
           event_time: string
           image?: string | null
           lat?: number | null
           lng?: number | null
           location: string
-          meetup_id?: number
           title: string
         }
         Update: {
@@ -71,12 +71,12 @@ export type Database = {
           created_at?: string | null
           creator_id?: number
           description?: string | null
+          event_id?: number
           event_time?: string
           image?: string | null
           lat?: number | null
           lng?: number | null
           location?: string
-          meetup_id?: number
           title?: string
         }
         Relationships: [
@@ -91,21 +91,21 @@ export type Database = {
       }
       rsvps: {
         Row: {
-          meetup_id: number
+          event_id: number
           responded_at: string | null
           rsvp_id: number
           status: string | null
           user_id: number
         }
         Insert: {
-          meetup_id: number
+          event_id: number
           responded_at?: string | null
           rsvp_id?: number
           status?: string | null
           user_id: number
         }
         Update: {
-          meetup_id?: number
+          event_id?: number
           responded_at?: string | null
           rsvp_id?: number
           status?: string | null
@@ -113,11 +113,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rsvps_meetup_id_fkey"
-            columns: ["meetup_id"]
+            foreignKeyName: "rsvps_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "meetups"
-            referencedColumns: ["meetup_id"]
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
           },
           {
             foreignKeyName: "rsvps_user_id_fkey"

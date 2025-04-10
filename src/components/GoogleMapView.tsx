@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
@@ -40,8 +39,8 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
     const fetchMeetupLocations = async () => {
       try {
         const { data: meetupsData, error } = await supabase
-          .from('meetups')
-          .select('meetup_id, title, description, lat, lng, category')
+          .from('events')
+          .select('event_id, title, description, lat, lng, category')
           .not('lat', 'is', null);
 
         if (error) {
@@ -52,7 +51,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         if (meetupsData && meetupsData.length > 0) {
           // Convert Supabase meetups to MapLocation format
           const meetupLocations: MapLocation[] = meetupsData.map((meetup) => ({
-            id: `meetup_${meetup.meetup_id}`,
+            id: `meetup_${meetup.event_id}`,
             title: meetup.title,
             lat: Number(meetup.lat),
             lng: Number(meetup.lng),

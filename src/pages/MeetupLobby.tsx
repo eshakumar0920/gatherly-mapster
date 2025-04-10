@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,7 +17,7 @@ import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface MeetupRow {
-  meetup_id: number;
+  event_id: number;  // Updated from meetup_id
   title: string;
   description: string | null;
   location: string;
@@ -73,9 +74,9 @@ const MeetupLobby = () => {
       setLoading(true);
       try {
         const { data: meetupData, error } = await supabase
-          .from('meetups')
+          .from('events')  // Updated table name
           .select('*')
-          .eq('meetup_id', parseInt(meetupId as string))
+          .eq('event_id', parseInt(meetupId as string))  // Updated column name
           .single();
 
         if (error) {
@@ -91,7 +92,7 @@ const MeetupLobby = () => {
 
         if (meetupData) {
           const formattedMeetup: Meetup = {
-            id: meetupData.meetup_id.toString(),
+            id: meetupData.event_id.toString(),  // Updated field name
             title: meetupData.title,
             description: meetupData.description || "No description available",
             dateTime: new Date(meetupData.event_time).toLocaleString(),
