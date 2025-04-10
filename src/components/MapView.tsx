@@ -121,35 +121,52 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
     // Make sure the map container exists before initializing
     if (!mapRef.current && mapContainerRef.current) {
       try {
-        // Create map instance
-        const map = L.map(mapContainerRef.current).setView(UTD_CENTER as L.LatLngExpression, 16);
-        
-        // Add OpenStreetMap tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap contributors | UTD Campus Map'
-        }).addTo(map);
-        
-        // Add UTD campus boundary (approximate polygon)
-        const utdBoundary = L.polygon([
-          [32.9935, -96.7535],
-          [32.9935, -96.7435],
-          [32.9835, -96.7435],
-          [32.9835, -96.7535]
-        ], {
-          color: '#E87500', // UTD orange
-          fillColor: '#E87500',
-          fillOpacity: 0.1,
-          weight: 2
-        }).addTo(map);
-        
-        // Store map instance in ref
-        mapRef.current = map;
-        
-        // Create a layer group for markers
-        markersLayerRef.current = L.layerGroup().addTo(map);
-        
-        setMapLoaded(true);
+        console.log("Initializing map...");
+        // Create map instance with a timeout to ensure container is ready
+        setTimeout(() => {
+          // Double-check that the component is still mounted
+          if (mapContainerRef.current) {
+            const map = L.map(mapContainerRef.current, {
+              zoomControl: true,
+              attributionControl: true
+            }).setView(UTD_CENTER as L.LatLngExpression, 16);
+            
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '© OpenStreetMap contributors | UTD Campus Map'
+            }).addTo(map);
+            
+            // Add UTD campus boundary (approximate polygon)
+            const utdBoundary = L.polygon([
+              [32.9935, -96.7535],
+              [32.9935, -96.7435],
+              [32.9835, -96.7435],
+              [32.9835, -96.7535]
+            ], {
+              color: '#E87500', // UTD orange
+              fillColor: '#E87500',
+              fillOpacity: 0.1,
+              weight: 2
+            }).addTo(map);
+            
+            // Store map instance in ref
+            mapRef.current = map;
+            
+            // Create a layer group for markers
+            markersLayerRef.current = L.layerGroup().addTo(map);
+            
+            setMapLoaded(true);
+            console.log("Map initialized successfully");
+            
+            // Force a resize event to make sure the map loads correctly
+            setTimeout(() => {
+              if (mapRef.current) {
+                mapRef.current.invalidateSize();
+              }
+            }, 500);
+          }
+        }, 100);
       } catch (error) {
         console.error("Error initializing map:", error);
       }
@@ -168,6 +185,8 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
   // Update markers when locations or selected location changes
   useEffect(() => {
     if (mapLoaded && mapRef.current && markersLayerRef.current) {
+      console.log("Updating markers, locations count:", allLocations.length);
+      
       // Clear existing markers
       markersLayerRef.current.clearLayers();
       
@@ -214,8 +233,28 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
         // Add marker to layer group
         markersLayerRef.current?.addLayer(marker);
       });
+      
+      // Force map update to display markers
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
     }
   }, [mapLoaded, allLocations, selectedLocation]);
+
+  // Add a resize event listener to update the map when window size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const toggleUTDLocations = () => {
     setShowUTDLocations(!showUTDLocations);

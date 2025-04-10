@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, List, Layers, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import MapView from "@/components/MapView";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
@@ -45,6 +46,7 @@ const Maps = () => {
     const fetchLocations = async () => {
       try {
         setIsLoading(true);
+        console.log("Fetching location data...");
         // Query the meetups table in Supabase
         const { data, error } = await supabase.from('meetups').select('*');
         
@@ -64,6 +66,7 @@ const Maps = () => {
         }
         
         if (data && data.length > 0) {
+          console.log("Found location data:", data.length);
           // Convert the meetup data to map locations
           const locations: MapLocation[] = (data as MeetupRow[]).map(meetup => ({
             id: meetup.meetup_id.toString(),
@@ -76,6 +79,7 @@ const Maps = () => {
           
           setMapLocations(locations);
         } else {
+          console.log("No location data found, using mock data");
           // Fall back to mock data if no data is returned
           const events = getEvents();
           const mockLocations = generateMockLocations(events);
@@ -183,13 +187,15 @@ const Maps = () => {
       </div>
 
       {/* Map */}
-      <div className="px-4 flex-1">
+      <div className="px-4 flex-1 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <p>Loading UTD campus map...</p>
+            <Skeleton className="w-full h-full rounded-lg" />
           </div>
         ) : (
-          <MapView locations={filteredLocations} />
+          <div className="w-full h-full">
+            <MapView locations={filteredLocations} />
+          </div>
         )}
       </div>
 
