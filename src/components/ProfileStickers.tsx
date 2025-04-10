@@ -57,7 +57,7 @@ export const ProfileSticker: React.FC<ProfileStickerProps> = ({
   const iconSize = sizeClasses[size];
   
   return (
-    <div className={`absolute -bottom-1 -right-1 ${className}`}>
+    <div className={`absolute -bottom-1 -left-1 ${className}`}>
       <div className={`bg-white rounded-full p-1 shadow-md ${sticker.color}`}>
         <IconComponent className={iconSize} fill="currentColor" />
       </div>
