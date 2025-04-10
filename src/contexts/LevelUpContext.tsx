@@ -13,11 +13,10 @@ interface LevelUpContextType {
 const LevelUpContext = createContext<LevelUpContextType | undefined>(undefined);
 
 export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { level } = useUserStore();
+  const { level, selectedSticker: userSelectedSticker, setSelectedSticker: updateSelectedSticker } = useUserStore();
   const [previousLevel, setPreviousLevel] = useState(0);
   const [isLootBoxOpen, setIsLootBoxOpen] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
-  const [selectedSticker, setSelectedSticker] = useState<number | null>(null);
   
   // Initialize previousLevel after first render
   useEffect(() => {
@@ -29,6 +28,7 @@ export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Check for level up across any page
   useEffect(() => {
     console.log("Level context check:", level, "Previous:", previousLevel);
+    console.log("Current selected sticker:", userSelectedSticker);
     
     if (previousLevel > 0 && level > previousLevel) {
       console.log("Level up detected globally! Opening loot box.");
@@ -45,8 +45,8 @@ export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{ 
         showStickers, 
         setShowStickers, 
-        selectedSticker, 
-        setSelectedSticker 
+        selectedSticker: userSelectedSticker, 
+        setSelectedSticker: updateSelectedSticker 
       }}
     >
       {children}

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
@@ -29,7 +28,6 @@ import LootBoxPopup from "@/components/LootBoxPopup";
 import { useLevelUp } from "@/contexts/LevelUpContext";
 import { ProfileSticker } from "@/components/ProfileStickers";
 
-// Define the available tags array
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
   "Gaming", "Reading", "Photography", "Fitness", "Movies",
@@ -71,9 +69,8 @@ const Profile = () => {
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
   
-  // Calculate progress to next level
   const pointsToNextLevel = level * 10;
-  const progress = (points % 10) * 10; // 10 points per level, so progress is X out of 10
+  const progress = (points % 10) * 10;
   
   const handleLogout = () => {
     logout();
@@ -145,27 +142,23 @@ const Profile = () => {
 
   const { setShowStickers } = useLevelUp();
 
-  // For debugging - add a button to manually trigger level up popup
   const triggerStickers = () => {
     setShowStickers(true);
   };
   
   return (
     <div className="pb-20">
-      {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
           <span className="font-bold">i</span>mpulse
         </h1>
       </div>
 
-      {/* Header */}
       <header className="p-4">
         <h1 className="text-2xl font-bold">Profile</h1>
         <p className="text-muted-foreground">Manage your account</p>
       </header>
 
-      {/* Profile Content */}
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
@@ -173,11 +166,13 @@ const Profile = () => {
               <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
                 <span className="text-4xl">👤</span>
               </div>
-              {/* Profile sticker */}
-              {selectedSticker !== null && (
-                <ProfileSticker level={level} selectedSticker={selectedSticker} />
+              {level > 0 && (
+                <ProfileSticker 
+                  level={level} 
+                  selectedSticker={selectedSticker} 
+                  size="lg"
+                />
               )}
-              {/* Add sticker button */}
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -194,7 +189,6 @@ const Profile = () => {
             <h2 className="text-xl font-semibold">{name}</h2>
             <p className="text-muted-foreground">{email}</p>
             
-            {/* Tags */}
             <div className="flex flex-wrap gap-1 mt-2 justify-center">
               {tags.map(tag => (
                 <span key={tag} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
@@ -213,7 +207,6 @@ const Profile = () => {
             </div>
           </div>
           
-          {/* Points & Level Section */}
           <div className="bg-primary/5 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center">
@@ -237,7 +230,6 @@ const Profile = () => {
             </div>
           </div>
           
-          {/* Friends Section */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Friends</h3>
@@ -324,7 +316,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Add Friend Dialog */}
       <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -359,7 +350,6 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Profile Dialog */}
       <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -394,7 +384,6 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Tags Dialog */}
       <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -425,7 +414,6 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Navigation */}
       <Navigation />
     </div>
   );
