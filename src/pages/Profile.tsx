@@ -28,6 +28,13 @@ import LootBoxPopup from "@/components/LootBoxPopup";
 import { useLevelUp } from "@/contexts/LevelUpContext";
 import { ProfileSticker } from "@/components/ProfileStickers";
 
+// Define the available tags array
+const availableTags: TagType[] = [
+  "Technology", "Art", "Music", "Sports", "Food", "Travel", 
+  "Gaming", "Reading", "Photography", "Fitness", "Movies",
+  "Science", "Outdoors", "Cooking", "Fashion", "Design"
+];
+
 const Profile = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
