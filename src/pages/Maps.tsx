@@ -34,7 +34,8 @@ const Maps = () => {
           // Generate locations around UTD
           lat: 32.9886 + (Math.random() - 0.5) * 0.01,
           lng: -96.7479 + (Math.random() - 0.5) * 0.01,
-          description: event.description
+          description: event.description,
+          isEvent: true
         }));
         
         setMapLocations(locations);
