@@ -18,8 +18,8 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 // Define the type for the data returned from Supabase
-interface MeetupRow {
-  meetup_id: number;  // Using meetup_id instead of event_id
+interface EventRow {
+  event_id: number;
   title: string;
   description: string | null;
   location: string;
@@ -59,7 +59,7 @@ const Meetups = () => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase.from('meetups').select('*');  // Using 'meetups' instead of 'events'
+        const { data, error } = await supabase.from('events').select('*');  // Using 'events' instead of 'meetups'
         
         if (error) {
           console.error("Error fetching meetups:", error);
@@ -73,15 +73,15 @@ const Meetups = () => {
         
         if (data && data.length > 0) {
           // Convert Supabase data to the Meetup type
-          const supabaseMeetups = (data as MeetupRow[]).map(meetup => ({
-            id: meetup.meetup_id.toString(),  // Using meetup_id instead of event_id
-            title: meetup.title,
-            description: meetup.description || "No description available",
-            dateTime: new Date(meetup.event_time).toLocaleString(),
-            location: meetup.location,
+          const supabaseMeetups = (data as EventRow[]).map(event => ({
+            id: event.event_id.toString(),  // Using event_id instead of meetup_id
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_time).toLocaleString(),
+            location: event.location,
             points: 3, // Default value
             createdBy: "Student", // Default value
-            creatorAvatar: meetup.image || undefined,
+            creatorAvatar: event.image || undefined,
             lobbySize: 5, // Default value
             attendees: []
           }));
@@ -128,7 +128,7 @@ const Meetups = () => {
       const eventTime = new Date().toISOString();
       
       // Insert the new meetup into Supabase
-      const { data, error } = await supabase.from('meetups').insert({  // Using 'meetups' instead of 'events'
+      const { data, error } = await supabase.from('events').insert({  // Using 'events' instead of 'meetups'
         title: values.title,
         description: values.description,
         location: values.location,
@@ -158,17 +158,17 @@ const Meetups = () => {
       form.reset();
       
       // Refresh the meetups list
-      const { data: updatedMeetups } = await supabase.from('meetups').select('*');  // Using 'meetups' instead of 'events'
+      const { data: updatedMeetups } = await supabase.from('events').select('*');  // Using 'events' instead of 'meetups'
       if (updatedMeetups) {
-        const supabaseMeetups = (updatedMeetups as MeetupRow[]).map(meetup => ({
-          id: meetup.meetup_id.toString(),  // Using meetup_id instead of event_id
-          title: meetup.title,
-          description: meetup.description || "No description available",
-          dateTime: new Date(meetup.event_time).toLocaleString(),
-          location: meetup.location,
+        const supabaseMeetups = (updatedMeetups as EventRow[]).map(event => ({
+          id: event.event_id.toString(),  // Using event_id instead of meetup_id
+          title: event.title,
+          description: event.description || "No description available",
+          dateTime: new Date(event.event_time).toLocaleString(),
+          location: event.location,
           points: 3,
           createdBy: "Student",
-          creatorAvatar: meetup.image || undefined,
+          creatorAvatar: event.image || undefined,
           lobbySize: 5,
           attendees: []
         }));

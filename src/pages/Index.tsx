@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
@@ -37,6 +36,20 @@ interface Meetup {
   attendees?: string[];
 }
 
+interface EventRow {
+  event_id: number;
+  title: string;
+  description: string | null;
+  location: string;
+  event_time: string;
+  created_at: string | null;
+  creator_id: number;
+  image: string | null;
+  category: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
@@ -52,7 +65,7 @@ const Index = () => {
         
         // Fetch meetups from Supabase
         const { data: meetupsData, error: meetupsError } = await supabase
-          .from('meetups')
+          .from('events')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(5);
@@ -64,7 +77,7 @@ const Index = () => {
         } else if (meetupsData && meetupsData.length > 0) {
           // Map Supabase meetups data to our app structure
           const mappedMeetups: Meetup[] = meetupsData.map(item => ({
-            id: item.meetup_id.toString(),
+            id: item.event_id.toString(),
             title: item.title,
             description: item.description || "No description available",
             dateTime: new Date(item.event_time).toLocaleString(),

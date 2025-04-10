@@ -16,8 +16,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
-interface MeetupRow {
-  meetup_id: number;  // Using meetup_id instead of event_id
+interface EventRow {
+  event_id: number;
   title: string;
   description: string | null;
   location: string;
@@ -74,9 +74,9 @@ const MeetupLobby = () => {
       setLoading(true);
       try {
         const { data: meetupData, error } = await supabase
-          .from('meetups')  // Using 'meetups' instead of 'events'
+          .from('events')  // Using 'events' table instead of 'meetups'
           .select('*')
-          .eq('meetup_id', parseInt(meetupId as string))  // Using meetup_id instead of event_id
+          .eq('event_id', parseInt(meetupId as string))  // Using event_id instead of meetup_id
           .single();
 
         if (error) {
@@ -92,7 +92,7 @@ const MeetupLobby = () => {
 
         if (meetupData) {
           const formattedMeetup: Meetup = {
-            id: meetupData.meetup_id.toString(),  // Using meetup_id instead of event_id
+            id: meetupData.event_id.toString(),  // Using event_id instead of meetup_id
             title: meetupData.title,
             description: meetupData.description || "No description available",
             dateTime: new Date(meetupData.event_time).toLocaleString(),
