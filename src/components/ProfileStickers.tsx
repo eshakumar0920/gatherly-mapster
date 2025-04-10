@@ -17,7 +17,8 @@ import {
   Flag,
   Sparkles,
   Flame,
-  Lightning,
+  // Lightning icon doesn't exist in lucide-react, replaced with LightbulbIcon
+  Lightbulb,
   Aperture,
   Compass
 } from 'lucide-react';
@@ -50,7 +51,7 @@ const stickers = [
   { level: 16, icon: Target, color: 'text-red-600', name: 'Target Badge' },
   { level: 18, icon: Flame, color: 'text-orange-600', name: 'Flame Badge' },
   { level: 20, icon: Sparkles, color: 'text-indigo-500', name: 'Sparkles Badge' },
-  { level: 21, icon: Lightning, color: 'text-yellow-600', name: 'Lightning Badge' },
+  { level: 21, icon: Lightbulb, color: 'text-yellow-600', name: 'Lightbulb Badge' },
   { level: 22, icon: Flag, color: 'text-green-600', name: 'Flag Badge' },
   { level: 23, icon: Aperture, color: 'text-purple-600', name: 'Aperture Badge' },
   { level: 24, icon: Compass, color: 'text-blue-600', name: 'Compass Badge' },
