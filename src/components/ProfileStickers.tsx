@@ -6,7 +6,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useLevelUp } from '@/contexts/LevelUpContext';
@@ -27,7 +28,7 @@ interface ProfileStickerProps {
   level: number;
   selectedSticker: number | null;
   className?: string;
-  size?: number;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 // This component displays the sticker on the profile picture
@@ -35,7 +36,7 @@ export const ProfileSticker: React.FC<ProfileStickerProps> = ({
   level, 
   selectedSticker,
   className = "",
-  size = 6
+  size = 'md'
 }) => {
   const stickerIndex = selectedSticker !== null 
     ? selectedSticker 
@@ -46,10 +47,19 @@ export const ProfileSticker: React.FC<ProfileStickerProps> = ({
   const sticker = stickers[stickerIndex];
   const IconComponent = sticker.icon;
   
+  // Map size prop to actual Tailwind classes
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-6 w-6',
+    lg: 'h-8 w-8'
+  };
+  
+  const iconSize = sizeClasses[size];
+  
   return (
     <div className={`absolute -bottom-1 -right-1 ${className}`}>
       <div className={`bg-white rounded-full p-1 shadow-md ${sticker.color}`}>
-        <IconComponent className={`h-${size} w-${size}`} fill="currentColor" />
+        <IconComponent className={iconSize} fill="currentColor" />
       </div>
     </div>
   );
@@ -78,6 +88,9 @@ const ProfileStickers: React.FC = () => {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Choose Your Profile Sticker</DialogTitle>
+          <DialogDescription>
+            Select a sticker to display on your profile picture.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="py-4">
