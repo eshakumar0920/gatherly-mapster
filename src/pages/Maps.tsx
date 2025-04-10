@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { Search, List, Layers, MapPin } from "lucide-react";
+import { Search, Layers, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +17,6 @@ interface MapLocation {
   description?: string;
 }
 
-// Define the type for the data returned from Supabase
 interface MeetupRow {
   meetup_id: number;
   title: string;
@@ -40,12 +39,10 @@ const Maps = () => {
   const [showPOI, setShowPOI] = useState(true);
   const { toast } = useToast();
   
-  // Helper function to generate random coordinates near a center point
   const generateRandomCoordinateNear = (center: number) => {
     return center + (Math.random() - 0.5) * 0.01;
   };
   
-  // Generate mock locations from events (fallback function)
   const generateMockLocations = (events: any[]) => {
     const UTD_CENTER_LAT = 32.9886;
     const UTD_CENTER_LNG = -96.7479;
@@ -59,13 +56,11 @@ const Maps = () => {
     }));
   };
   
-  // Fetch locations from Supabase
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         setIsLoading(true);
         console.log("Fetching location data...");
-        // Query the meetups table in Supabase
         const { data, error } = await supabase.from('meetups').select('*');
         
         if (error) {
@@ -76,7 +71,6 @@ const Maps = () => {
             variant: "destructive"
           });
           
-          // Fall back to mock data if there's an error
           const events = getEvents();
           const mockLocations = generateMockLocations(events);
           setMapLocations(mockLocations);
@@ -85,11 +79,9 @@ const Maps = () => {
         
         if (data && data.length > 0) {
           console.log("Found location data:", data.length);
-          // Convert the meetup data to map locations
           const locations: MapLocation[] = (data as MeetupRow[]).map(meetup => ({
             id: meetup.meetup_id.toString(),
             title: meetup.title,
-            // If lat/lng are null, generate random coordinates near UTD
             lat: meetup.lat || generateRandomCoordinateNear(32.9886),
             lng: meetup.lng || generateRandomCoordinateNear(-96.7479),
             description: meetup.description || undefined
@@ -98,14 +90,12 @@ const Maps = () => {
           setMapLocations(locations);
         } else {
           console.log("No location data found, using mock data");
-          // Fall back to mock data if no data is returned
           const events = getEvents();
           const mockLocations = generateMockLocations(events);
           setMapLocations(mockLocations);
         }
       } catch (error) {
         console.error("Error in location fetching:", error);
-        // Fall back to mock data on any other error
         const events = getEvents();
         const mockLocations = generateMockLocations(events);
         setMapLocations(mockLocations);
@@ -117,7 +107,6 @@ const Maps = () => {
     fetchLocations();
   }, [toast]);
 
-  // Filter locations based on search query
   const filteredLocations = searchQuery 
     ? mapLocations.filter(location => 
         location.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,32 +114,27 @@ const Maps = () => {
       )
     : mapLocations;
 
-  // Toggle building visibility
   const toggleBuildings = () => {
     setShowBuildings(!showBuildings);
   };
   
-  // Toggle POI visibility
   const togglePOI = () => {
     setShowPOI(!showPOI);
   };
 
   return (
     <div className="h-screen flex flex-col">
-      {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
           <span className="font-bold">i</span>mpulse
         </h1>
       </div>
 
-      {/* Header */}
       <header className="p-4">
         <h1 className="text-2xl font-bold">UTD Campus Map</h1>
         <p className="text-muted-foreground">Find events and locations at UT Dallas</p>
       </header>
 
-      {/* Search bar */}
       <div className="px-4 pb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -163,42 +147,39 @@ const Maps = () => {
         </div>
       </div>
 
-      {/* Map controls */}
       <div className="px-4 pb-4 flex gap-2">
         <Button 
           variant="yellow" 
           size="sm" 
-          className="flex-1"
+          className="flex-1 gap-1.5"
           onClick={toggleBuildings}
         >
           <Layers className="h-4 w-4" />
-          Campus Buildings
+          <span>Campus Buildings</span>
         </Button>
         <Button 
           variant="yellow" 
           size="sm" 
-          className="flex-1"
+          className="flex-1 gap-1.5"
           onClick={togglePOI}
         >
           <MapPin className="h-4 w-4" />
-          Events
+          <span>Events</span>
         </Button>
       </div>
 
-      {/* Map container */}
-      <div className="px-4 flex-1 pb-20 min-h-[400px]">
-        <div className="w-full h-full">
-          {isLoading ? (
+      <div className="px-4 flex-1 pb-20">
+        {isLoading ? (
+          <div className="w-full h-full min-h-[400px]">
             <Skeleton className="w-full h-full rounded-lg" />
-          ) : (
-            <div className="w-full h-full">
-              <GoogleMapView locations={filteredLocations} />
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="w-full h-full min-h-[400px]">
+            <GoogleMapView locations={filteredLocations} />
+          </div>
+        )}
       </div>
 
-      {/* Navigation */}
       <Navigation />
     </div>
   );
