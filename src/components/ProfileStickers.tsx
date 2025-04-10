@@ -1,28 +1,6 @@
 
 import React from 'react';
 import { 
-  Badge, 
-  Gift, 
-  Star, 
-  Award, 
-  Medal, 
-  Trophy, 
-  Crown,
-  Heart,
-  Diamond,
-  Rocket,
-  Zap,
-  Shield,
-  Target,
-  Flag,
-  Sparkles,
-  Flame,
-  // Lightning icon doesn't exist in lucide-react, replaced with LightbulbIcon
-  Lightbulb,
-  Aperture,
-  Compass
-} from 'lucide-react';
-import { 
   Dialog,
   DialogContent,
   DialogHeader,
@@ -34,29 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { useUserStore } from '@/services/meetupService';
 import { useToast } from '@/hooks/use-toast';
-
-const stickers = [
-  { level: 1, icon: Badge, color: 'text-blue-400', name: 'Beginner Badge' },
-  { level: 2, icon: Gift, color: 'text-green-400', name: 'Gift Badge' },
-  { level: 3, icon: Star, color: 'text-yellow-400', name: 'Star Badge' },
-  { level: 4, icon: Award, color: 'text-purple-400', name: 'Award Badge' },
-  { level: 5, icon: Medal, color: 'text-pink-400', name: 'Medal Badge' },
-  { level: 6, icon: Trophy, color: 'text-amber-500', name: 'Trophy Badge' },
-  { level: 7, icon: Crown, color: 'text-yellow-500', name: 'Crown Badge' },
-  { level: 8, icon: Heart, color: 'text-red-500', name: 'Heart Badge' },
-  { level: 9, icon: Diamond, color: 'text-blue-500', name: 'Diamond Badge' },
-  { level: 10, icon: Rocket, color: 'text-orange-500', name: 'Rocket Badge' },
-  { level: 12, icon: Zap, color: 'text-yellow-400', name: 'Zap Badge' },
-  { level: 14, icon: Shield, color: 'text-slate-600', name: 'Shield Badge' },
-  { level: 16, icon: Target, color: 'text-red-600', name: 'Target Badge' },
-  { level: 18, icon: Flame, color: 'text-orange-600', name: 'Flame Badge' },
-  { level: 20, icon: Sparkles, color: 'text-indigo-500', name: 'Sparkles Badge' },
-  { level: 21, icon: Lightbulb, color: 'text-yellow-600', name: 'Lightbulb Badge' },
-  { level: 22, icon: Flag, color: 'text-green-600', name: 'Flag Badge' },
-  { level: 23, icon: Aperture, color: 'text-purple-600', name: 'Aperture Badge' },
-  { level: 24, icon: Compass, color: 'text-blue-600', name: 'Compass Badge' },
-  { level: 25, icon: Crown, color: 'text-yellow-600', name: 'Gold Crown Badge' },
-];
+import { stickers, StickerType } from '@/utils/badgeData';
 
 interface ProfileStickerProps {
   level: number;
@@ -170,6 +126,9 @@ const ProfileStickers: React.FC = () => {
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowStickers(false)}>
             Close
+          </Button>
+          <Button variant="secondary" onClick={() => window.location.href = "/badges"}>
+            View All Badges
           </Button>
         </DialogFooter>
       </DialogContent>

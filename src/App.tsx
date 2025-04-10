@@ -14,6 +14,7 @@ import Maps from "./pages/Maps";
 import EventLobby from "./pages/EventLobby";
 import MeetupLobby from "./pages/MeetupLobby";
 import NotFound from "./pages/NotFound";
+import BadgesPage from "./pages/BadgesPage";
 import { LevelUpProvider } from "./contexts/LevelUpContext";
 import ProfileStickers from "./components/ProfileStickers";
 
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Maps />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/badges" 
+              element={
+                <ProtectedRoute>
+                  <BadgesPage />
                 </ProtectedRoute>
               } 
             />
