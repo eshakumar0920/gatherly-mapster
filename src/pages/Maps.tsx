@@ -4,7 +4,7 @@ import { Search, List, Layers, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import MapView from "@/components/MapView";
+import GoogleMapView from "@/components/GoogleMapView";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
@@ -185,14 +185,14 @@ const Maps = () => {
         </Button>
       </div>
 
-      {/* Map container - explicit height */}
+      {/* Map container */}
       <div className="px-4 flex-1 pb-20 min-h-[400px]">
         <div className="w-full h-full">
           {isLoading ? (
             <Skeleton className="w-full h-full rounded-lg" />
           ) : (
             <div className="w-full h-full">
-              <MapView locations={filteredLocations} />
+              <GoogleMapView locations={filteredLocations} />
             </div>
           )}
         </div>
