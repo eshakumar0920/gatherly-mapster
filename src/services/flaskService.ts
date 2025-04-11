@@ -73,6 +73,38 @@ export interface LootBox {
   awarded_for: string;
 }
 
+// New types for rewards system
+export interface UserReward {
+  id: number;
+  reward_id: number;
+  name: string;
+  description: string;
+  image_url: string;
+  tier: string;
+  category: string;
+  theme: string;
+  is_rare: boolean;
+  is_equipped: boolean;
+  acquired_at: string;
+  loot_box_id: number;
+}
+
+export interface RewardType {
+  id: number;
+  name: string;
+  description: string;
+  image_url: string;
+  tier: string;
+  category: string;
+  theme: string;
+  is_rare: boolean;
+}
+
+export interface CategoryTheme {
+  categories: string[];
+  themes: string[];
+}
+
 // Original event service
 export function useEventService() {
   const { toast } = useToast();
@@ -381,5 +413,113 @@ export function useLevelingService() {
     getUserLootboxes,
     openLootbox,
     startNewSemester
+  };
+}
+
+// New rewards service
+export function useRewardsService() {
+  const { toast } = useToast();
+  const { handleApiError } = useApiErrorHandling();
+  
+  // Get user rewards
+  const getUserRewards = useCallback(async (userId: number): Promise<UserReward[]> => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/users/${userId}/rewards`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleApiError(errorData.error || 'Failed to fetch user rewards');
+        return [];
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user rewards:', error);
+      handleApiError('Network error when fetching user rewards');
+      return [];
+    }
+  }, [handleApiError]);
+  
+  // Get all reward types
+  const getRewardTypes = useCallback(async (params?: { tier?: number; category?: string; theme?: string }): Promise<RewardType[]> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.tier) queryParams.append('tier', params.tier.toString());
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.theme) queryParams.append('theme', params.theme);
+      
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await fetch(`http://localhost:5000/api/reward-types${queryString}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleApiError(errorData.error || 'Failed to fetch reward types');
+        return [];
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching reward types:', error);
+      handleApiError('Network error when fetching reward types');
+      return [];
+    }
+  }, [handleApiError]);
+  
+  // Equip a reward
+  const equipReward = useCallback(async (userId: number, rewardId: number): Promise<boolean> => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/users/${userId}/rewards/${rewardId}/equip`, 
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleApiError(errorData.error || 'Failed to equip reward');
+        return false;
+      }
+      
+      toast({
+        title: "Reward Equipped",
+        description: "You've successfully equipped the reward!",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error equipping reward:', error);
+      handleApiError('Network error when equipping reward');
+      return false;
+    }
+  }, [toast, handleApiError]);
+  
+  // Get categories and themes
+  const getCategoriesAndThemes = useCallback(async (): Promise<CategoryTheme> => {
+    try {
+      const response = await fetch('http://localhost:5000/api/categories');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleApiError(errorData.error || 'Failed to fetch categories and themes');
+        return { categories: [], themes: [] };
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching categories and themes:', error);
+      handleApiError('Network error when fetching categories and themes');
+      return { categories: [], themes: [] };
+    }
+  }, [handleApiError]);
+  
+  return {
+    getUserRewards,
+    getRewardTypes,
+    equipReward,
+    getCategoriesAndThemes
   };
 }

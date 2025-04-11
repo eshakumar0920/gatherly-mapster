@@ -3,15 +3,19 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUserStore } from '@/services/meetupService';
 import LootBoxPopup from '@/components/LootBoxPopup';
 import { useLevelingService } from '@/services/flaskService';
+import { useRewardsService } from '@/services/flaskService';
 
 interface LevelUpContextType {
   showStickers: boolean;
   setShowStickers: (show: boolean) => void;
   selectedSticker: number | null;
   setSelectedSticker: (sticker: number | null) => void;
-  // New fields for the leveling system
+  // Fields for the leveling system
   refreshUserProgress: () => void;
   isLoadingProgress: boolean;
+  // New fields for the rewards system
+  refreshUserRewards: () => void;
+  isLoadingRewards: boolean;
 }
 
 const LevelUpContext = createContext<LevelUpContextType | undefined>(undefined);
@@ -23,8 +27,10 @@ export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [showStickers, setShowStickers] = useState(false);
   const [userId, setUserId] = useState<number | null>(null); // Will be set from auth system when available
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [isLoadingRewards, setIsLoadingRewards] = useState(false);
   
   const { getUserProgress } = useLevelingService();
+  const { getUserRewards } = useRewardsService();
   
   // Function to refresh user progress data
   const refreshUserProgress = async () => {
@@ -51,6 +57,23 @@ export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.error("Failed to refresh user progress:", error);
     } finally {
       setIsLoadingProgress(false);
+    }
+  };
+  
+  // Function to refresh user rewards data
+  const refreshUserRewards = async () => {
+    if (!userId) return;
+    
+    setIsLoadingRewards(true);
+    try {
+      const rewards = await getUserRewards(userId);
+      if (rewards) {
+        console.log("User rewards refreshed:", rewards);
+      }
+    } catch (error) {
+      console.error("Failed to refresh user rewards:", error);
+    } finally {
+      setIsLoadingRewards(false);
     }
   };
   
@@ -84,7 +107,9 @@ export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ child
         selectedSticker: userSelectedSticker, 
         setSelectedSticker: updateSelectedSticker,
         refreshUserProgress,
-        isLoadingProgress
+        isLoadingProgress,
+        refreshUserRewards,
+        isLoadingRewards
       }}
     >
       {children}
