@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
@@ -9,6 +10,21 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   status: number;
+}
+
+export interface Event {
+  id: number;
+  title: string;
+  description: string;
+  location: string;
+  event_date: string;
+  creator_id: number;
+  participants_count?: number;
+}
+
+export interface Participant {
+  user_id: number;
+  joined_at: string;
 }
 
 // Generic function to handle API requests
@@ -53,6 +69,39 @@ async function fetchFromApi<T>(
   }
 }
 
+// API endpoints for events
+export const eventsApi = {
+  // Get all events
+  getAllEvents: (params?: { location?: string; date?: string; q?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.location) queryParams.append('location', params.location);
+    if (params?.date) queryParams.append('date', params.date);
+    if (params?.q) queryParams.append('q', params.q);
+    
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return fetchFromApi<Event[]>(`/events${queryString}`);
+  },
+  
+  // Get a single event by ID
+  getEventById: (id: number) => fetchFromApi<Event>(`/events/${id}`),
+  
+  // Create a new event
+  createEvent: (eventData: Omit<Event, 'id'>) => 
+    fetchFromApi<{ id: number; message: string }>('/events', 'POST', eventData),
+  
+  // Join an event
+  joinEvent: (eventId: number, userId: number) => 
+    fetchFromApi<{ message: string }>(`/events/${eventId}/join`, 'POST', { user_id: userId }),
+  
+  // Leave an event
+  leaveEvent: (eventId: number, userId: number) => 
+    fetchFromApi<{ message: string }>(`/events/${eventId}/leave`, 'POST', { user_id: userId }),
+  
+  // Get event participants
+  getEventParticipants: (eventId: number) => 
+    fetchFromApi<Participant[]>(`/events/${eventId}/participants`)
+};
+
 // API endpoints for meetups
 export const meetupsApi = {
   // Get all meetups
@@ -71,17 +120,6 @@ export const meetupsApi = {
   // Check in to a meetup
   checkInToMeetup: (meetupId: string, userData: any) => 
     fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
-};
-
-// API endpoints for events
-export const eventsApi = {
-  // Get all events
-  getAllEvents: () => fetchFromApi<any[]>('/events'),
-  
-  // Get a single event by ID
-  getEventById: (id: string) => fetchFromApi<any>(`/events/${id}`),
-  
-  // Other event-related API calls
 };
 
 // API endpoints for user-related operations
