@@ -10,7 +10,7 @@ import { categories } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import { useEventService } from "@/services/flaskService";
 import { Event as EventCardType } from "@/components/EventCard";
-import { FlaskEvent } from "@/services/flaskService";
+import { FlaskEvent } from "@/services/types/flaskTypes";
 
 const Events = () => {
   const [filter, setFilter] = useState("all");
