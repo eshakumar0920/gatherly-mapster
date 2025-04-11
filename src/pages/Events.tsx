@@ -36,11 +36,11 @@ const Events = () => {
           id: String(event.id),
           title: event.title,
           description: event.description,
-          image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80", // Default image
+          image: event.image_url || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80", // Default image
           date: new Date(event.event_date).toLocaleDateString(),
           time: new Date(event.event_date).toLocaleTimeString(),
           location: event.location,
-          category: "Event" // You might want to add categories to your Flask API
+          category: event.category || "Event" // Default category if not provided
         }));
         
         setEvents(mappedEvents);
@@ -48,7 +48,7 @@ const Events = () => {
         console.error("Error fetching events:", error);
         toast({
           title: "Error",
-          description: "Failed to load events. Please try again later.",
+          description: "Failed to load events. Using mock data instead.",
           variant: "destructive"
         });
       } finally {

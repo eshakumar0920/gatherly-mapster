@@ -12,6 +12,8 @@ export interface FlaskEvent {
   event_date: string;
   creator_id: number;
   participants_count?: number;
+  category?: string;
+  image_url?: string;
 }
 
 // Define types for meetups
@@ -112,26 +114,38 @@ export function useEventService() {
   
   // Fetch all events with error handling
   const fetchEvents = useCallback(async (params?: { location?: string; date?: string; q?: string }): Promise<FlaskEvent[]> => {
-    const response = await eventsApi.getAllEvents(params);
-    
-    if (response.error) {
-      handleApiError(response.error);
+    try {
+      const response = await eventsApi.getAllEvents(params);
+      
+      if (response.error) {
+        handleApiError(response.error);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error("Failed to fetch events:", error);
+      handleApiError("An unexpected error occurred while fetching events");
       return [];
     }
-    
-    return response.data || [];
   }, [handleApiError]);
   
   // Fetch a single event by ID
   const fetchEventById = useCallback(async (eventId: number): Promise<FlaskEvent | null> => {
-    const response = await eventsApi.getEventById(eventId);
-    
-    if (response.error) {
-      handleApiError(response.error);
+    try {
+      const response = await eventsApi.getEventById(eventId);
+      
+      if (response.error) {
+        handleApiError(response.error);
+        return null;
+      }
+      
+      return response.data || null;
+    } catch (error) {
+      console.error("Failed to fetch event details:", error);
+      handleApiError("An unexpected error occurred while fetching event details");
       return null;
     }
-    
-    return response.data || null;
   }, [handleApiError]);
   
   // Join an event
@@ -283,15 +297,42 @@ export function useLevelingService() {
   // Get user progress
   const getUserProgress = useCallback(async (userId: number): Promise<UserProgress | null> => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userId}/progress`);
+      // Use mock data instead of making the actual API call
+      console.log("Using mock user progress data for user", userId);
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        handleApiError(errorData.error || 'Failed to fetch user progress');
-        return null;
-      }
+      // Mock user progress
+      const mockProgress: UserProgress = {
+        user_id: userId,
+        username: "User" + userId,
+        current_level: 5,
+        current_xp: 1250,
+        total_xp_earned: 1250,
+        current_tier: "Bronze",
+        active_weeks_streak: 3,
+        activity_bonus: "1.15x",
+        next_level: 6,
+        xp_for_next_level: 750,
+        xp_needed_for_level: 2000,
+        progress_percent: 62,
+        max_level_reached: false,
+        current_semester: "Fall 2025",
+        recent_activities: [
+          {
+            timestamp: new Date().toISOString(),
+            activity_type: "event_join",
+            xp_earned: 50,
+            description: "Joined an event"
+          },
+          {
+            timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+            activity_type: "meetup_hosted",
+            xp_earned: 100,
+            description: "Hosted a meetup"
+          }
+        ]
+      };
       
-      return await response.json();
+      return mockProgress;
     } catch (error) {
       console.error('Error fetching user progress:', error);
       handleApiError('Network error when fetching user progress');
@@ -424,15 +465,42 @@ export function useRewardsService() {
   // Get user rewards
   const getUserRewards = useCallback(async (userId: number): Promise<UserReward[]> => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userId}/rewards`);
+      // Use mock data instead of making the actual API call
+      console.log("Using mock user rewards data for user", userId);
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        handleApiError(errorData.error || 'Failed to fetch user rewards');
-        return [];
-      }
+      // Mock user rewards
+      const mockRewards: UserReward[] = [
+        {
+          id: 1,
+          reward_id: 101,
+          name: "Bronze Badge",
+          description: "A shiny bronze badge for your profile",
+          image_url: "https://via.placeholder.com/150/cd7f32",
+          tier: "common",
+          category: "Badge",
+          theme: "Achievement",
+          is_rare: false,
+          is_equipped: true,
+          acquired_at: new Date().toISOString(),
+          loot_box_id: 1
+        },
+        {
+          id: 2,
+          reward_id: 102,
+          name: "Comet Mascot",
+          description: "UTD's mascot sticker",
+          image_url: "https://via.placeholder.com/150/e87500",
+          tier: "uncommon",
+          category: "Sticker",
+          theme: "School Spirit",
+          is_rare: false,
+          is_equipped: false,
+          acquired_at: new Date(Date.now() - 604800000).toISOString(), // 1 week ago
+          loot_box_id: 2
+        }
+      ];
       
-      return await response.json();
+      return mockRewards;
     } catch (error) {
       console.error('Error fetching user rewards:', error);
       handleApiError('Network error when fetching user rewards');
