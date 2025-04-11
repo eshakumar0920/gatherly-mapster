@@ -1,6 +1,8 @@
-import { eventsApi, Event as FlaskEvent, useApiErrorHandling } from './api';
+
+import { eventsApi } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
+import { useApiErrorHandling } from './api';
 
 // Define types for events that match your Flask backend
 export interface FlaskEvent {
@@ -11,6 +13,20 @@ export interface FlaskEvent {
   event_date: string;
   creator_id: number;
   participants_count?: number;
+}
+
+// Define types for meetups
+export interface FlaskMeetup {
+  id: string;
+  title: string;
+  description: string;
+  dateTime: string;
+  location: string;
+  points: number;
+  createdBy: string;
+  creatorAvatar?: string;
+  lobbySize: number;
+  attendees?: string[];
 }
 
 export function useEventService() {
@@ -27,7 +43,7 @@ export function useEventService() {
     }
     
     return response.data || [];
-  }, []);
+  }, [handleApiError]);
   
   // Fetch a single event by ID
   const fetchEventById = useCallback(async (eventId: number): Promise<FlaskEvent | null> => {
@@ -39,7 +55,7 @@ export function useEventService() {
     }
     
     return response.data || null;
-  }, []);
+  }, [handleApiError]);
   
   // Join an event
   const joinEvent = useCallback(async (eventId: number, userId: number): Promise<boolean> => {
@@ -56,7 +72,7 @@ export function useEventService() {
     });
     
     return true;
-  }, [toast]);
+  }, [toast, handleApiError]);
   
   // Leave an event
   const leaveEvent = useCallback(async (eventId: number, userId: number): Promise<boolean> => {
@@ -73,7 +89,7 @@ export function useEventService() {
     });
     
     return true;
-  }, [toast]);
+  }, [toast, handleApiError]);
   
   // Get event participants
   const getEventParticipants = useCallback(async (eventId: number) => {
@@ -85,7 +101,7 @@ export function useEventService() {
     }
     
     return response.data || [];
-  }, []);
+  }, [handleApiError]);
 
   // Create a new event
   const createEvent = useCallback(async (eventData: Omit<FlaskEvent, 'id'>): Promise<number | null> => {
@@ -102,7 +118,7 @@ export function useEventService() {
     });
     
     return response.data?.id || null;
-  }, [toast]);
+  }, [toast, handleApiError]);
   
   return {
     fetchEvents,
@@ -118,38 +134,25 @@ export function useMeetupService() {
   const { toast } = useToast();
   const { handleApiError } = useApiErrorHandling();
   
+  // Mock implementation for meetup service since there's no actual meetupsApi
   // Fetch all meetups with error handling
   const fetchMeetups = useCallback(async (): Promise<FlaskMeetup[]> => {
-    const response = await meetupsApi.getAllMeetups();
-    
-    if (response.error) {
-      handleApiError(response.error);
-      return [];
-    }
-    
-    return response.data || [];
+    // For now this is a mock implementation
+    console.log("fetchMeetups called - this is a mock implementation");
+    return [];
   }, []);
   
   // Fetch a single meetup by ID
   const fetchMeetupById = useCallback(async (meetupId: string): Promise<FlaskMeetup | null> => {
-    const response = await meetupsApi.getMeetupById(meetupId);
-    
-    if (response.error) {
-      handleApiError(response.error);
-      return null;
-    }
-    
-    return response.data || null;
+    // For now this is a mock implementation
+    console.log(`fetchMeetupById called with id: ${meetupId} - this is a mock implementation`);
+    return null;
   }, []);
   
   // Join a meetup lobby
   const joinMeetupLobby = useCallback(async (meetupId: string): Promise<boolean> => {
-    const response = await meetupsApi.joinMeetupLobby(meetupId, {});
-    
-    if (response.error) {
-      handleApiError(response.error);
-      return false;
-    }
+    // For now this is a mock implementation
+    console.log(`joinMeetupLobby called with id: ${meetupId} - this is a mock implementation`);
     
     toast({
       title: "Joined lobby",
@@ -161,12 +164,8 @@ export function useMeetupService() {
   
   // Check in to a meetup
   const checkInToMeetup = useCallback(async (meetupId: string): Promise<boolean> => {
-    const response = await meetupsApi.checkInToMeetup(meetupId, {});
-    
-    if (response.error) {
-      handleApiError(response.error);
-      return false;
-    }
+    // For now this is a mock implementation
+    console.log(`checkInToMeetup called with id: ${meetupId} - this is a mock implementation`);
     
     toast({
       title: "Check-in successful!",
@@ -187,16 +186,11 @@ export function useMeetupService() {
 export function useUserService() {
   const { handleApiError } = useApiErrorHandling();
   
-  // Get user points
+  // Mock implementation for user service 
   const getUserPoints = useCallback(async (userId: string) => {
-    const response = await userApi.getUserPoints(userId);
-    
-    if (response.error) {
-      handleApiError(response.error);
-      return 0;
-    }
-    
-    return response.data || 0;
+    // For now this is a mock implementation
+    console.log(`getUserPoints called with userId: ${userId} - this is a mock implementation`);
+    return 0;
   }, []);
   
   return {
