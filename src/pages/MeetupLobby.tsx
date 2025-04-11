@@ -1,5 +1,3 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
@@ -15,6 +13,8 @@ import { useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useMeetupService, FlaskMeetup } from "@/services/flaskService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EventRow {
   event_id: number;
@@ -62,6 +62,7 @@ const MeetupLobby = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const { attendMeetup, joinMeetupLobby, joinedLobbies, attendedMeetups } = useUserStore();
+  const { fetchMeetupById, checkInToMeetup } = useMeetupService();
   
   const mockAttendees: Attendee[] = [
     { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -73,10 +74,20 @@ const MeetupLobby = () => {
     const fetchMeetupData = async () => {
       setLoading(true);
       try {
+        const flaskMeetup = await fetchMeetupById(meetupId as string);
+        
+        if (flaskMeetup) {
+          setMeetup(flaskMeetup as unknown as Meetup);
+          setIsJoinedLobby(joinedLobbies?.includes(flaskMeetup.id));
+          setIsCheckedIn(attendedMeetups?.includes(flaskMeetup.id));
+          setLoading(false);
+          return;
+        }
+        
         const { data: meetupData, error } = await supabase
-          .from('events')  // Using 'events' table instead of 'meetups'
+          .from('events')
           .select('*')
-          .eq('event_id', parseInt(meetupId as string))  // Using event_id instead of meetup_id
+          .eq('event_id', parseInt(meetupId as string))
           .single();
 
         if (error) {
@@ -92,7 +103,7 @@ const MeetupLobby = () => {
 
         if (meetupData) {
           const formattedMeetup: Meetup = {
-            id: meetupData.event_id.toString(),  // Using event_id instead of meetup_id
+            id: meetupData.event_id.toString(),
             title: meetupData.title,
             description: meetupData.description || "No description available",
             dateTime: new Date(meetupData.event_time).toLocaleString(),
@@ -121,7 +132,7 @@ const MeetupLobby = () => {
     };
 
     fetchMeetupData();
-  }, [meetupId, joinedLobbies, attendedMeetups, toast]);
+  }, [meetupId, joinedLobbies, attendedMeetups, toast, fetchMeetupById]);
 
   const filteredAttendees = mockAttendees.filter(attendee => {
     if (attendeeView === "all") return true;
@@ -143,16 +154,22 @@ const MeetupLobby = () => {
     setIsQrScannerOpen(true);
   };
   
-  const handleQrScanSuccess = (data: string) => {
+  const handleQrScanSuccess = async (data: string) => {
     if (meetup) {
       if (data.includes(meetupId as string)) {
-        attendMeetup(meetup.id, meetup.points);
-        setIsCheckedIn(true);
-        toast({
-          title: "Meetup attendance confirmed!",
-          description: `You've successfully checked in and earned ${meetup.points} points!`,
-          variant: "default",
-        });
+        const success = await checkInToMeetup(meetup.id);
+        
+        if (success) {
+          setIsCheckedIn(true);
+        } else {
+          attendMeetup(meetup.id, meetup.points);
+          setIsCheckedIn(true);
+          toast({
+            title: "Meetup attendance confirmed!",
+            description: `You've successfully checked in and earned ${meetup.points} points!`,
+            variant: "default",
+          });
+        }
       } else {
         toast({
           title: "Invalid QR Code",

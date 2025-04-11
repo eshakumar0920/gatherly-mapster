@@ -89,6 +89,59 @@ export type Database = {
           },
         ]
       }
+      levels: {
+        Row: {
+          description: string | null
+          level_number: number
+          title: string | null
+          xp_threshold: number
+        }
+        Insert: {
+          description?: string | null
+          level_number: number
+          title?: string | null
+          xp_threshold: number
+        }
+        Update: {
+          description?: string | null
+          level_number?: number
+          title?: string | null
+          xp_threshold?: number
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          is_claimed: boolean | null
+          level_required: number | null
+          reward_description: string | null
+          reward_id: number
+          reward_name: string
+        }
+        Insert: {
+          is_claimed?: boolean | null
+          level_required?: number | null
+          reward_description?: string | null
+          reward_id?: number
+          reward_name: string
+        }
+        Update: {
+          is_claimed?: boolean | null
+          level_required?: number | null
+          reward_description?: string | null
+          reward_id?: number
+          reward_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rewards_level_required_fkey"
+            columns: ["level_required"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["level_number"]
+          },
+        ]
+      }
       rsvps: {
         Row: {
           event_id: number
@@ -142,6 +195,74 @@ export type Database = {
           tag_id?: number
         }
         Relationships: []
+      }
+      user_activities: {
+        Row: {
+          activity_id: number
+          activity_type: string
+          description: string | null
+          timestamp: string | null
+          user_id: number | null
+          xp_awarded: number
+        }
+        Insert: {
+          activity_id?: number
+          activity_type: string
+          description?: string | null
+          timestamp?: string | null
+          user_id?: number | null
+          xp_awarded: number
+        }
+        Update: {
+          activity_id?: number
+          activity_type?: string
+          description?: string | null
+          timestamp?: string | null
+          user_id?: number | null
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_rewards: {
+        Row: {
+          claimed_at: string | null
+          reward_id: number
+          user_id: number
+        }
+        Insert: {
+          claimed_at?: string | null
+          reward_id: number
+          user_id: number
+        }
+        Update: {
+          claimed_at?: string | null
+          reward_id?: number
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["reward_id"]
+          },
+          {
+            foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       users: {
         Row: {
