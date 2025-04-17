@@ -278,7 +278,7 @@ export const getMeetupDetails = async (meetupId: string) => {
       events_box(box_data),
       event_metadata(meta_key, meta_value)
     `)
-    .eq('event_id', meetupId)
+    .eq('event_id', parseInt(meetupId))
     .single();
 
   if (eventError) {
