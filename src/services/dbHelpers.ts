@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Function to safely check if a table exists in the database using a raw SQL RPC call
+// Function to safely check if a table exists in the database using a Supabase RPC call
 export const checkTableExists = async (tableName: string): Promise<boolean> => {
   try {
     // Using Supabase RPC function to check if table exists
