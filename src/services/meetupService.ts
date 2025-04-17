@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -281,10 +282,18 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
     
-    // Query using the correct column names from the schema
+    // Query the events table with correct column names
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('event_id, title, description, location, event_date, creator_id, created_at, xp_reward')
+      .select(`
+        event_id, 
+        title, 
+        description, 
+        location, 
+        event_time, 
+        creator_id, 
+        created_at
+      `)
       .eq('event_id', eventId)
       .single();
 
@@ -294,31 +303,40 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
 
-    // Get participants data separately to avoid recursive type issues
-    const { data: participantsData } = await supabase
-      .from('participants')
-      .select('user_id, joined_at, attendance_status')
+    // Get creator details from users table with correct column names
+    // The users table likely has name and not username
+    const { data: creatorData, error: creatorError } = await supabase
+      .from('users')
+      .select('name, email')  // Adjust based on actual columns in users table
+      .eq('user_id', eventData.creator_id)
+      .single();
+
+    if (creatorError) {
+      console.error('Error fetching creator details:', creatorError);
+    }
+
+    // Get participants data - using rsvps table instead of a non-existent participants table
+    const { data: rsvpData, error: rsvpError } = await supabase
+      .from('rsvps')
+      .select('user_id, status')
       .eq('event_id', eventId);
 
-    // Get creator details from users table with correct column names
-    const { data: creatorData } = await supabase
-      .from('users')
-      .select('username, profile_picture')
-      .eq('id', eventData.creator_id)
-      .single();
+    if (rsvpError) {
+      console.error('Error fetching RSVPs:', rsvpError);
+    }
 
     // Map Supabase data to Meetup type
     return {
       id: eventData.event_id.toString(),
       title: eventData.title,
       description: eventData.description || '',
-      dateTime: eventData.event_date,
+      dateTime: eventData.event_time, // Using event_time instead of event_date
       location: eventData.location,
-      points: eventData.xp_reward || 3, // Use xp_reward from database or default to 3
-      createdBy: creatorData?.username || 'Unknown',
-      creatorAvatar: creatorData?.profile_picture || null,
+      points: 3, // Default points since xp_reward might not exist
+      createdBy: creatorData?.name || 'Unknown',
+      creatorAvatar: null, // No profile picture in the schema
       lobbySize: 5, // Default lobby size
-      attendees: participantsData?.map(p => p.user_id.toString()) || []
+      attendees: rsvpData?.filter(r => r.status === 'going').map(p => p.user_id.toString()) || []
     } as Meetup;
   } catch (error) {
     console.error('Unexpected error in getMeetupDetails:', error);
