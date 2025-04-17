@@ -281,23 +281,10 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
     
+    // Query using the correct column names from the schema
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select(`
-        id,
-        title,
-        description,
-        location,
-        event_date,
-        creator_id,
-        created_at,
-        xp_reward,
-        participants (
-          user_id,
-          joined_at,
-          attendance_status
-        )
-      `)
+      .select('id, title, description, location, event_date, creator_id, created_at, xp_reward')
       .eq('id', eventId)
       .single();
 
@@ -307,7 +294,13 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
 
-    // Get creator details from users table
+    // Get participants data separately to avoid recursive type issues
+    const { data: participantsData } = await supabase
+      .from('participants')
+      .select('user_id, joined_at, attendance_status')
+      .eq('event_id', eventId);
+
+    // Get creator details from users table with correct column names
     const { data: creatorData } = await supabase
       .from('users')
       .select('username, profile_picture')
@@ -325,7 +318,7 @@ export const getMeetupDetails = async (meetupId: string) => {
       createdBy: creatorData?.username || 'Unknown',
       creatorAvatar: creatorData?.profile_picture || null,
       lobbySize: 5, // Default lobby size
-      attendees: eventData.participants?.map(p => p.user_id.toString()) || []
+      attendees: participantsData?.map(p => p.user_id.toString()) || []
     } as Meetup;
   } catch (error) {
     console.error('Unexpected error in getMeetupDetails:', error);
