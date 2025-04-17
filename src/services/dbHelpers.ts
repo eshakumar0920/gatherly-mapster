@@ -1,21 +1,21 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Function to safely check if a table exists in the database
+// Function to safely check if a table exists in the database using a raw SQL query
 export const checkTableExists = async (tableName: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_name', tableName)
-      .eq('table_schema', 'public');
+    // Using raw SQL query instead of ORM approach to check if table exists
+    const { data, error } = await supabase.rpc(
+      'check_table_exists', 
+      { table_name: tableName }
+    );
       
     if (error) {
       console.error(`Error checking if table ${tableName} exists:`, error);
       return false;
     }
     
-    return data && data.length > 0;
+    return data === true;
   } catch (error) {
     console.error(`Error checking if table ${tableName} exists:`, error);
     return false;
@@ -25,24 +25,26 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
 // Function to get event participants safely
 export const getEventParticipants = async (eventId: number): Promise<string[]> => {
   try {
-    // First check if participants table exists
-    const tableExists = await checkTableExists('participants');
+    // Try to fetch participants via Edge Function
+    const response = await fetch(`https://lzcpjxkttpfcgcwonrfc.supabase.co/functions/v1/get_participants?eventId=${eventId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabase.auth.getSession()}`
+      }
+    });
     
-    if (!tableExists) {
-      console.log('Participants table does not exist');
+    if (!response.ok) {
+      console.error('Error fetching participants from edge function:', await response.text());
       return [];
     }
     
-    // If table exists, attempt to query it
-    const { data, error } = await supabase
-      .rpc('get_participants_for_event', { event_id_param: eventId });
+    const result = await response.json();
     
-    if (error) {
-      console.error('Error getting participants:', error);
-      return [];
+    if (Array.isArray(result.data)) {
+      return result.data.map((p: any) => p.user_id?.toString() || '');
     }
     
-    return (data || []).map(p => p.user_id?.toString() || '');
+    return [];
   } catch (error) {
     console.error('Error in getEventParticipants:', error);
     return [];

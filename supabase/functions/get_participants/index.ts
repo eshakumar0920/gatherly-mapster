@@ -32,16 +32,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Check if participants table exists
-    const { data: tableData, error: tableError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_name', 'participants')
-      .eq('table_schema', 'public');
+    // Check if participants table exists using a raw SQL query
+    const { data: existsData, error: existsError } = await supabase.rpc(
+      'check_table_exists',
+      { table_name: 'participants' }
+    );
     
     let participants = [];
     
-    if (!tableError && tableData && tableData.length > 0) {
+    if (!existsError && existsData === true) {
       // Table exists, get participants
       const { data, error } = await supabase
         .from('participants')

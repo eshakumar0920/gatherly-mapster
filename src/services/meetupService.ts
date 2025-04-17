@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
+import { getEventParticipants } from './dbHelpers';
 
 export interface Meetup {
   id: string;
@@ -281,11 +282,11 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
     
-    // Try to query the events table based on our new schema
+    // Try to query the events table based on our schema
     const { data: eventData, error: eventError } = await supabase
       .from('events')
       .select('*')
-      .eq('id', eventId)
+      .eq('event_id', eventId)
       .single();
 
     if (eventError) {
@@ -298,52 +299,45 @@ export const getMeetupDetails = async (meetupId: string) => {
     let creatorName = 'Unknown';
     let creatorAvatar = undefined;
     
-    if (eventData) {
+    if (eventData && eventData.creator_id) {
       const { data: creatorData, error: creatorError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', eventData.creator_id)
+        .eq('user_id', eventData.creator_id)
         .single();
 
       if (creatorError) {
         console.error('Error fetching creator details:', creatorError);
       } else if (creatorData) {
-        // Use name property instead of username based on the schema
+        // Use name property from users table
         creatorName = creatorData.name || 'Unknown';
-        // profile_picture field does not exist in our database, use null for now
+        // No profile_picture in our schema
         creatorAvatar = null;
       }
     }
 
-    // For participants, we need to check first if the table exists in our schema
-    // Since 'participants' table is not in the Supabase types, we'll fetch using a direct SQL query
+    // Get participants via our helper function
     let attendees: string[] = [];
     
-    try {
-      const { data: participantsData, error: participantsError } = await supabase
-        .rpc('get_event_participants', {
-          event_id_param: eventId
-        });
-  
-      if (!participantsError && participantsData) {
-        attendees = participantsData.map(p => p.user_id?.toString() || '');
+    if (eventData) {
+      try {
+        attendees = await getEventParticipants(eventId);
+      } catch (err) {
+        console.error('Error getting participants:', err);
       }
-    } catch (err) {
-      console.error('Error getting participants:', err);
-      // Silently fail and continue with empty attendees list
     }
 
     // Map Supabase data to Meetup type
     if (eventData) {
       return {
-        id: eventData.id?.toString() || meetupId,
+        id: eventData.event_id?.toString() || meetupId,
         title: eventData.title || 'Untitled Event',
         description: eventData.description || '',
-        // Use event_date instead of event_time based on the schema
-        dateTime: eventData.event_date || new Date().toISOString(),
+        // Use event_time field as dateTime
+        dateTime: eventData.event_time || new Date().toISOString(),
         location: eventData.location || 'TBD',
-        // Use xp_reward as points, or default to 3
-        points: eventData.xp_reward || 3,
+        // Default to 3 points if xp_reward doesn't exist
+        points: 3,
         createdBy: creatorName,
         creatorAvatar: creatorAvatar,
         lobbySize: 5, // Default lobby size
