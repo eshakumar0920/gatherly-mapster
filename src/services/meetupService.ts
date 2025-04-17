@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -285,17 +284,7 @@ export const getMeetupDetails = async (meetupId: string) => {
     // Query the events table with correct column names
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select(`
-        event_id,
-        title,
-        description,
-        location,
-        event_time,
-        creator_id,
-        created_at,
-        category,
-        image
-      `)
+      .select('event_id, title, description, location, event_time, creator_id')
       .eq('event_id', eventId)
       .single();
 
@@ -320,8 +309,7 @@ export const getMeetupDetails = async (meetupId: string) => {
     const { data: rsvpData, error: rsvpError } = await supabase
       .from('rsvps')
       .select('user_id')
-      .eq('event_id', eventId)
-      .eq('status', 'going');
+      .eq('event_id', eventId);
 
     if (rsvpError) {
       console.error('Error fetching RSVPs:', rsvpError);
@@ -336,7 +324,7 @@ export const getMeetupDetails = async (meetupId: string) => {
       location: eventData.location,
       points: 3,
       createdBy: creatorData?.name || 'Unknown',
-      creatorAvatar: eventData.image,
+      creatorAvatar: undefined,
       lobbySize: 5,
       attendees: rsvpData?.map(p => p.user_id.toString()) || []
     } as Meetup;
