@@ -48,55 +48,30 @@ export const getEventParticipants = async (eventId: number): Promise<string[]> =
 // Function to create a check_table_exists function in the database if it doesn't exist
 export const createCheckTableExistsFunction = async (): Promise<boolean> => {
   try {
+    // First, check if the function already exists
     const { error } = await supabase.rpc('check_table_exists', { table_name: 'users' });
     
-    // If the function doesn't exist, create it
+    // If the function doesn't exist, we'll get an error
     if (error && error.message.includes('function does not exist')) {
-      const { error: createError } = await supabase.rpc('execute_sql', {
-        sql_query: `
-          CREATE OR REPLACE FUNCTION public.check_table_exists(table_name text)
-          RETURNS boolean
-          LANGUAGE plpgsql
-          SECURITY DEFINER
-          AS $function$
-          DECLARE
-            table_exists BOOLEAN;
-          BEGIN
-            SELECT EXISTS (
-              SELECT FROM information_schema.tables 
-              WHERE table_schema = 'public'
-              AND table_name = $1
-            ) INTO table_exists;
-            
-            RETURN table_exists;
-          END;
-          $function$
-        `
-      });
-      
-      if (createError) {
-        console.error('Failed to create check_table_exists function:', createError);
-        return false;
-      }
-      
-      console.log('Successfully created check_table_exists function');
-      return true;
+      console.error('The check_table_exists function does not exist in the database.');
+      // We'd need to create it using SQL, but this requires admin privileges
+      // This would typically be done during database initialization
+      return false;
     }
     
-    return true;
+    return !error;
   } catch (error) {
     console.error('Error in createCheckTableExistsFunction:', error);
     return false;
   }
 };
 
-// Update the Edge Function to work with the new schema
-// This needs to be called on app initialization
+// Initialize database
 export const initializeDatabase = async (): Promise<void> => {
   // First ensure the check_table_exists function exists
   await createCheckTableExistsFunction();
   
-  // Check if other essential tables exist and handle accordingly
+  // Check if essential tables exist and handle accordingly
   const usersTableExists = await checkTableExists('users');
   const eventsTableExists = await checkTableExists('events');
   const participantsTableExists = await checkTableExists('participants');

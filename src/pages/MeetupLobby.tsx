@@ -87,7 +87,7 @@ const MeetupLobby = () => {
         const { data: meetupData, error } = await supabase
           .from('events')
           .select('*')
-          .eq('event_id', parseInt(meetupId as string))
+          .eq('id', parseInt(meetupId as string))
           .single();
 
         if (error) {
@@ -103,14 +103,14 @@ const MeetupLobby = () => {
 
         if (meetupData) {
           const formattedMeetup: Meetup = {
-            id: meetupData.event_id.toString(),
+            id: meetupData.id.toString(),
             title: meetupData.title,
             description: meetupData.description || "No description available",
-            dateTime: new Date(meetupData.event_time).toLocaleString(),
+            dateTime: new Date(meetupData.event_date).toLocaleString(),
             location: meetupData.location,
-            points: 3,
+            points: meetupData.xp_reward || 3,
             createdBy: "Student",
-            creatorAvatar: meetupData.image,
+            creatorAvatar: undefined,
             lobbySize: 5,
             attendees: []
           };

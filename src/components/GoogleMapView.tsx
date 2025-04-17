@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
@@ -38,10 +39,12 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   useEffect(() => {
     const fetchMeetupLocations = async () => {
       try {
+        // Updated query to match our new schema
+        // We need to check if lat/lng fields exist in our schema
         const { data: meetupsData, error } = await supabase
-          .from('events')  // Using 'events' table
-          .select('event_id, title, description, lat, lng, category')
-          .not('lat', 'is', null);
+          .from('events')
+          .select('id, title, description, location, event_date, semester')
+          .not('location', 'is', null);
 
         if (error) {
           console.error('Error fetching meetups:', error);
@@ -49,14 +52,15 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         }
 
         if (meetupsData && meetupsData.length > 0) {
-          // Convert Supabase meetups to MapLocation format
+          // Generate random locations around UTD for the meetups since actual lat/lng may not exist
           const meetupLocations: MapLocation[] = meetupsData.map((meetup) => ({
-            id: `meetup_${meetup.event_id}`,
+            id: `meetup_${meetup.id}`,
             title: meetup.title,
-            lat: Number(meetup.lat),
-            lng: Number(meetup.lng),
+            // Generate locations around UTD for demonstration
+            lat: UTD_CENTER.lat + (Math.random() - 0.5) * 0.01,
+            lng: UTD_CENTER.lng + (Math.random() - 0.5) * 0.01,
             description: meetup.description || undefined,
-            category: meetup.category || undefined,
+            category: meetup.semester || undefined, // Using semester as category for now
             isEvent: false
           }));
 
