@@ -9,6 +9,18 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alembic_version: {
+        Row: {
+          version_num: string
+        }
+        Insert: {
+          version_num: string
+        }
+        Update: {
+          version_num?: string
+        }
+        Relationships: []
+      }
       event_metadata: {
         Row: {
           created_at: string | null
@@ -31,15 +43,7 @@ export type Database = {
           meta_key?: string
           meta_value?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "event_metadata_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["event_id"]
-          },
-        ]
+        Relationships: []
       }
       event_tags: {
         Row: {
@@ -56,13 +60,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "event_tags_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["event_id"]
-          },
-          {
             foreignKeyName: "meetup_tags_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
@@ -73,51 +70,48 @@ export type Database = {
       }
       events: {
         Row: {
-          category: string | null
-          created_at: string | null
+          created_at: string
           creator_id: number
           description: string | null
-          event_id: number
-          event_time: string
-          image: string | null
-          lat: number | null
-          lng: number | null
+          event_date: string
+          id: number
           location: string
+          organizer_xp_reward: number | null
+          semester: string | null
           title: string
+          xp_reward: number | null
         }
         Insert: {
-          category?: string | null
-          created_at?: string | null
+          created_at: string
           creator_id: number
           description?: string | null
-          event_id?: number
-          event_time: string
-          image?: string | null
-          lat?: number | null
-          lng?: number | null
+          event_date: string
+          id?: number
           location: string
+          organizer_xp_reward?: number | null
+          semester?: string | null
           title: string
+          xp_reward?: number | null
         }
         Update: {
-          category?: string | null
-          created_at?: string | null
+          created_at?: string
           creator_id?: number
           description?: string | null
-          event_id?: number
-          event_time?: string
-          image?: string | null
-          lat?: number | null
-          lng?: number | null
+          event_date?: string
+          id?: number
           location?: string
+          organizer_xp_reward?: number | null
+          semester?: string | null
           title?: string
+          xp_reward?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "meetups_creator_id_fkey"
+            foreignKeyName: "events_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -140,34 +134,327 @@ export type Database = {
           event_id?: number | null
           id?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "events_box_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["event_id"]
-          },
-        ]
+        Relationships: []
       }
       levels: {
         Row: {
           description: string | null
+          id: number
           level_number: number
-          title: string | null
-          xp_threshold: number
+          perks: string | null
+          tier: number
+          title: string
+          total_xp: number
         }
         Insert: {
           description?: string | null
+          id?: number
           level_number: number
-          title?: string | null
-          xp_threshold: number
+          perks?: string | null
+          tier: number
+          title: string
+          total_xp: number
         }
         Update: {
           description?: string | null
+          id?: number
           level_number?: number
-          title?: string | null
-          xp_threshold?: number
+          perks?: string | null
+          tier?: number
+          title?: string
+          total_xp?: number
+        }
+        Relationships: []
+      }
+      loot_box_drop_rates: {
+        Row: {
+          id: number
+          level_max: number
+          level_min: number
+          tier_1_rate: number | null
+          tier_2_rate: number | null
+          tier_3_rate: number | null
+          tier_4_rate: number | null
+        }
+        Insert: {
+          id?: number
+          level_max: number
+          level_min: number
+          tier_1_rate?: number | null
+          tier_2_rate?: number | null
+          tier_3_rate?: number | null
+          tier_4_rate?: number | null
+        }
+        Update: {
+          id?: number
+          level_max?: number
+          level_min?: number
+          tier_1_rate?: number | null
+          tier_2_rate?: number | null
+          tier_3_rate?: number | null
+          tier_4_rate?: number | null
+        }
+        Relationships: []
+      }
+      loot_box_level_ranges: {
+        Row: {
+          id: number
+          level_max: number
+          level_min: number
+        }
+        Insert: {
+          id?: number
+          level_max: number
+          level_min: number
+        }
+        Update: {
+          id?: number
+          level_max?: number
+          level_min?: number
+        }
+        Relationships: []
+      }
+      loot_box_tier_rates: {
+        Row: {
+          id: number
+          level_range_id: number
+          rate: number | null
+          tier: number
+        }
+        Insert: {
+          id?: number
+          level_range_id: number
+          rate?: number | null
+          tier: number
+        }
+        Update: {
+          id?: number
+          level_range_id?: number
+          rate?: number | null
+          tier?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loot_box_tier_rates_level_range_id_fkey"
+            columns: ["level_range_id"]
+            isOneToOne: false
+            referencedRelation: "loot_box_level_ranges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loot_box_types: {
+        Row: {
+          description: string | null
+          icon_url: string | null
+          id: number
+          name: string
+          tier: number | null
+        }
+        Insert: {
+          description?: string | null
+          icon_url?: string | null
+          id?: number
+          name: string
+          tier?: number | null
+        }
+        Update: {
+          description?: string | null
+          icon_url?: string | null
+          id?: number
+          name?: string
+          tier?: number | null
+        }
+        Relationships: []
+      }
+      loot_boxes: {
+        Row: {
+          awarded_at: string | null
+          awarded_for: string | null
+          id: number
+          is_opened: boolean | null
+          opened_at: string | null
+          type_id: number
+          user_id: number
+        }
+        Insert: {
+          awarded_at?: string | null
+          awarded_for?: string | null
+          id?: number
+          is_opened?: boolean | null
+          opened_at?: string | null
+          type_id: number
+          user_id: number
+        }
+        Update: {
+          awarded_at?: string | null
+          awarded_for?: string | null
+          id?: number
+          is_opened?: boolean | null
+          opened_at?: string | null
+          type_id?: number
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loot_boxes_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "loot_box_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_boxes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participants: {
+        Row: {
+          attendance_status: string | null
+          event_id: number
+          id: number
+          joined_at: string
+          user_id: number
+          xp_earned: number | null
+        }
+        Insert: {
+          attendance_status?: string | null
+          event_id: number
+          id?: number
+          joined_at: string
+          user_id: number
+          xp_earned?: number | null
+        }
+        Update: {
+          attendance_status?: string | null
+          event_id?: number
+          id?: number
+          joined_at?: string
+          user_id?: number
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_box_tiers: {
+        Row: {
+          id: number
+          loot_box_tier: number
+        }
+        Insert: {
+          id?: number
+          loot_box_tier: number
+        }
+        Update: {
+          id?: number
+          loot_box_tier?: number
+        }
+        Relationships: []
+      }
+      reward_drop_rates: {
+        Row: {
+          id: number
+          loot_box_tier: number
+          tier_1_rate: number | null
+          tier_2_rate: number | null
+          tier_3_rate: number | null
+          tier_4_rate: number | null
+        }
+        Insert: {
+          id?: number
+          loot_box_tier: number
+          tier_1_rate?: number | null
+          tier_2_rate?: number | null
+          tier_3_rate?: number | null
+          tier_4_rate?: number | null
+        }
+        Update: {
+          id?: number
+          loot_box_tier?: number
+          tier_1_rate?: number | null
+          tier_2_rate?: number | null
+          tier_3_rate?: number | null
+          tier_4_rate?: number | null
+        }
+        Relationships: []
+      }
+      reward_tier_rates: {
+        Row: {
+          box_tier_id: number
+          id: number
+          rate: number | null
+          tier: number
+        }
+        Insert: {
+          box_tier_id: number
+          id?: number
+          rate?: number | null
+          tier: number
+        }
+        Update: {
+          box_tier_id?: number
+          id?: number
+          rate?: number | null
+          tier?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_tier_rates_box_tier_id_fkey"
+            columns: ["box_tier_id"]
+            isOneToOne: false
+            referencedRelation: "reward_box_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_types: {
+        Row: {
+          category: string | null
+          description: string | null
+          id: number
+          image_url: string
+          is_rare: boolean | null
+          name: string
+          theme: string | null
+          tier: number | null
+        }
+        Insert: {
+          category?: string | null
+          description?: string | null
+          id?: number
+          image_url: string
+          is_rare?: boolean | null
+          name: string
+          theme?: string | null
+          tier?: number | null
+        }
+        Update: {
+          category?: string | null
+          description?: string | null
+          id?: number
+          image_url?: string
+          is_rare?: boolean | null
+          name?: string
+          theme?: string | null
+          tier?: number | null
         }
         Relationships: []
       }
@@ -193,15 +480,7 @@ export type Database = {
           reward_id?: number
           reward_name?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "rewards_level_required_fkey"
-            columns: ["level_required"]
-            isOneToOne: false
-            referencedRelation: "levels"
-            referencedColumns: ["level_number"]
-          },
-        ]
+        Relationships: []
       }
       rsvps: {
         Row: {
@@ -225,22 +504,31 @@ export type Database = {
           status?: string | null
           user_id?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "rsvps_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["event_id"]
-          },
-          {
-            foreignKeyName: "rsvps_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
+      }
+      semesters: {
+        Row: {
+          end_date: string
+          id: number
+          is_active: boolean | null
+          name: string
+          start_date: string
+        }
+        Insert: {
+          end_date: string
+          id?: number
+          is_active?: boolean | null
+          name: string
+          start_date: string
+        }
+        Update: {
+          end_date?: string
+          id?: number
+          is_active?: boolean | null
+          name?: string
+          start_date?: string
+        }
+        Relationships: []
       }
       tags: {
         Row: {
@@ -283,36 +571,95 @@ export type Database = {
       }
       user_activities: {
         Row: {
-          activity_id: number
           activity_type: string
           description: string | null
+          id: number
+          related_event_id: number | null
           timestamp: string | null
-          user_id: number | null
-          xp_awarded: number
+          user_id: number
+          xp_earned: number
         }
         Insert: {
-          activity_id?: number
           activity_type: string
           description?: string | null
+          id?: number
+          related_event_id?: number | null
           timestamp?: string | null
-          user_id?: number | null
-          xp_awarded: number
+          user_id: number
+          xp_earned: number
         }
         Update: {
-          activity_id?: number
           activity_type?: string
           description?: string | null
+          id?: number
+          related_event_id?: number | null
           timestamp?: string | null
-          user_id?: number | null
-          xp_awarded?: number
+          user_id?: number
+          xp_earned?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "user_activities_related_event_id_fkey"
+            columns: ["related_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_activities_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_interactions: {
+        Row: {
+          event_id: number
+          id: number
+          interaction_date: string | null
+          other_user_id: number
+          semester: string | null
+          user_id: number
+        }
+        Insert: {
+          event_id: number
+          id?: number
+          interaction_date?: string | null
+          other_user_id: number
+          semester?: string | null
+          user_id: number
+        }
+        Update: {
+          event_id?: number
+          id?: number
+          interaction_date?: string | null
+          other_user_id?: number
+          semester?: string | null
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_interactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_interactions_other_user_id_fkey"
+            columns: ["other_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_interactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -350,64 +697,95 @@ export type Database = {
       }
       user_rewards: {
         Row: {
-          claimed_at: string | null
-          reward_id: number
+          acquired_at: string | null
+          id: number
+          is_equipped: boolean | null
+          loot_box_id: number | null
+          reward_type_id: number
           user_id: number
         }
         Insert: {
-          claimed_at?: string | null
-          reward_id: number
+          acquired_at?: string | null
+          id?: number
+          is_equipped?: boolean | null
+          loot_box_id?: number | null
+          reward_type_id: number
           user_id: number
         }
         Update: {
-          claimed_at?: string | null
-          reward_id?: number
+          acquired_at?: string | null
+          id?: number
+          is_equipped?: boolean | null
+          loot_box_id?: number | null
+          reward_type_id?: number
           user_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "user_rewards_reward_id_fkey"
-            columns: ["reward_id"]
+            foreignKeyName: "user_rewards_loot_box_id_fkey"
+            columns: ["loot_box_id"]
             isOneToOne: false
-            referencedRelation: "rewards"
-            referencedColumns: ["reward_id"]
+            referencedRelation: "loot_boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_reward_type_id_fkey"
+            columns: ["reward_type_id"]
+            isOneToOne: false
+            referencedRelation: "reward_types"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "user_rewards_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["id"]
           },
         ]
       }
       users: {
         Row: {
-          created_at: string | null
+          active_weeks_streak: number | null
           current_level: number | null
+          current_semester: string | null
           current_xp: number | null
           email: string
-          name: string
-          password_hash: string
-          user_id: number
+          id: number
+          join_date: string | null
+          last_event_date: string | null
+          password_hash: string | null
+          profile_picture: string | null
+          total_xp_earned: number | null
+          username: string
         }
         Insert: {
-          created_at?: string | null
+          active_weeks_streak?: number | null
           current_level?: number | null
+          current_semester?: string | null
           current_xp?: number | null
           email: string
-          name: string
-          password_hash: string
-          user_id?: number
+          id?: number
+          join_date?: string | null
+          last_event_date?: string | null
+          password_hash?: string | null
+          profile_picture?: string | null
+          total_xp_earned?: number | null
+          username: string
         }
         Update: {
-          created_at?: string | null
+          active_weeks_streak?: number | null
           current_level?: number | null
+          current_semester?: string | null
           current_xp?: number | null
           email?: string
-          name?: string
-          password_hash?: string
-          user_id?: number
+          id?: number
+          join_date?: string | null
+          last_event_date?: string | null
+          password_hash?: string | null
+          profile_picture?: string | null
+          total_xp_earned?: number | null
+          username?: string
         }
         Relationships: []
       }

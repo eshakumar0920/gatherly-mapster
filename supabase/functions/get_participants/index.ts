@@ -41,7 +41,7 @@ serve(async (req) => {
     let participants = [];
     
     if (!existsError && existsData === true) {
-      // Table exists, get participants
+      // Table exists, get participants - using our new schema
       const { data, error } = await supabase
         .from('participants')
         .select('user_id')

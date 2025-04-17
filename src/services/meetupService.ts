@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
-import { getEventParticipants } from './dbHelpers';
+import { getEventParticipants, initializeDatabase } from './dbHelpers';
 
 export interface Meetup {
   id: string;
@@ -282,11 +282,14 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
     
-    // Try to query the events table based on our schema
+    // Initialize the database if needed
+    await initializeDatabase();
+    
+    // Try to query the events table based on our new schema
     const { data: eventData, error: eventError } = await supabase
       .from('events')
       .select('*')
-      .eq('event_id', eventId)
+      .eq('id', eventId)
       .single();
 
     if (eventError) {
@@ -303,16 +306,15 @@ export const getMeetupDetails = async (meetupId: string) => {
       const { data: creatorData, error: creatorError } = await supabase
         .from('users')
         .select('*')
-        .eq('user_id', eventData.creator_id)
+        .eq('id', eventData.creator_id)
         .single();
 
       if (creatorError) {
         console.error('Error fetching creator details:', creatorError);
       } else if (creatorData) {
-        // Use name property from users table
-        creatorName = creatorData.name || 'Unknown';
-        // No profile_picture in our schema
-        creatorAvatar = null;
+        // Use username from users table per new schema
+        creatorName = creatorData.username || 'Unknown';
+        creatorAvatar = creatorData.profile_picture;
       }
     }
 
@@ -330,14 +332,14 @@ export const getMeetupDetails = async (meetupId: string) => {
     // Map Supabase data to Meetup type
     if (eventData) {
       return {
-        id: eventData.event_id?.toString() || meetupId,
+        id: eventData.id?.toString() || meetupId,
         title: eventData.title || 'Untitled Event',
         description: eventData.description || '',
-        // Use event_time field as dateTime
-        dateTime: eventData.event_time || new Date().toISOString(),
+        // Use event_date field as dateTime per new schema
+        dateTime: eventData.event_date || new Date().toISOString(),
         location: eventData.location || 'TBD',
-        // Default to 3 points if xp_reward doesn't exist
-        points: 3,
+        // Use xp_reward field per new schema
+        points: eventData.xp_reward || 3,
         createdBy: creatorName,
         creatorAvatar: creatorAvatar,
         lobbySize: 5, // Default lobby size
