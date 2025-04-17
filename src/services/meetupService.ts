@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -285,11 +284,21 @@ export const getMeetupDetails = async (meetupId: string) => {
     const { data: eventData, error: eventError } = await supabase
       .from('events')
       .select(`
-        *,
-        events_box(box_data),
-        event_metadata(meta_key, meta_value)
+        id,
+        title,
+        description,
+        location,
+        event_date,
+        creator_id,
+        created_at,
+        xp_reward,
+        participants (
+          user_id,
+          joined_at,
+          attendance_status
+        )
       `)
-      .eq('event_id', eventId)
+      .eq('id', eventId)
       .single();
 
     if (eventError) {
@@ -298,18 +307,25 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
 
-    // Map Supabase data to Meetup type if needed
+    // Get creator details from users table
+    const { data: creatorData } = await supabase
+      .from('users')
+      .select('username, profile_picture')
+      .eq('id', eventData.creator_id)
+      .single();
+
+    // Map Supabase data to Meetup type
     return {
-      id: eventData.event_id.toString(),
+      id: eventData.id.toString(),
       title: eventData.title,
       description: eventData.description || '',
-      dateTime: eventData.event_time,
+      dateTime: eventData.event_date,
       location: eventData.location,
-      points: 3, // Default points, adjust as needed
-      createdBy: 'Unknown', // Add logic to get creator name if possible
-      lobbySize: 5, // Default lobby size, adjust as needed
-      creatorAvatar: null,
-      attendees: []
+      points: eventData.xp_reward || 3, // Use xp_reward from database or default to 3
+      createdBy: creatorData?.username || 'Unknown',
+      creatorAvatar: creatorData?.profile_picture || null,
+      lobbySize: 5, // Default lobby size
+      attendees: eventData.participants?.map(p => p.user_id.toString()) || []
     } as Meetup;
   } catch (error) {
     console.error('Unexpected error in getMeetupDetails:', error);
