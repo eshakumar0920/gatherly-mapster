@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -281,11 +282,11 @@ export const getMeetupDetails = async (meetupId: string) => {
       return meetups.find(m => m.id === meetupId);
     }
     
-    // Query the events table with correct column names
+    // Query the events table with the new column names
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('event_id, title, description, location, event_time, creator_id')
-      .eq('event_id', eventId)
+      .select('id, title, description, location, event_date, creator_id')
+      .eq('id', eventId)
       .single();
 
     if (eventError) {
@@ -297,36 +298,36 @@ export const getMeetupDetails = async (meetupId: string) => {
     // Get creator details from users table
     const { data: creatorData, error: creatorError } = await supabase
       .from('users')
-      .select('name')
-      .eq('user_id', eventData.creator_id)
+      .select('username, profile_picture')
+      .eq('id', eventData.creator_id)
       .single();
 
     if (creatorError) {
       console.error('Error fetching creator details:', creatorError);
     }
 
-    // Get RSVPs for this event
-    const { data: rsvpData, error: rsvpError } = await supabase
-      .from('rsvps')
+    // Get participants for this event (using participants table instead of rsvps)
+    const { data: participantsData, error: participantsError } = await supabase
+      .from('participants')
       .select('user_id')
       .eq('event_id', eventId);
 
-    if (rsvpError) {
-      console.error('Error fetching RSVPs:', rsvpError);
+    if (participantsError) {
+      console.error('Error fetching participants:', participantsError);
     }
 
     // Map Supabase data to Meetup type
     return {
-      id: eventData.event_id.toString(),
+      id: eventData.id.toString(),
       title: eventData.title,
       description: eventData.description || '',
-      dateTime: eventData.event_time,
+      dateTime: eventData.event_date,
       location: eventData.location,
-      points: 3,
-      createdBy: creatorData?.name || 'Unknown',
-      creatorAvatar: undefined,
-      lobbySize: 5,
-      attendees: rsvpData?.map(p => p.user_id.toString()) || []
+      points: eventData.xp_reward || 3,
+      createdBy: creatorData?.username || 'Unknown',
+      creatorAvatar: creatorData?.profile_picture,
+      lobbySize: 5, // Default lobby size
+      attendees: participantsData?.map(p => p.user_id.toString()) || []
     } as Meetup;
   } catch (error) {
     console.error('Unexpected error in getMeetupDetails:', error);
