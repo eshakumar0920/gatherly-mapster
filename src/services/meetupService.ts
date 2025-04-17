@@ -287,5 +287,17 @@ export const getMeetupDetails = async (meetupId: string) => {
     return meetups.find(m => m.id === meetupId);
   }
 
-  return eventData;
+  // Map Supabase data to Meetup type if needed
+  return {
+    id: eventData.event_id.toString(),
+    title: eventData.title,
+    description: eventData.description || '',
+    dateTime: eventData.event_time,
+    location: eventData.location,
+    points: 3, // Default points, adjust as needed
+    createdBy: 'Unknown', // Add logic to get creator name if possible
+    lobbySize: 5, // Default lobby size, adjust as needed
+    creatorAvatar: null,
+    attendees: []
+  } as Meetup;
 };
