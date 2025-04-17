@@ -1,77 +1,33 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventCard from "@/components/EventCard";
 import Navigation from "@/components/Navigation";
-import { categories } from "@/services/eventService";
+import { getEvents, categories } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
-import { useFlaskEventService, FlaskEvent } from "@/services/flaskEventService";
 
 const Events = () => {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [events, setEvents] = useState<FlaskEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const { getAllEvents, searchEvents } = useFlaskEventService();
+  const [events, setEvents] = useState(getEvents());
   
-  // Fetch events from Flask API
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setIsLoading(true);
-      try {
-        // If there's a search query, use the search endpoint
-        let fetchedEvents;
-        if (searchQuery) {
-          fetchedEvents = await searchEvents(searchQuery);
-        } else {
-          fetchedEvents = await getAllEvents();
-        }
-        
-        setEvents(fetchedEvents);
-      } catch (error) {
-        console.error("Error fetching events:", error);
-        toast({
-          title: "Error loading events",
-          description: "Could not fetch events from the server. Using mock data instead.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchEvents();
-  }, [searchQuery, getAllEvents, searchEvents, toast]);
-  
-  // Filter events by category
+  // Filter events by category and search query
   const filteredEvents = events.filter(event => {
-    // Filter by category
-    if (filter !== "all" && event.location?.toLowerCase() !== filter.toLowerCase()) {
+    // Filter by type
+    if (filter !== "all" && event.category.toLowerCase() !== filter.toLowerCase()) {
+      return false;
+    }
+    
+    // Filter by search query
+    if (searchQuery && !event.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     
     return true;
   });
-
-  // Map Flask events to the format expected by EventCard
-  const mapFlaskEventToEventCard = (event: FlaskEvent) => {
-    const eventDate = new Date(event.event_date);
-    
-    return {
-      id: event.id.toString(),
-      title: event.title,
-      description: event.description,
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80", // Default image
-      date: eventDate.toLocaleDateString(),
-      time: eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: event.location,
-      category: "General" // Default category
-    };
-  };
 
   return (
     <div className="pb-20">
@@ -117,17 +73,10 @@ const Events = () => {
 
       {/* Events List */}
       <div className="px-4">
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading events...</p>
-          </div>
-        ) : filteredEvents.length > 0 ? (
+        {filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
             {filteredEvents.map(event => (
-              <EventCard 
-                key={event.id} 
-                event={mapFlaskEventToEventCard(event)} 
-              />
+              <EventCard key={event.id} event={event} />
             ))}
           </div>
         ) : (
