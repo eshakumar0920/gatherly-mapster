@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      event_metadata: {
+        Row: {
+          created_at: string | null
+          event_id: number | null
+          id: number
+          meta_key: string
+          meta_value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          meta_key: string
+          meta_value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          meta_key?: string
+          meta_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_metadata_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
+          },
+        ]
+      }
       event_tags: {
         Row: {
           event_id: number
@@ -86,6 +118,35 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      events_box: {
+        Row: {
+          box_data: Json | null
+          created_at: string | null
+          event_id: number | null
+          id: number
+        }
+        Insert: {
+          box_data?: Json | null
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+        }
+        Update: {
+          box_data?: Json | null
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_box_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
           },
         ]
       }
@@ -196,6 +257,30 @@ export type Database = {
         }
         Relationships: []
       }
+      theme_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       user_activities: {
         Row: {
           activity_id: number
@@ -228,6 +313,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          id: number
+          notifications_enabled: boolean | null
+          theme: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_theme_fkey"
+            columns: ["theme"]
+            isOneToOne: false
+            referencedRelation: "theme_types"
+            referencedColumns: ["name"]
           },
         ]
       }

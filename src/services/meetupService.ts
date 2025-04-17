@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -269,3 +268,23 @@ export const useUserStore = create<UserState>()(
     }
   )
 );
+
+export const getMeetupDetails = async (meetupId: string) => {
+  const { data: eventData, error: eventError } = await supabase
+    .from('events')
+    .select(`
+      *,
+      events_box(box_data),
+      event_metadata(meta_key, meta_value)
+    `)
+    .eq('event_id', meetupId)
+    .single();
+
+  if (eventError) {
+    console.error('Error fetching meetup details:', eventError);
+    // Fall back to mock data if fetch fails
+    return meetups.find(m => m.id === meetupId);
+  }
+
+  return eventData;
+};
