@@ -1,14 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Function to safely check if a table exists in the database using a raw SQL query
+// Function to safely check if a table exists in the database using a raw SQL RPC call
 export const checkTableExists = async (tableName: string): Promise<boolean> => {
   try {
-    // Using raw SQL query instead of ORM approach to check if table exists
-    const { data, error } = await supabase.rpc(
-      'check_table_exists', 
-      { table_name: tableName }
-    );
+    // Using Supabase RPC function to check if table exists
+    const { data, error } = await supabase
+      .rpc('check_table_exists', { table_name: tableName });
       
     if (error) {
       console.error(`Error checking if table ${tableName} exists:`, error);
@@ -29,7 +27,7 @@ export const getEventParticipants = async (eventId: number): Promise<string[]> =
     const response = await fetch(`https://lzcpjxkttpfcgcwonrfc.supabase.co/functions/v1/get_participants?eventId=${eventId}`, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabase.auth.getSession()}`
+        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
       }
     });
     
