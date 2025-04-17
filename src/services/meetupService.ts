@@ -284,8 +284,8 @@ export const getMeetupDetails = async (meetupId: string) => {
     // Query using the correct column names from the schema
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('id, title, description, location, event_date, creator_id, created_at, xp_reward')
-      .eq('id', eventId)
+      .select('event_id, title, description, location, event_date, creator_id, created_at, xp_reward')
+      .eq('event_id', eventId)
       .single();
 
     if (eventError) {
@@ -309,7 +309,7 @@ export const getMeetupDetails = async (meetupId: string) => {
 
     // Map Supabase data to Meetup type
     return {
-      id: eventData.id.toString(),
+      id: eventData.event_id.toString(),
       title: eventData.title,
       description: eventData.description || '',
       dateTime: eventData.event_date,
