@@ -12,11 +12,12 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event, session);
         setSession(session);
         setUser(session?.user ?? null);
@@ -25,9 +26,14 @@ export const useAuth = () => {
         if (session?.user) {
           setVerifiedEmail(session.user.email || "");
           setIsEmailVerified(session.user.email_confirmed_at !== null);
+          
+          // Get JWT token for API authentication
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          setToken(currentSession?.access_token ?? null);
         } else {
           setVerifiedEmail("");
           setIsEmailVerified(false);
+          setToken(null);
         }
       }
     );
@@ -42,6 +48,7 @@ export const useAuth = () => {
       if (session?.user) {
         setVerifiedEmail(session.user.email || "");
         setIsEmailVerified(session.user.email_confirmed_at !== null);
+        setToken(session.access_token);
       }
       
       setIsLoading(false);
@@ -102,6 +109,7 @@ export const useAuth = () => {
     verifiedEmail, 
     isLoading, 
     user,
+    token,  // New property to access JWT token
     login, 
     signup,
     logout 

@@ -1,1 +1,21 @@
+
+# This is your Supabase project's configuration file
 project_id = "lzcpjxkttpfcgcwonrfc"
+
+[api]
+enabled = true
+
+[db]
+enabled = true
+
+[auth]
+enabled = true
+
+[storage]
+enabled = true
+
+[functions]
+enabled = true
+
+[functions.event-api]
+verify_jwt = false
