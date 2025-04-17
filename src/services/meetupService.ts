@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -271,33 +272,47 @@ export const useUserStore = create<UserState>()(
 );
 
 export const getMeetupDetails = async (meetupId: string) => {
-  const { data: eventData, error: eventError } = await supabase
-    .from('events')
-    .select(`
-      *,
-      events_box(box_data),
-      event_metadata(meta_key, meta_value)
-    `)
-    .eq('event_id', parseInt(meetupId))
-    .single();
+  try {
+    // Convert string ID to integer for database query
+    const eventId = parseInt(meetupId, 10);
+    
+    // Check if the conversion resulted in a valid number
+    if (isNaN(eventId)) {
+      console.error('Invalid meetup ID format:', meetupId);
+      return meetups.find(m => m.id === meetupId);
+    }
+    
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select(`
+        *,
+        events_box(box_data),
+        event_metadata(meta_key, meta_value)
+      `)
+      .eq('event_id', eventId)
+      .single();
 
-  if (eventError) {
-    console.error('Error fetching meetup details:', eventError);
-    // Fall back to mock data if fetch fails
+    if (eventError) {
+      console.error('Error fetching meetup details:', eventError);
+      // Fall back to mock data if fetch fails
+      return meetups.find(m => m.id === meetupId);
+    }
+
+    // Map Supabase data to Meetup type if needed
+    return {
+      id: eventData.event_id.toString(),
+      title: eventData.title,
+      description: eventData.description || '',
+      dateTime: eventData.event_time,
+      location: eventData.location,
+      points: 3, // Default points, adjust as needed
+      createdBy: 'Unknown', // Add logic to get creator name if possible
+      lobbySize: 5, // Default lobby size, adjust as needed
+      creatorAvatar: null,
+      attendees: []
+    } as Meetup;
+  } catch (error) {
+    console.error('Unexpected error in getMeetupDetails:', error);
     return meetups.find(m => m.id === meetupId);
   }
-
-  // Map Supabase data to Meetup type if needed
-  return {
-    id: eventData.event_id.toString(),
-    title: eventData.title,
-    description: eventData.description || '',
-    dateTime: eventData.event_time,
-    location: eventData.location,
-    points: 3, // Default points, adjust as needed
-    createdBy: 'Unknown', // Add logic to get creator name if possible
-    lobbySize: 5, // Default lobby size, adjust as needed
-    creatorAvatar: null,
-    attendees: []
-  } as Meetup;
 };
