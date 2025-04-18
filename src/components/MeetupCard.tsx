@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
