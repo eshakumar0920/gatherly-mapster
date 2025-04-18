@@ -35,20 +35,19 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   useEffect(() => {
     const fetchMeetupLocations = async () => {
       try {
-        // Since we don't have direct access to events table, we'll use mock data
-        // or the locations passed in props
+        // We'll use mock data since the tables might not be fully set up yet
         const mockMeetups = [
           {
             id: '101',
             title: 'Chess Club',
             description: 'Weekly chess meetup',
-            semester: 'Spring 2023',
+            semester: 'Spring 2025',
           },
           {
             id: '102',
             title: 'Study Group',
             description: 'Final exam preparation',
-            semester: 'Spring 2023',
+            semester: 'Spring 2025',
           },
         ];
 
@@ -78,7 +77,6 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
     fetchMeetupLocations();
   }, [locations]);
 
-  
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     

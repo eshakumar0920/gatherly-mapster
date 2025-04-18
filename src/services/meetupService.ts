@@ -285,66 +285,94 @@ export const getMeetupDetails = async (meetupId: string) => {
     // Initialize the database if needed
     await initializeDatabase();
     
-    // Try to query the events table based on our new schema
-    const { data: eventData, error: eventError } = await supabase
-      .from('events')
-      .select('*')
-      .eq('id', eventId)
-      .single();
-
-    if (eventError) {
-      console.error('Error fetching meetup details:', eventError);
-      // Fall back to mock data if fetch fails
-      return meetups.find(m => m.id === meetupId);
-    }
-
-    // Get creator details from users table
-    let creatorName = 'Unknown';
-    let creatorAvatar = undefined;
-    
-    if (eventData && eventData.creator_id) {
-      const { data: creatorData, error: creatorError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', eventData.creator_id)
-        .single();
-
-      if (creatorError) {
-        console.error('Error fetching creator details:', creatorError);
-      } else if (creatorData) {
-        // Use username from users table per new schema
-        creatorName = creatorData.username || 'Unknown';
-        creatorAvatar = creatorData.profile_picture;
+    try {
+      // Try to get the event by ID using RPC function if available
+      const { data: eventData, error: eventError } = await supabase.rpc('get_event_by_id', {
+        p_event_id: eventId
+      });
+      
+      if (eventError) {
+        console.error('Error fetching meetup details with RPC:', eventError);
+        
+        // Fall back to direct query
+        const { data: directEventData, error: directEventError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .single();
+          
+        if (directEventError) {
+          console.error('Error fetching meetup details directly:', directEventError);
+          // Fall back to mock data
+          return meetups.find(m => m.id === meetupId);
+        }
+        
+        // If we got data from direct query, use it
+        if (directEventData) {
+          let creatorName = 'Unknown';
+          let creatorAvatar = undefined;
+          
+          // Get participants for this event
+          let attendees: string[] = [];
+          try {
+            const { data: participantsData, error: participantsError } = await supabase
+              .from('participants')
+              .select('user_id')
+              .eq('event_id', eventId);
+              
+            if (!participantsError && participantsData) {
+              attendees = participantsData.map(p => p.user_id?.toString() || '');
+            }
+          } catch (err) {
+            console.error('Error getting participants:', err);
+          }
+          
+          // Return formatted event data
+          return {
+            id: directEventData.id?.toString() || meetupId,
+            title: directEventData.title || 'Untitled Event',
+            description: directEventData.description || '',
+            dateTime: directEventData.event_date || new Date().toISOString(),
+            location: directEventData.location || 'TBD',
+            points: directEventData.xp_reward || 3,
+            createdBy: creatorName,
+            creatorAvatar: creatorAvatar,
+            lobbySize: 5, // Default lobby size
+            attendees: attendees
+          } as Meetup;
+        }
       }
-    }
-
-    // Get participants via our helper function
-    let attendees: string[] = [];
-    
-    if (eventData) {
-      try {
-        attendees = await getEventParticipants(eventId);
-      } catch (err) {
-        console.error('Error getting participants:', err);
+      
+      // If we have data from the RPC function, use it
+      if (eventData && eventData.length > 0) {
+        const event = Array.isArray(eventData) ? eventData[0] : eventData;
+        
+        let creatorName = 'Unknown';
+        let creatorAvatar = undefined;
+        
+        // Get participants via our helper function
+        let attendees: string[] = [];
+        try {
+          attendees = await getEventParticipants(eventId);
+        } catch (err) {
+          console.error('Error getting participants:', err);
+        }
+        
+        return {
+          id: event.id?.toString() || meetupId,
+          title: event.title || 'Untitled Event',
+          description: event.description || '',
+          dateTime: event.event_date || new Date().toISOString(),
+          location: event.location || 'TBD',
+          points: event.xp_reward || 3,
+          createdBy: creatorName,
+          creatorAvatar: creatorAvatar,
+          lobbySize: 5, // Default lobby size
+          attendees: attendees
+        } as Meetup;
       }
-    }
-
-    // Map Supabase data to Meetup type
-    if (eventData) {
-      return {
-        id: eventData.id?.toString() || meetupId,
-        title: eventData.title || 'Untitled Event',
-        description: eventData.description || '',
-        // Use event_date field as dateTime per new schema
-        dateTime: eventData.event_date || new Date().toISOString(),
-        location: eventData.location || 'TBD',
-        // Use xp_reward field per new schema
-        points: eventData.xp_reward || 3,
-        createdBy: creatorName,
-        creatorAvatar: creatorAvatar,
-        lobbySize: 5, // Default lobby size
-        attendees: attendees
-      } as Meetup;
+    } catch (error) {
+      console.error('Error using Supabase in getMeetupDetails:', error);
     }
 
     // If we couldn't get event data, fall back to mock data

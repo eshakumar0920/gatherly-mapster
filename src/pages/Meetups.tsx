@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { initializeDatabase } from '@/services/dbHelpers';
 
 // Define the type for the data returned from our RPC function
@@ -25,7 +24,7 @@ interface EventRow {
   location: string;
   event_date: string;
   created_at: string;
-  creator_id: number;
+  creator_id: number | null;
   xp_reward: number | null;
   organizer_xp_reward: number | null;
   semester: string | null;
@@ -62,38 +61,66 @@ const Meetups = () => {
         // Initialize the database helpers
         await initializeDatabase();
         
-        // Use RPC function to get events
-        const { data, error } = await supabase.rpc('get_events');
-        
-        if (error) {
-          console.error("Error fetching meetups:", error);
-          toast({
-            title: "Error fetching meetups",
-            description: "Could not load meetups from the database",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        if (data && data.length > 0) {
-          // Convert Supabase data to the Meetup type
-          const supabaseMeetups = (data as EventRow[]).map(event => ({
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description || "No description available",
-            dateTime: event.event_date,
-            location: event.location,
-            points: event.xp_reward || 3,
-            createdBy: "Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            attendees: []
-          }));
+        try {
+          // Use RPC function to get events if available
+          const { data, error } = await supabase.rpc('get_events');
           
-          setAllMeetups(supabaseMeetups);
+          if (error) {
+            console.error("Error fetching meetups with RPC:", error);
+            // Fall back to direct query
+            const { data: eventsData, error: eventsError } = await supabase
+              .from('events')
+              .select('*')
+              .order('event_date', { ascending: false });
+              
+            if (eventsError) {
+              console.error("Error fetching meetups directly:", eventsError);
+              // Keep mock data
+              return;
+            }
+            
+            if (eventsData && eventsData.length > 0) {
+              // Convert Supabase data to the Meetup type
+              const supabaseMeetups = eventsData.map(event => ({
+                id: event.id.toString(),
+                title: event.title,
+                description: event.description || "No description available",
+                dateTime: event.event_date,
+                location: event.location,
+                points: event.xp_reward || 3,
+                createdBy: "Student",
+                creatorAvatar: undefined,
+                lobbySize: 5,
+                attendees: []
+              }));
+              
+              setAllMeetups(supabaseMeetups);
+            }
+            
+            return;
+          }
+          
+          if (data && Array.isArray(data) && data.length > 0) {
+            // Convert Supabase data to the Meetup type
+            const supabaseMeetups = data.map(event => ({
+              id: event.id.toString(),
+              title: event.title,
+              description: event.description || "No description available",
+              dateTime: event.event_date,
+              location: event.location,
+              points: event.xp_reward || 3,
+              createdBy: "Student",
+              creatorAvatar: undefined,
+              lobbySize: 5,
+              attendees: []
+            }));
+            
+            setAllMeetups(supabaseMeetups);
+          }
+        } catch (err) {
+          console.error("Unexpected error fetching meetups:", err);
+          // Keep mock data
         }
-      } catch (error) {
-        console.error("Error in fetching meetups:", error);
       } finally {
         setIsLoading(false);
       }
@@ -125,59 +152,115 @@ const Meetups = () => {
       // Format the date string based on user input
       const eventDate = values.dateTime;
       
-      // Use an RPC function to insert a new event
-      const { data, error } = await supabase.rpc(
-        'create_event',
-        {
-          p_title: values.title,
-          p_description: values.description,
-          p_location: values.location,
-          p_event_date: eventDate,
-          p_creator_id: 1, // Default user ID until we have auth
-          p_xp_reward: 3,
-          p_organizer_xp_reward: 5,
-          p_semester: "Spring 2025"
+      try {
+        // Use an RPC function to insert a new event if available
+        const { data, error } = await supabase.rpc(
+          'create_event',
+          {
+            p_title: values.title,
+            p_description: values.description,
+            p_location: values.location,
+            p_event_date: eventDate,
+            p_creator_id: 1, // Default user ID until we have auth
+            p_xp_reward: 3,
+            p_organizer_xp_reward: 5,
+            p_semester: "Spring 2025"
+          }
+        );
+        
+        if (error) {
+          console.error("Error creating meetup with RPC:", error);
+          
+          // Fall back to direct insert
+          const { data: insertData, error: insertError } = await supabase
+            .from('events')
+            .insert({
+              title: values.title,
+              description: values.description,
+              location: values.location,
+              event_date: eventDate,
+              creator_id: 1,
+              xp_reward: 3,
+              organizer_xp_reward: 5,
+              semester: "Spring 2025"
+            })
+            .select();
+            
+          if (insertError) {
+            console.error("Error creating meetup:", insertError);
+            toast({
+              title: "Error creating meetup",
+              description: insertError.message,
+              variant: "destructive"
+            });
+            return;
+          }
         }
-      );
-      
-      if (error) {
-        console.error("Error creating meetup:", error);
+        
+        toast({
+          title: "Meetup created!",
+          description: "Your meetup has been successfully created.",
+        });
+        
+        setIsDialogOpen(false);
+        form.reset();
+        
+        // Refresh the meetups list
+        try {
+          const { data: updatedData } = await supabase.rpc('get_events');
+          
+          if (updatedData && Array.isArray(updatedData) && updatedData.length > 0) {
+            const supabaseMeetups = updatedData.map(event => ({
+              id: event.id.toString(),
+              title: event.title,
+              description: event.description || "No description available",
+              dateTime: event.event_date,
+              location: event.location,
+              points: event.xp_reward || 3,
+              createdBy: "Student",
+              creatorAvatar: undefined,
+              lobbySize: 5,
+              attendees: []
+            }));
+            
+            setAllMeetups(supabaseMeetups);
+          } else {
+            // Fall back to direct query if RPC fails
+            const { data: eventsData } = await supabase
+              .from('events')
+              .select('*')
+              .order('event_date', { ascending: false });
+              
+            if (eventsData && eventsData.length > 0) {
+              const supabaseMeetups = eventsData.map(event => ({
+                id: event.id.toString(),
+                title: event.title,
+                description: event.description || "No description available",
+                dateTime: event.event_date,
+                location: event.location,
+                points: event.xp_reward || 3,
+                createdBy: "Student",
+                creatorAvatar: undefined,
+                lobbySize: 5,
+                attendees: []
+              }));
+              
+              setAllMeetups(supabaseMeetups);
+            }
+          }
+        } catch (refreshError) {
+          console.error("Error refreshing meetups:", refreshError);
+        }
+      } catch (error) {
+        console.error("Error in meetup creation:", error);
         toast({
           title: "Error creating meetup",
-          description: error.message,
+          description: "An unexpected error occurred",
           variant: "destructive"
         });
-        return;
-      }
-      
-      toast({
-        title: "Meetup created!",
-        description: "Your meetup has been successfully created.",
-      });
-      
-      setIsDialogOpen(false);
-      form.reset();
-      
-      // Refresh the meetups list
-      const { data: updatedMeetups } = await supabase.rpc('get_events');
-      if (updatedMeetups) {
-        const supabaseMeetups = (updatedMeetups as EventRow[]).map(event => ({
-          id: event.id.toString(),
-          title: event.title,
-          description: event.description || "No description available",
-          dateTime: event.event_date,
-          location: event.location,
-          points: event.xp_reward || 3,
-          createdBy: "Student",
-          creatorAvatar: undefined,
-          lobbySize: 5,
-          attendees: []
-        }));
-        
-        setAllMeetups(supabaseMeetups);
       }
     } catch (error) {
-      console.error("Error in meetup creation:", error);
+      console.error("Error in form submission:", error);
       toast({
         title: "Error creating meetup",
         description: "An unexpected error occurred",
