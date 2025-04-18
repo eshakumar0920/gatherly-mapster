@@ -32,6 +32,21 @@ interface EventRow {
   xp_reward: number | null;
 }
 
+// Define meetup interface separately to avoid deep type instantiation
+interface Meetup {
+  id: string;
+  title: string;
+  description: string;
+  dateTime: string;
+  location: string;
+  points: number;
+  createdBy: string;
+  creatorAvatar?: string;
+  lobbySize: number;
+  category: string;
+  attendees: string[];
+}
+
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -50,7 +65,7 @@ const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [allMeetups, setAllMeetups] = useState(getMeetups());
+  const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { points, level, attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
@@ -95,6 +110,8 @@ const Meetups = () => {
           }));
           
           setAllMeetups(supabaseMeetups);
+        } else {
+          setAllMeetups([]);
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
@@ -141,30 +158,82 @@ const Meetups = () => {
         return;
       }
       
-      // Create a numeric creator_id based on current timestamp
-      // This is a temporary solution until the database schema is updated
-      const numericCreatorId = Math.floor(Date.now() / 1000);
+      // First, let's verify if there's a user record in the users table
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single();
       
-      const { data, error } = await supabase.from('events').insert({
-        title: values.title,
-        description: values.description,
-        location: values.location,
-        event_date: eventDate,
-        creator_id: numericCreatorId, // Use the numeric creator ID
-        created_at: new Date().toISOString(),
-        semester: "Spring 2025",
-        xp_reward: 3,
-        organizer_xp_reward: 5
-      }).select();
-      
-      if (error) {
-        console.error("Error creating meetup:", error);
-        toast({
-          title: "Error creating meetup",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
+      if (usersError || !usersData) {
+        console.log("User not found in users table, creating a new record");
+        
+        // Create a new user record if one doesn't exist
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            email: user.email,
+            username: user.email.split('@')[0], // Simple username from email
+            join_date: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+        
+        if (createError) {
+          console.error("Error creating user record:", createError);
+          toast({
+            title: "Error creating meetup",
+            description: "Could not create user record in database",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Use the newly created user ID
+        const { data, error } = await supabase.from('events').insert({
+          title: values.title,
+          description: values.description,
+          location: values.location,
+          event_date: eventDate,
+          creator_id: newUser.id,
+          created_at: new Date().toISOString(),
+          semester: "Spring 2025",
+          xp_reward: 3,
+          organizer_xp_reward: 5
+        }).select();
+        
+        if (error) {
+          console.error("Error creating meetup:", error);
+          toast({
+            title: "Error creating meetup",
+            description: error.message,
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        // Use the existing user ID
+        const { data, error } = await supabase.from('events').insert({
+          title: values.title,
+          description: values.description,
+          location: values.location,
+          event_date: eventDate,
+          creator_id: usersData.id,
+          created_at: new Date().toISOString(),
+          semester: "Spring 2025",
+          xp_reward: 3,
+          organizer_xp_reward: 5
+        }).select();
+        
+        if (error) {
+          console.error("Error creating meetup:", error);
+          toast({
+            title: "Error creating meetup",
+            description: error.message,
+            variant: "destructive"
+          });
+          return;
+        }
       }
       
       toast({
@@ -175,6 +244,7 @@ const Meetups = () => {
       setIsDialogOpen(false);
       form.reset();
       
+      // Refresh the meetups list
       const { data: updatedMeetups } = await supabase.from('events').select('*');
       if (updatedMeetups) {
         const supabaseMeetups = updatedMeetups.map((event: EventRow) => ({
