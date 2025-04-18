@@ -17,8 +17,8 @@ import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { categories } from "@/services/eventService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 
-// Define the event structure from the Supabase events table
 interface EventRow {
   id: number;
   title: string;
@@ -32,7 +32,6 @@ interface EventRow {
   xp_reward: number | null;
 }
 
-// Update the form schema to include category
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -56,6 +55,7 @@ const Meetups = () => {
   const { points, level, attendMeetup, attendedMeetups } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchMeetups = async () => {
@@ -64,8 +64,7 @@ const Meetups = () => {
         let query = supabase.from('events').select('*');
         
         if (selectedCategory) {
-          // Add this when you have a category column
-          //query = query.eq('category', selectedCategory);
+          query = query.eq('category', selectedCategory);
         }
         
         const { data, error } = await query;
@@ -85,16 +84,12 @@ const Meetups = () => {
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
-            // Use event_date instead of event_time
             dateTime: new Date(event.event_date).toLocaleString(),
             location: event.location,
             points: event.xp_reward || 3,
             createdBy: "Student",
-            // Image might not exist, use a default
             creatorAvatar: undefined,
-            // Use default lobby_size since it doesn't exist
             lobbySize: 5,
-            // Use default category since it doesn't exist
             category: "Other",
             attendees: []
           }));
@@ -137,13 +132,21 @@ const Meetups = () => {
     try {
       const eventDate = new Date().toISOString();
       
+      if (!user || !user.id) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to create meetups",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const { data, error } = await supabase.from('events').insert({
         title: values.title,
         description: values.description,
         location: values.location,
-        // Use event_date instead of event_time
         event_date: eventDate,
-        creator_id: 1,
+        creator_id: user.id,
         created_at: new Date().toISOString(),
         semester: "Spring 2025",
         xp_reward: 3,
