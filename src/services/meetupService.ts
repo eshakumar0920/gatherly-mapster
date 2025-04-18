@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -12,7 +11,8 @@ export interface Meetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
-  attendees?: string[]; // Array of user IDs who have joined
+  attendees?: string[];
+  category: string;
 }
 
 export type Tag = 'Gaming' | 'Sports' | 'Academic' | 'Arts' | 'Music' | 'Technology' | 'Food' | 'Outdoors' | 
@@ -37,7 +37,8 @@ export const meetups: Meetup[] = [
     createdBy: "Alex Chen",
     creatorAvatar: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=200&h=200&auto=format&fit=crop",
     lobbySize: 4,
-    attendees: ["Jane Cooper"]
+    attendees: ["Jane Cooper"],
+    category: "Gaming"
   },
   {
     id: "2",
@@ -49,7 +50,8 @@ export const meetups: Meetup[] = [
     createdBy: "Jordan Smith",
     creatorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&auto=format&fit=crop",
     lobbySize: 2,
-    attendees: []
+    attendees: [],
+    category: "Sports"
   },
   {
     id: "3",
@@ -61,7 +63,8 @@ export const meetups: Meetup[] = [
     createdBy: "Sofia Martinez",
     creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop",
     lobbySize: 3,
-    attendees: ["Wade Warren", "Esther Howard"]
+    attendees: ["Wade Warren", "Esther Howard"],
+    category: "Reading"
   },
   {
     id: "4",
@@ -73,7 +76,8 @@ export const meetups: Meetup[] = [
     createdBy: "Michael Johnson",
     creatorAvatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&auto=format&fit=crop",
     lobbySize: 8,
-    attendees: ["Cameron Williamson"]
+    attendees: ["Cameron Williamson"],
+    category: "Sports"
   },
   {
     id: "5",
@@ -85,7 +89,8 @@ export const meetups: Meetup[] = [
     createdBy: "Emily Parker",
     creatorAvatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&auto=format&fit=crop",
     lobbySize: 6,
-    attendees: []
+    attendees: [],
+    category: "Academic"
   },
   {
     id: "6",
@@ -97,7 +102,8 @@ export const meetups: Meetup[] = [
     createdBy: "David Thompson",
     creatorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop",
     lobbySize: 12,
-    attendees: ["Brooklyn Simmons", "Robert Fox"]
+    attendees: ["Brooklyn Simmons", "Robert Fox"],
+    category: "Sports"
   },
   {
     id: "7",
@@ -109,7 +115,8 @@ export const meetups: Meetup[] = [
     createdBy: "Sarah Wilson",
     creatorAvatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop",
     lobbySize: 16,
-    attendees: []
+    attendees: [],
+    category: "Sports"
   },
   {
     id: "8",
@@ -121,7 +128,8 @@ export const meetups: Meetup[] = [
     createdBy: "Ryan Garcia",
     creatorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop",
     lobbySize: 10,
-    attendees: []
+    attendees: [],
+    category: "Gaming"
   },
   {
     id: "9",
@@ -133,7 +141,8 @@ export const meetups: Meetup[] = [
     createdBy: "Olivia Kim",
     creatorAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&auto=format&fit=crop",
     lobbySize: 5,
-    attendees: ["Jenny Wilson", "Robert Fox", "Jane Cooper", "Wade Warren", "Esther Howard"]
+    attendees: ["Jenny Wilson", "Robert Fox", "Jane Cooper", "Wade Warren", "Esther Howard"],
+    category: "Academic"
   }
 ];
 
