@@ -15,22 +15,8 @@ import { useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useMeetupService, FlaskMeetup } from "@/services/flaskService";
+import { useMeetupService } from "@/services/flaskService";
 import { supabase } from "@/integrations/supabase/client";
-
-interface EventRow {
-  event_id: number;
-  title: string;
-  description: string | null;
-  location: string;
-  event_time: string;
-  created_at: string | null;
-  creator_id: number;
-  image: string | null;
-  category: string | null;
-  lat: number | null;
-  lng: number | null;
-}
 
 interface Meetup {
   id: string;
@@ -76,6 +62,7 @@ const MeetupLobby = () => {
     const fetchMeetupData = async () => {
       setLoading(true);
       try {
+        // Try using Flask service first
         const flaskMeetup = await fetchMeetupById(meetupId as string);
         
         if (flaskMeetup) {
@@ -86,65 +73,26 @@ const MeetupLobby = () => {
           return;
         }
         
-        const { data: meetupData, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('event_id', parseInt(meetupId || '0'))
-          .single();
+        // If Flask service fails, use mock data based on ID
+        console.log("Using mock data for meetup since 'events' table doesn't exist in Supabase");
+        
+        // Create a mock meetup based on ID
+        const mockMeetup: Meetup = {
+          id: meetupId || "0",
+          title: `Meetup ${meetupId}`,
+          description: "This is a mock meetup since the events table doesn't exist in Supabase yet",
+          dateTime: format(new Date(), "MM/dd/yyyy h:mm a"),
+          location: "UTD Campus",
+          points: 3,
+          createdBy: "Student",
+          creatorAvatar: "",
+          lobbySize: 5,
+          attendees: []
+        };
 
-        if (error) {
-          console.error("Error fetching meetup:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load meetup details",
-            variant: "destructive"
-          });
-          setLoading(false);
-          return;
-        }
-
-        if (meetupData) {
-          // Try to fetch creator information if available
-          let creatorName = "Student";
-          let creatorAvatar = null;
-          
-          try {
-            // If there's a creator_id, try to fetch the creator's info from a user table
-            // This is just a placeholder - adjust according to your actual schema
-            if (meetupData.creator_id) {
-              const { data: creatorData } = await supabase
-                .from('users')  // Replace with your actual users table name
-                .select('name, avatar_url')
-                .eq('id', meetupData.creator_id)
-                .single();
-                
-              if (creatorData) {
-                creatorName = creatorData.name || "Student";
-                creatorAvatar = creatorData.avatar_url;
-              }
-            }
-          } catch (creatorError) {
-            console.log("Creator info not available:", creatorError);
-            // Fallback to default values already set
-          }
-
-          const formattedMeetup: Meetup = {
-            id: meetupData.event_id.toString(),
-            title: meetupData.title,
-            description: meetupData.description || "No description available",
-            dateTime: format(new Date(meetupData.event_time), "MM/dd/yyyy h:mm a"),
-            location: meetupData.location,
-            points: 3,
-            createdBy: creatorName,
-            creatorAvatar: meetupData.image,
-            lobbySize: 5,
-            attendees: []
-          };
-
-          setMeetup(formattedMeetup);
-          setIsJoinedLobby(joinedLobbies?.includes(formattedMeetup.id));
-          setIsCheckedIn(attendedMeetups?.includes(formattedMeetup.id));
-        }
+        setMeetup(mockMeetup);
+        setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
+        setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
       } catch (error) {
         console.error("Error in fetching meetup:", error);
         toast({

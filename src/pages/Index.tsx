@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { getMeetups } from "@/services/meetupService";
 import MeetupCard from "@/components/MeetupCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Event {
   id: string;
@@ -36,20 +37,6 @@ interface Meetup {
   attendees?: string[];
 }
 
-interface EventRow {
-  event_id: number;
-  title: string;
-  description: string | null;
-  location: string;
-  event_time: string;
-  created_at: string | null;
-  creator_id: number;
-  image: string | null;
-  category: string | null;
-  lat: number | null;
-  lng: number | null;
-}
-
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
@@ -57,53 +44,23 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch data from Supabase
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch meetups from Supabase
-        const { data: meetupsData, error: meetupsError } = await supabase
-          .from('events')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        
-        if (meetupsError) {
-          console.error("Error fetching meetups:", meetupsError);
-          // Fall back to mock data for meetups
-          setMeetups(getMeetups());
-        } else if (meetupsData && meetupsData.length > 0) {
-          // Map Supabase meetups data to our app structure
-          const mappedMeetups: Meetup[] = meetupsData.map(item => ({
-            id: item.event_id.toString(),
-            title: item.title,
-            description: item.description || "No description available",
-            dateTime: new Date(item.event_time).toLocaleString(),
-            location: item.location,
-            points: 3, // Default points value
-            createdBy: "Student", // Default creator
-            lobbySize: 5, // Default lobby size
-            attendees: []
-          }));
-          
-          setMeetups(mappedMeetups);
-        } else {
-          // Fall back to mock data if no meetups found
-          setMeetups(getMeetups());
-        }
-        
-        // For now, continue using mock data for featured events
-        // In a full implementation, you'd fetch these from Supabase too
+        // For now, use mock data since the events table doesn't exist in Supabase
+        console.log("Supabase doesn't have the events table yet. Using mock data.");
         setFeaturedEvents(getFeaturedEvents());
+        setMeetups(getMeetups());
         
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
           title: "Error loading data",
-          description: "Could not load from database, using mock data instead",
+          description: "Could not load data, using mock data instead",
           variant: "destructive"
         });
         

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const formattedDateTime = (() => {
     try {
       // First, check if dateTime is already a valid Date object
-      if (meetup.dateTime instanceof Date && !isNaN(meetup.dateTime.getTime())) {
+      if (meetup.dateTime && typeof meetup.dateTime === 'object' && 'getTime' in meetup.dateTime && !isNaN(meetup.dateTime.getTime())) {
         return format(meetup.dateTime, "MM/dd/yyyy h:mm a");
       }
       

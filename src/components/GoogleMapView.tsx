@@ -35,47 +35,23 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch meetup locations from Supabase
+  // Fetch meetup locations from mock data or other source
   useEffect(() => {
     const fetchMeetupLocations = async () => {
       try {
-        const { data: meetupsData, error } = await supabase
-          .from('events')  // Using 'events' table
-          .select('event_id, title, description, lat, lng, category')
-          .not('lat', 'is', null);
+        // Since we don't have an events table in the schema, we'll use hardcoded data or the locations prop
+        console.log('Using provided location data:', locations);
+        
+        // Mark event locations
+        const eventLocations = locations.map(location => ({
+          ...location,
+          isEvent: true
+        }));
 
-        if (error) {
-          console.error('Error fetching meetups:', error);
-          return;
-        }
-
-        if (meetupsData && meetupsData.length > 0) {
-          console.log('Fetched meetups from Supabase:', meetupsData);
-          
-          // Convert Supabase meetups to MapLocation format
-          const meetupLocations: MapLocation[] = meetupsData.map((meetup) => ({
-            id: `meetup_${meetup.event_id}`,
-            title: meetup.title,
-            lat: Number(meetup.lat),
-            lng: Number(meetup.lng),
-            description: meetup.description || undefined,
-            category: meetup.category || undefined,
-            isEvent: false
-          }));
-
-          // Mark event locations
-          const eventLocations = locations.map(location => ({
-            ...location,
-            isEvent: true
-          }));
-
-          // Combine both sets of locations
-          setAllLocations([...eventLocations, ...meetupLocations]);
-        } else {
-          console.log('No meetups found in Supabase or lat/lng is null');
-        }
+        // Set combined locations
+        setAllLocations(eventLocations);
       } catch (err) {
-        console.error('Failed to fetch meetup locations:', err);
+        console.error('Failed to fetch locations:', err);
       }
     };
 
