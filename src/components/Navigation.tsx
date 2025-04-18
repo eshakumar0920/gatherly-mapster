@@ -32,7 +32,7 @@ const Navigation = () => {
                 <item.icon className="h-6 w-6" />
                 <span className="text-xs">{item.label}</span>
                 {item.path === "/profile" && (
-                  <span className="text-xs bg-primary/20 px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-primary/20 px-2 py-0.5 rounded-full flex items-center justify-center">
                     Lvl {level}
                   </span>
                 )}
