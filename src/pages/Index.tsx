@@ -37,17 +37,16 @@ interface Meetup {
 }
 
 interface EventRow {
-  event_id: number;
+  id: number;
   title: string;
   description: string | null;
   location: string;
-  event_time: string;
+  event_date: string;
   created_at: string | null;
   creator_id: number;
-  image: string | null;
-  category: string | null;
-  lat: number | null;
-  lng: number | null;
+  semester: string | null;
+  xp_reward: number | null;
+  organizer_xp_reward: number | null;
 }
 
 const Index = () => {
@@ -78,7 +77,7 @@ const Index = () => {
             description: item.description || "No description available",
             dateTime: new Date(item.event_date).toLocaleString(),
             location: item.location,
-            points: 3,
+            points: item.xp_reward || 3,
             createdBy: "Student",
             lobbySize: 5,
             attendees: []
@@ -90,7 +89,6 @@ const Index = () => {
         }
         
         setFeaturedEvents(getFeaturedEvents());
-        
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);

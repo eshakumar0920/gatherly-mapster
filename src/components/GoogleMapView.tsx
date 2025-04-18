@@ -1,10 +1,7 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-// Fix Leaflet icon issues
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,15 +12,14 @@ interface MapLocation {
   lat: number;
   lng: number;
   description?: string;
-  category?: string; // Added for meetup categories
-  isEvent?: boolean; // Flag to distinguish between events and meetups
+  category?: string;
+  isEvent?: boolean;
 }
 
 interface GoogleMapViewProps {
   locations: MapLocation[];
 }
 
-// UTD campus coordinates
 const UTD_CENTER = {
   lat: 32.9886,
   lng: -96.7479
@@ -35,12 +31,9 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch meetup locations from Supabase
   useEffect(() => {
     const fetchMeetupLocations = async () => {
       try {
-        // Updated query to match our new schema
-        // We need to check if lat/lng fields exist in our schema
         const { data: meetupsData, error } = await supabase
           .from('events')
           .select('id, title, description, location, event_date, semester')
@@ -52,25 +45,21 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         }
 
         if (meetupsData && meetupsData.length > 0) {
-          // Generate random locations around UTD for the meetups since actual lat/lng may not exist
           const meetupLocations: MapLocation[] = meetupsData.map((meetup) => ({
-            id: `meetup_${meetup.id}`,
+            id: meetup.id.toString(),
             title: meetup.title,
-            // Generate locations around UTD for demonstration
             lat: UTD_CENTER.lat + (Math.random() - 0.5) * 0.01,
             lng: UTD_CENTER.lng + (Math.random() - 0.5) * 0.01,
             description: meetup.description || undefined,
-            category: meetup.semester || undefined, // Using semester as category for now
+            category: meetup.semester || undefined,
             isEvent: false
           }));
 
-          // Mark event locations
           const eventLocations = locations.map(location => ({
             ...location,
             isEvent: true
           }));
 
-          // Combine both sets of locations
           setAllLocations([...eventLocations, ...meetupLocations]);
         }
       } catch (err) {
@@ -80,11 +69,10 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
 
     fetchMeetupLocations();
   }, [locations]);
-  
+
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     
-    // Fix Leaflet's default icon problem
     const DefaultIcon = L.icon({
       iconUrl: icon,
       shadowUrl: iconShadow,
@@ -95,32 +83,27 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
     
     L.Marker.prototype.options.icon = DefaultIcon;
     
-    // Initialize the map
     const map = L.map(mapContainerRef.current).setView([UTD_CENTER.lat, UTD_CENTER.lng], 14);
     
-    // Add OpenStreetMap tile layer (free and no API key needed)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
     
-    // Add UTD campus boundary (approximate polygon)
     const utdBoundary = L.polygon([
       [32.9935, -96.7535] as L.LatLngTuple,
       [32.9935, -96.7435] as L.LatLngTuple,
       [32.9835, -96.7435] as L.LatLngTuple,
       [32.9835, -96.7535] as L.LatLngTuple
     ], {
-      color: '#E87500', // UTD orange
+      color: '#E87500',
       fillColor: '#E87500',
       fillOpacity: 0.1,
       weight: 2
     }).addTo(map);
     
-    // Store the map reference
     mapRef.current = map;
     setIsLoading(false);
     
-    // Clean up on unmount
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -129,25 +112,20 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
     };
   }, []);
   
-  // Update markers when locations change
   useEffect(() => {
     if (mapRef.current && !isLoading) {
-      // Clear existing markers
       mapRef.current.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
           mapRef.current?.removeLayer(layer);
         }
       });
       
-      // Add new markers
       allLocations.forEach(location => {
-        // Create different colored markers based on the location type
         const markerColor = location.isEvent ? "blue" : 
                            (location.category === "Sports" ? "green" : 
                             location.category === "Academic" ? "red" : 
                             location.category === "Gaming" ? "purple" : "orange");
         
-        // Create custom icon with different colors
         const customIcon = L.divIcon({
           className: 'custom-map-marker',
           html: `<div style="background-color: white; border-radius: 50%; padding: 2px;">
