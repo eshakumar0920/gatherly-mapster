@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -106,7 +107,7 @@ const MeetupLobby = () => {
             id: meetupData.event_id.toString(),
             title: meetupData.title,
             description: meetupData.description || "No description available",
-            dateTime: new Date(meetupData.event_time).toLocaleString(),
+            dateTime: format(new Date(meetupData.event_time), "MM/dd/yyyy h:mm a"),
             location: meetupData.location,
             points: 3,
             createdBy: "Student",
