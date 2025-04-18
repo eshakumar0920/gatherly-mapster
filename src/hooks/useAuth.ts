@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +13,6 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state changed:", event, session);
@@ -32,7 +30,6 @@ export const useAuth = () => {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("Initial session check:", session);
       setSession(session);
@@ -54,6 +51,10 @@ export const useAuth = () => {
   
   const login = async (email: string, password: string) => {
     try {
+      if (!email.endsWith('@utdallas.edu')) {
+        throw new Error('Only @utdallas.edu emails are allowed');
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -70,11 +71,20 @@ export const useAuth = () => {
   
   const signup = async (email: string, password: string, metadata?: { name?: string }) => {
     try {
+      if (!email.endsWith('@utdallas.edu')) {
+        throw new Error('Only @utdallas.edu emails are allowed');
+      }
+
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: metadata
+          data: metadata,
+          emailRedirectTo: window.location.origin
         }
       });
       
@@ -115,7 +125,6 @@ export const useRequireAuth = () => {
   
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
-      // Redirect to auth page if not logged in
       navigate("/auth", { state: { from: location.pathname } });
     }
   }, [isLoggedIn, isLoading, navigate, location]);
