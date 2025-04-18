@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -22,15 +23,18 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   
   // Handle date formatting with validation and null check
   const formattedDateTime = (() => {
-    // If dateTime is null or undefined, return a placeholder
+    // Explicitly check if dateTime is null or undefined
     if (!meetup.dateTime) {
       return "Date unavailable";
     }
 
     try {
       // First, check if dateTime is already a valid Date object
-      if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime && !isNaN(meetup.dateTime.getTime())) {
-        return format(meetup.dateTime, "MM/dd/yyyy h:mm a");
+      if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime) {
+        const dateObj = meetup.dateTime as Date;
+        return isValid(dateObj) 
+          ? format(dateObj, "MM/dd/yyyy h:mm a") 
+          : "Invalid date";
       }
       
       // If it's a string, try to parse it
