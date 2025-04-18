@@ -56,7 +56,7 @@ const Meetups = () => {
           query = query.eq('category', selectedCategory);
         }
         
-        const { data, error } = await query;
+        const { data: rawData, error } = await query;
         
         if (error) {
           console.error("Error fetching meetups:", error);
@@ -68,21 +68,24 @@ const Meetups = () => {
           return;
         }
         
-        if (data && data.length > 0) {
-          const typedData = data as EventRow[];
-          const supabaseMeetups: Meetup[] = typedData.map((event: EventRow) => ({
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toLocaleString(),
-            location: event.location,
-            points: event.xp_reward || 3,
-            createdBy: "Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            category: event.category || "Other",
-            attendees: []
-          }));
+        if (rawData && rawData.length > 0) {
+          const supabaseMeetups = rawData.map((event) => {
+            const typedEvent = event as EventRow;
+            const meetup: Meetup = {
+              id: typedEvent.id.toString(),
+              title: typedEvent.title,
+              description: typedEvent.description || "No description available",
+              dateTime: new Date(typedEvent.event_date).toLocaleString(),
+              location: typedEvent.location,
+              points: typedEvent.xp_reward || 3,
+              createdBy: "Student",
+              creatorAvatar: undefined,
+              lobbySize: 5,
+              category: typedEvent.category || "Other",
+              attendees: []
+            };
+            return meetup;
+          });
           
           setAllMeetups(supabaseMeetups);
         } else {
@@ -217,22 +220,25 @@ const Meetups = () => {
       setIsDialogOpen(false);
       form.reset();
       
-      const { data: updatedMeetups } = await supabase.from('events').select('*');
-      if (updatedMeetups) {
-        const typedData = updatedMeetups as EventRow[];
-        const supabaseMeetups = typedData.map((event: EventRow) => ({
-          id: event.id.toString(),
-          title: event.title,
-          description: event.description || "No description available",
-          dateTime: new Date(event.event_date).toLocaleString(),
-          location: event.location,
-          points: event.xp_reward || 3,
-          createdBy: "Student",
-          creatorAvatar: undefined,
-          lobbySize: 5,
-          category: event.category || "Other",
-          attendees: []
-        }));
+      const { data: updatedRawData } = await supabase.from('events').select('*');
+      if (updatedRawData) {
+        const supabaseMeetups = updatedRawData.map((event) => {
+          const typedEvent = event as EventRow;
+          const meetup: Meetup = {
+            id: typedEvent.id.toString(),
+            title: typedEvent.title,
+            description: typedEvent.description || "No description available",
+            dateTime: new Date(typedEvent.event_date).toLocaleString(),
+            location: typedEvent.location,
+            points: typedEvent.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: typedEvent.category || "Other",
+            attendees: []
+          };
+          return meetup;
+        });
         
         setAllMeetups(supabaseMeetups);
       }
