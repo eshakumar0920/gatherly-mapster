@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
@@ -16,18 +17,18 @@ import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { categories } from "@/services/eventService";
 
+// Define the event structure from the Supabase events table
 interface EventRow {
-  event_id: number;
+  id: number;
   title: string;
   description: string | null;
   location: string;
-  event_time: string;
-  created_at: string | null;
+  event_date: string;
+  created_at: string;
   creator_id: number;
-  image: string | null;
-  category: string | null;
-  lat: number | null;
-  lng: number | null;
+  semester: string | null;
+  organizer_xp_reward: number | null;
+  xp_reward: number | null;
 }
 
 const formSchema = z.object({
@@ -60,7 +61,8 @@ const Meetups = () => {
         let query = supabase.from('events').select('*');
         
         if (selectedCategory) {
-          query = query.eq('category', selectedCategory);
+          // Add this when you have a category column
+          //query = query.eq('category', selectedCategory);
         }
         
         const { data, error } = await query;
@@ -76,17 +78,21 @@ const Meetups = () => {
         }
         
         if (data && data.length > 0) {
-          const supabaseMeetups = data.map(event => ({
-            id: event.event_id.toString(),
+          const supabaseMeetups = data.map((event: EventRow) => ({
+            id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
-            dateTime: new Date(event.event_time).toLocaleString(),
+            // Use event_date instead of event_time
+            dateTime: new Date(event.event_date).toLocaleString(),
             location: event.location,
-            points: 3,
+            points: event.xp_reward || 3,
             createdBy: "Student",
-            creatorAvatar: event.image || undefined,
-            lobbySize: event.lobby_size || 5,
-            category: event.category,
+            // Image might not exist, use a default
+            creatorAvatar: undefined,
+            // Use default lobby_size since it doesn't exist
+            lobbySize: 5,
+            // Use default category since it doesn't exist
+            category: "Other",
             attendees: []
           }));
           
@@ -122,22 +128,19 @@ const Meetups = () => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const UTD_CENTER_LAT = 32.9886;
-      const UTD_CENTER_LNG = -96.7479;
-      const randomLat = UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01;
-      const randomLng = UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01;
-      
-      const eventTime = new Date().toISOString();
+      const eventDate = new Date().toISOString();
       
       const { data, error } = await supabase.from('events').insert({
         title: values.title,
         description: values.description,
         location: values.location,
-        event_time: eventTime,
+        // Use event_date instead of event_time
+        event_date: eventDate,
         creator_id: 1,
-        lat: randomLat,
-        lng: randomLng,
-        category: "Other"
+        created_at: new Date().toISOString(),
+        semester: "Spring 2025",
+        xp_reward: 3,
+        organizer_xp_reward: 5
       }).select();
       
       if (error) {
@@ -160,17 +163,17 @@ const Meetups = () => {
       
       const { data: updatedMeetups } = await supabase.from('events').select('*');
       if (updatedMeetups) {
-        const supabaseMeetups = updatedMeetups.map(event => ({
-          id: event.event_id.toString(),
+        const supabaseMeetups = updatedMeetups.map((event: EventRow) => ({
+          id: event.id.toString(),
           title: event.title,
           description: event.description || "No description available",
-          dateTime: new Date(event.event_time).toLocaleString(),
+          dateTime: new Date(event.event_date).toLocaleString(),
           location: event.location,
-          points: 3,
+          points: event.xp_reward || 3,
           createdBy: "Student",
-          creatorAvatar: event.image || undefined,
-          lobbySize: event.lobby_size || 5,
-          category: event.category,
+          creatorAvatar: undefined,
+          lobbySize: 5,
+          category: "Other",
           attendees: []
         }));
         
