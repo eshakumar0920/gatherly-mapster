@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -21,11 +20,16 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const currentAttendees = meetup.attendees?.length || 0;
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
   
-  // Handle date formatting with validation
+  // Handle date formatting with validation and null check
   const formattedDateTime = (() => {
+    // If dateTime is null or undefined, return a placeholder
+    if (!meetup.dateTime) {
+      return "Date unavailable";
+    }
+
     try {
       // First, check if dateTime is already a valid Date object
-      if (meetup.dateTime && typeof meetup.dateTime === 'object' && 'getTime' in meetup.dateTime && !isNaN(meetup.dateTime.getTime())) {
+      if (meetup.dateTime instanceof Date && !isNaN(meetup.dateTime.getTime())) {
         return format(meetup.dateTime, "MM/dd/yyyy h:mm a");
       }
       
