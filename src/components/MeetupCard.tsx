@@ -1,4 +1,5 @@
-
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Meetup, useUserStore } from "@/services/meetupService";
@@ -19,6 +20,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const currentAttendees = meetup.attendees?.length || 0;
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
   
+  const formattedDateTime = format(new Date(meetup.dateTime), "MM/dd/yyyy h:mm a");
+
   const handleJoinMeetup = (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -31,7 +34,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       return;
     }
     
-    // Join the meetup lobby without QR code
     joinMeetupLobby(meetup.id);
     
     toast({
@@ -39,7 +41,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
     });
     
-    // Navigate to meetup details
     navigate(`/meetups/${meetup.id}`);
   };
 
@@ -64,7 +65,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       <div className="mt-3 space-y-2">
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="h-4 w-4 mr-2" />
-          <span>{meetup.dateTime}</span>
+          <span>{formattedDateTime}</span>
         </div>
         
         <div className="flex items-center text-sm text-muted-foreground">
