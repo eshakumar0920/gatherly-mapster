@@ -20,35 +20,21 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
   }
 };
 
-// Function to get event participants 
+// Function to get event participants - using mock data now
 export const getEventParticipants = async (eventId: number): Promise<string[]> => {
   try {
-    const { data, error } = await supabase.rpc('get_event_participants', {
-      p_event_id: eventId
-    });
-    
-    if (error) {
-      console.error(`Error getting participants for event ${eventId}:`, error);
-      return [];
-    }
-    
-    if (data && Array.isArray(data)) {
-      // Extract usernames or other identifiers
-      const participants = data.map(p => p.user_id?.toString() || '');
-      return participants;
-    }
-    
-    return [];
+    // Just return mock data since we don't have the participants table
+    return ["user1", "user2", "user3"];
   } catch (error) {
     console.error('Error in getEventParticipants:', error);
     return [];
   }
 };
 
-// Create database functions for events
+// Create database functions for events - now just checks for tables
 export const createDatabaseFunctions = async (): Promise<boolean> => {
   try {
-    // Check if our RPC functions exist
+    // Check if our tables exist
     const eventsTableExists = await checkTableExists('events');
     const participantsTableExists = await checkTableExists('participants');
     
@@ -59,7 +45,7 @@ export const createDatabaseFunctions = async (): Promise<boolean> => {
   }
 };
 
-// Initialize database
+// Initialize database - just logs a warning now if tables don't exist
 export const initializeDatabase = async (): Promise<void> => {
   try {
     // Check if essential tables exist
@@ -69,7 +55,7 @@ export const initializeDatabase = async (): Promise<void> => {
     const levelsTableExists = await checkTableExists('levels');
     
     if (!eventsTableExists || !participantsTableExists || !usersTableExists || !levelsTableExists) {
-      console.warn('Some essential tables are missing. The application may not function correctly.');
+      console.warn('Some essential tables are missing. The application will use mock data instead.');
     }
   } catch (error) {
     console.error('Error initializing database:', error);
