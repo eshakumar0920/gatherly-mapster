@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { useMeetupService } from "@/services/flaskService";
 import { supabase } from "@/integrations/supabase/client";
 
+// Update the local Meetup interface to include category as optional
 interface Meetup {
   id: string;
   title: string;
@@ -28,6 +29,7 @@ interface Meetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
+  category?: string; // Added category property as optional
   attendees?: string[];
 }
 
