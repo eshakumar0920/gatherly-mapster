@@ -16,6 +16,7 @@ export interface FlaskMeetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
+  category?: string; // Added category property as optional
   attendees?: string[];
 }
 

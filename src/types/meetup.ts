@@ -10,7 +10,7 @@ export interface Meetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
-  category: string;
+  category?: string; // Added category property as optional
   attendees?: string[];
 }
 
