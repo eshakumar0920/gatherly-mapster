@@ -35,6 +35,7 @@ interface Meetup {
   creatorAvatar?: string;
   lobbySize: number;
   attendees?: string[];
+  category: string; // Added category property
 }
 
 const Index = () => {
