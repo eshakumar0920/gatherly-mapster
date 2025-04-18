@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -25,19 +24,7 @@ interface Event {
   category: string;
 }
 
-interface Meetup {
-  id: string;
-  title: string;
-  description: string;
-  dateTime: string;
-  location: string;
-  points: number;
-  createdBy: string;
-  creatorAvatar?: string;
-  lobbySize: number;
-  attendees?: string[];
-  category: string; // Added category property
-}
+// Remove the local Meetup interface since we're importing it
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

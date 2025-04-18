@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
@@ -68,7 +69,7 @@ const Meetups = () => {
         }
         
         if (data && data.length > 0) {
-          const supabaseMeetups = data.map((event: EventRow) => ({
+          const supabaseMeetups: Meetup[] = data.map((event: EventRow) => ({
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
