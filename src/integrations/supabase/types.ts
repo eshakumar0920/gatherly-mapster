@@ -23,6 +23,7 @@ export type Database = {
       }
       events: {
         Row: {
+          category: string | null
           created_at: string
           creator_id: number
           description: string | null
@@ -35,6 +36,7 @@ export type Database = {
           xp_reward: number | null
         }
         Insert: {
+          category?: string | null
           created_at: string
           creator_id: number
           description?: string | null
@@ -47,6 +49,7 @@ export type Database = {
           xp_reward?: number | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           creator_id?: number
           description?: string | null
