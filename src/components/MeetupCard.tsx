@@ -44,7 +44,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             dateObj = fallbackDate;
           }
         }
-      } else if (meetup.dateTime instanceof Object && 'getTime' in meetup.dateTime) {
+      } else if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime) {
         // Check if it's a Date object by checking for a getTime method
         dateObj = meetup.dateTime as Date;
       }
