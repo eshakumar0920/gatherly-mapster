@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      event_metadata: {
+        Row: {
+          created_at: string | null
+          event_id: number | null
+          id: number
+          meta_key: string
+          meta_value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          meta_key: string
+          meta_value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          meta_key?: string
+          meta_value?: string | null
+        }
+        Relationships: []
+      }
       event_tags: {
         Row: {
           event_id: number
@@ -23,13 +47,6 @@ export type Database = {
           tag_id?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "event_tags_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["event_id"]
-          },
           {
             foreignKeyName: "meetup_tags_tag_id_fkey"
             columns: ["tag_id"]
@@ -50,6 +67,7 @@ export type Database = {
           image: string | null
           lat: number | null
           lng: number | null
+          lobby_size: number | null
           location: string
           title: string
         }
@@ -59,10 +77,11 @@ export type Database = {
           creator_id: number
           description?: string | null
           event_id?: number
-          event_time: string
+          event_time?: string
           image?: string | null
           lat?: number | null
           lng?: number | null
+          lobby_size?: number | null
           location: string
           title: string
         }
@@ -76,37 +95,30 @@ export type Database = {
           image?: string | null
           lat?: number | null
           lng?: number | null
+          lobby_size?: number | null
           location?: string
           title?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "meetups_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
-      levels: {
+      events_box: {
         Row: {
-          description: string | null
-          level_number: number
-          title: string | null
-          xp_threshold: number
+          box_data: Json | null
+          created_at: string | null
+          event_id: number | null
+          id: number
         }
         Insert: {
-          description?: string | null
-          level_number: number
-          title?: string | null
-          xp_threshold: number
+          box_data?: Json | null
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
         }
         Update: {
-          description?: string | null
-          level_number?: number
-          title?: string | null
-          xp_threshold?: number
+          box_data?: Json | null
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
         }
         Relationships: []
       }
@@ -132,15 +144,7 @@ export type Database = {
           reward_id?: number
           reward_name?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "rewards_level_required_fkey"
-            columns: ["level_required"]
-            isOneToOne: false
-            referencedRelation: "levels"
-            referencedColumns: ["level_number"]
-          },
-        ]
+        Relationships: []
       }
       rsvps: {
         Row: {
@@ -164,22 +168,7 @@ export type Database = {
           status?: string | null
           user_id?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "rsvps_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["event_id"]
-          },
-          {
-            foreignKeyName: "rsvps_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       tags: {
         Row: {
@@ -196,110 +185,71 @@ export type Database = {
         }
         Relationships: []
       }
-      user_activities: {
-        Row: {
-          activity_id: number
-          activity_type: string
-          description: string | null
-          timestamp: string | null
-          user_id: number | null
-          xp_awarded: number
-        }
-        Insert: {
-          activity_id?: number
-          activity_type: string
-          description?: string | null
-          timestamp?: string | null
-          user_id?: number | null
-          xp_awarded: number
-        }
-        Update: {
-          activity_id?: number
-          activity_type?: string
-          description?: string | null
-          timestamp?: string | null
-          user_id?: number | null
-          xp_awarded?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_activities_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      user_rewards: {
-        Row: {
-          claimed_at: string | null
-          reward_id: number
-          user_id: number
-        }
-        Insert: {
-          claimed_at?: string | null
-          reward_id: number
-          user_id: number
-        }
-        Update: {
-          claimed_at?: string | null
-          reward_id?: number
-          user_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_rewards_reward_id_fkey"
-            columns: ["reward_id"]
-            isOneToOne: false
-            referencedRelation: "rewards"
-            referencedColumns: ["reward_id"]
-          },
-          {
-            foreignKeyName: "user_rewards_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      users: {
+      theme_types: {
         Row: {
           created_at: string | null
-          current_level: number | null
-          current_xp: number | null
-          email: string
+          description: string | null
+          id: number
+          is_active: boolean | null
           name: string
-          password_hash: string
-          user_id: number
         }
         Insert: {
           created_at?: string | null
-          current_level?: number | null
-          current_xp?: number | null
-          email: string
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
           name: string
-          password_hash: string
-          user_id?: number
         }
         Update: {
           created_at?: string | null
-          current_level?: number | null
-          current_xp?: number | null
-          email?: string
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
           name?: string
-          password_hash?: string
-          user_id?: number
         }
         Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          id: number
+          notifications_enabled: boolean | null
+          theme: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_theme_fkey"
+            columns: ["theme"]
+            isOneToOne: false
+            referencedRelation: "theme_types"
+            referencedColumns: ["name"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

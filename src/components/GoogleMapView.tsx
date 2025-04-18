@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
@@ -14,7 +15,7 @@ interface MapLocation {
   lat: number;
   lng: number;
   description?: string;
-  category?: string; // Added for meetup categories
+  category?: string;
   isEvent?: boolean; // Flag to distinguish between events and meetups
 }
 
@@ -49,6 +50,8 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         }
 
         if (meetupsData && meetupsData.length > 0) {
+          console.log('Fetched meetups from Supabase:', meetupsData);
+          
           // Convert Supabase meetups to MapLocation format
           const meetupLocations: MapLocation[] = meetupsData.map((meetup) => ({
             id: `meetup_${meetup.event_id}`,
@@ -68,6 +71,8 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
 
           // Combine both sets of locations
           setAllLocations([...eventLocations, ...meetupLocations]);
+        } else {
+          console.log('No meetups found in Supabase or lat/lng is null');
         }
       } catch (err) {
         console.error('Failed to fetch meetup locations:', err);
