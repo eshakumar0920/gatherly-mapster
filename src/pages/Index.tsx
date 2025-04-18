@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
@@ -61,32 +62,9 @@ const Index = () => {
       try {
         setIsLoading(true);
         
-        const { data: meetupsData, error: meetupsError } = await supabase
-          .rpc('get_events')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        
-        if (meetupsError) {
-          console.error("Error fetching meetups:", meetupsError);
-          setMeetups(getMeetups());
-        } else if (meetupsData && meetupsData.length > 0) {
-          const mappedMeetups: Meetup[] = (meetupsData as EventRow[]).map(item => ({
-            id: item.id.toString(),
-            title: item.title,
-            description: item.description || "No description available",
-            dateTime: new Date(item.event_date).toLocaleString(),
-            location: item.location,
-            points: item.xp_reward || 3,
-            createdBy: "Student",
-            lobbySize: 5,
-            attendees: []
-          }));
-          
-          setMeetups(mappedMeetups);
-        } else {
-          setMeetups(getMeetups());
-        }
-        
+        // Since we don't have access to the events table directly, we'll use mock data
+        const mockMeetups = getMeetups();
+        setMeetups(mockMeetups);
         setFeaturedEvents(getFeaturedEvents());
         setIsLoading(false);
       } catch (error) {

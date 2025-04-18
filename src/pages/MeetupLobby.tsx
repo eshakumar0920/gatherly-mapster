@@ -14,7 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMeetupService, FlaskMeetup } from "@/services/flaskService";
-import { supabase } from "@/integrations/supabase/client";
+import { getMeetups } from "@/services/meetupService";
 
 interface EventRow {
   id: number;
@@ -83,38 +83,19 @@ const MeetupLobby = () => {
           return;
         }
         
-        const { data: meetupData, error } = await supabase
-          .rpc('get_event_by_id', { p_event_id: parseInt(meetupId as string) })
-          .single();
-
-        if (error) {
-          console.error("Error fetching meetup:", error);
+        const allMeetups = getMeetups();
+        const foundMeetup = allMeetups.find(m => m.id === meetupId);
+        
+        if (foundMeetup) {
+          setMeetup(foundMeetup);
+          setIsJoinedLobby(joinedLobbies?.includes(foundMeetup.id));
+          setIsCheckedIn(attendedMeetups?.includes(foundMeetup.id));
+        } else {
           toast({
             title: "Error",
-            description: "Failed to load meetup details",
+            description: "Meetup not found",
             variant: "destructive"
           });
-          setLoading(false);
-          return;
-        }
-
-        if (meetupData) {
-          const formattedMeetup: Meetup = {
-            id: meetupData.id.toString(),
-            title: meetupData.title,
-            description: meetupData.description || "No description available",
-            dateTime: new Date(meetupData.event_date).toLocaleString(),
-            location: meetupData.location,
-            points: meetupData.xp_reward || 3,
-            createdBy: "Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            attendees: []
-          };
-
-          setMeetup(formattedMeetup);
-          setIsJoinedLobby(joinedLobbies?.includes(formattedMeetup.id));
-          setIsCheckedIn(attendedMeetups?.includes(formattedMeetup.id));
         }
       } catch (error) {
         console.error("Error in fetching meetup:", error);
