@@ -1,7 +1,9 @@
+
 import { Meetup } from "@/types/meetup";
 import { format } from "date-fns";
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Friend, Tag, sampleFriends } from "./types";
 
 // Mock data for meetups updated to 2025
 export const meetups: Meetup[] = [
@@ -76,8 +78,19 @@ interface UserState {
   joinedLobbies: string[] | null;
   attendedMeetups: string[] | null;
   points: number;
+  level: number;
+  name: string;
+  email: string;
+  friends: Friend[];
+  tags: Tag[];
+  selectedSticker: number | null;
   joinMeetupLobby: (meetupId: string) => void;
   attendMeetup: (meetupId: string, points: number) => void;
+  addFriend: (friend: Friend) => void;
+  removeFriend: (friendId: string) => void;
+  updateTags: (tags: Tag[]) => void;
+  updateProfile: (name: string, email: string) => void;
+  setSelectedSticker: (sticker: number | null) => void;
   reset: () => void;
 }
 
@@ -87,16 +100,59 @@ export const useUserStore = create<UserState>()(
       joinedLobbies: [],
       attendedMeetups: [],
       points: 0,
+      level: 1,
+      name: "John Doe",
+      email: "johndoe@example.com",
+      friends: sampleFriends,
+      tags: ["Technology", "Gaming"],
+      selectedSticker: null,
       joinMeetupLobby: (meetupId: string) =>
         set((state) => ({
           joinedLobbies: [...(state.joinedLobbies || []), meetupId],
         })),
       attendMeetup: (meetupId: string, points: number) =>
+        set((state) => {
+          const newPoints = state.points + points;
+          const newLevel = Math.floor(newPoints / 10) + 1;
+          
+          return {
+            attendedMeetups: [...(state.attendedMeetups || []), meetupId],
+            points: newPoints,
+            level: newLevel,
+          };
+        }),
+      addFriend: (friend: Friend) =>
         set((state) => ({
-          attendedMeetups: [...(state.attendedMeetups || []), meetupId],
-          points: state.points + points,
+          friends: [...state.friends, friend]
         })),
-      reset: () => set({ joinedLobbies: [], attendedMeetups: [], points: 0 }),
+      removeFriend: (friendId: string) =>
+        set((state) => ({
+          friends: state.friends.filter(friend => friend.id !== friendId)
+        })),
+      updateTags: (tags: Tag[]) =>
+        set(() => ({
+          tags
+        })),
+      updateProfile: (name: string, email: string) =>
+        set(() => ({
+          name,
+          email
+        })),
+      setSelectedSticker: (sticker: number | null) =>
+        set(() => ({
+          selectedSticker: sticker
+        })),
+      reset: () => set({ 
+        joinedLobbies: [], 
+        attendedMeetups: [], 
+        points: 0,
+        level: 1,
+        name: "John Doe",
+        email: "johndoe@example.com",
+        friends: [],
+        tags: [],
+        selectedSticker: null
+      }),
     }),
     {
       name: 'user-storage',
