@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { initializeDatabase } from '@/services/dbHelpers';
 
-// Define the type for the data returned from Supabase
+// Define the type for the data returned from our RPC function
 interface EventRow {
   id: number;
   title: string;
@@ -62,7 +62,8 @@ const Meetups = () => {
         // Initialize the database helpers
         await initializeDatabase();
         
-        const { data, error } = await supabase.from('events').select('*');
+        // Use RPC function to get events
+        const { data, error } = await supabase.rpc('get_events');
         
         if (error) {
           console.error("Error fetching meetups:", error);
@@ -124,18 +125,20 @@ const Meetups = () => {
       // Format the date string based on user input
       const eventDate = values.dateTime;
       
-      // Insert the new meetup into Supabase using our new schema
-      const { data, error } = await supabase.from('events').insert({
-        title: values.title,
-        description: values.description,
-        location: values.location,
-        event_date: eventDate,
-        creator_id: 1,
-        created_at: new Date().toISOString(),
-        xp_reward: 3,
-        organizer_xp_reward: 5,
-        semester: "Spring 2025"
-      }).select();
+      // Use an RPC function to insert a new event
+      const { data, error } = await supabase.rpc(
+        'create_event',
+        {
+          p_title: values.title,
+          p_description: values.description,
+          p_location: values.location,
+          p_event_date: eventDate,
+          p_creator_id: 1, // Default user ID until we have auth
+          p_xp_reward: 3,
+          p_organizer_xp_reward: 5,
+          p_semester: "Spring 2025"
+        }
+      );
       
       if (error) {
         console.error("Error creating meetup:", error);
@@ -156,7 +159,7 @@ const Meetups = () => {
       form.reset();
       
       // Refresh the meetups list
-      const { data: updatedMeetups } = await supabase.from('events').select('*');
+      const { data: updatedMeetups } = await supabase.rpc('get_events');
       if (updatedMeetups) {
         const supabaseMeetups = (updatedMeetups as EventRow[]).map(event => ({
           id: event.id.toString(),

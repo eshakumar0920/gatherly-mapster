@@ -17,17 +17,16 @@ import { useMeetupService, FlaskMeetup } from "@/services/flaskService";
 import { supabase } from "@/integrations/supabase/client";
 
 interface EventRow {
-  event_id: number;
+  id: number;
   title: string;
   description: string | null;
   location: string;
-  event_time: string;
-  created_at: string | null;
+  event_date: string;
+  created_at: string;
   creator_id: number;
-  image: string | null;
-  category: string | null;
-  lat: number | null;
-  lng: number | null;
+  xp_reward: number | null;
+  organizer_xp_reward: number | null;
+  semester: string | null;
 }
 
 interface Meetup {
@@ -85,9 +84,7 @@ const MeetupLobby = () => {
         }
         
         const { data: meetupData, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('id', parseInt(meetupId as string))
+          .rpc('get_event_by_id', { p_event_id: parseInt(meetupId as string) })
           .single();
 
         if (error) {

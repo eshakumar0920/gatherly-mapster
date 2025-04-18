@@ -34,10 +34,10 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   useEffect(() => {
     const fetchMeetupLocations = async () => {
       try {
+        // This SQL query works directly with our custom schema
         const { data: meetupsData, error } = await supabase
-          .from('events')
-          .select('id, title, description, location, event_date, semester')
-          .not('location', 'is', null);
+          .rpc('get_events', {})
+          .select('id, title, description, location, event_date, semester');
 
         if (error) {
           console.error('Error fetching meetups:', error);
@@ -45,9 +45,9 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         }
 
         if (meetupsData && meetupsData.length > 0) {
-          const meetupLocations: MapLocation[] = meetupsData.map((meetup) => ({
-            id: meetup.id.toString(),
-            title: meetup.title,
+          const meetupLocations: MapLocation[] = meetupsData.map((meetup: any) => ({
+            id: meetup.id?.toString() || '',
+            title: meetup.title || 'Untitled',
             lat: UTD_CENTER.lat + (Math.random() - 0.5) * 0.01,
             lng: UTD_CENTER.lng + (Math.random() - 0.5) * 0.01,
             description: meetup.description || undefined,
@@ -70,6 +70,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
     fetchMeetupLocations();
   }, [locations]);
 
+  
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     

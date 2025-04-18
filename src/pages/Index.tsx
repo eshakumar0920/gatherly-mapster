@@ -42,11 +42,11 @@ interface EventRow {
   description: string | null;
   location: string;
   event_date: string;
-  created_at: string | null;
+  created_at: string;
   creator_id: number;
-  semester: string | null;
   xp_reward: number | null;
   organizer_xp_reward: number | null;
+  semester: string | null;
 }
 
 const Index = () => {
@@ -62,8 +62,7 @@ const Index = () => {
         setIsLoading(true);
         
         const { data: meetupsData, error: meetupsError } = await supabase
-          .from('events')
-          .select('*')
+          .rpc('get_events')
           .order('created_at', { ascending: false })
           .limit(5);
         
@@ -71,7 +70,7 @@ const Index = () => {
           console.error("Error fetching meetups:", meetupsError);
           setMeetups(getMeetups());
         } else if (meetupsData && meetupsData.length > 0) {
-          const mappedMeetups: Meetup[] = meetupsData.map(item => ({
+          const mappedMeetups: Meetup[] = (meetupsData as EventRow[]).map(item => ({
             id: item.id.toString(),
             title: item.title,
             description: item.description || "No description available",

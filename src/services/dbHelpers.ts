@@ -4,16 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 // Function to safely check if a table exists in the database using a Supabase RPC call
 export const checkTableExists = async (tableName: string): Promise<boolean> => {
   try {
-    // Using Supabase RPC function to check if table exists
+    // Directly query the information schema instead of using RPC
     const { data, error } = await supabase
-      .rpc('check_table_exists', { table_name: tableName });
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', tableName)
+      .single();
       
     if (error) {
       console.error(`Error checking if table ${tableName} exists:`, error);
       return false;
     }
     
-    return data === true;
+    return !!data;
   } catch (error) {
     console.error(`Error checking if table ${tableName} exists:`, error);
     return false;
@@ -24,10 +28,10 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
 export const getEventParticipants = async (eventId: number): Promise<string[]> => {
   try {
     // Query the participants table directly based on our new schema
-    const { data, error } = await supabase
-      .from('participants')
-      .select('user_id')
-      .eq('event_id', eventId);
+    const { data, error } = await supabase.rpc(
+      'get_event_participants',
+      { p_event_id: eventId }
+    );
     
     if (error) {
       console.error('Error fetching participants:', error);
@@ -45,38 +49,65 @@ export const getEventParticipants = async (eventId: number): Promise<string[]> =
   }
 };
 
-// Function to create a check_table_exists function in the database if it doesn't exist
-export const createCheckTableExistsFunction = async (): Promise<boolean> => {
+// Create database functions for events
+export const createDatabaseFunctions = async (): Promise<boolean> => {
   try {
-    // First, check if the function already exists
-    const { error } = await supabase.rpc('check_table_exists', { table_name: 'users' });
+    // Create get_events function
+    const { error: getEventsError } = await supabase.rpc('get_events');
     
-    // If the function doesn't exist, we'll get an error
-    if (error && error.message.includes('function does not exist')) {
-      console.error('The check_table_exists function does not exist in the database.');
-      // We'd need to create it using SQL, but this requires admin privileges
-      // This would typically be done during database initialization
+    if (getEventsError && !getEventsError.message.includes('does not exist')) {
+      console.error('Error checking get_events function:', getEventsError);
       return false;
     }
     
-    return !error;
+    // Create get_event_by_id function  
+    const { error: getEventByIdError } = await supabase.rpc(
+      'get_event_by_id', 
+      { p_event_id: -1 }  // Pass invalid ID for check
+    );
+    
+    if (getEventByIdError && !getEventByIdError.message.includes('does not exist')) {
+      console.error('Error checking get_event_by_id function:', getEventByIdError);
+      return false;
+    }
+
+    // Create create_event function
+    const { error: createEventError } = await supabase.rpc(
+      'create_event',
+      { 
+        p_title: 'test', 
+        p_description: 'test',
+        p_location: 'test',
+        p_event_date: 'test',
+        p_creator_id: 1,
+        p_xp_reward: 1,
+        p_organizer_xp_reward: 1,
+        p_semester: 'test'
+      }
+    );
+    
+    if (createEventError && !createEventError.message.includes('does not exist')) {
+      console.error('Error checking create_event function:', createEventError);
+      return false;
+    }
+    
+    return true;
   } catch (error) {
-    console.error('Error in createCheckTableExistsFunction:', error);
+    console.error('Error in createDatabaseFunctions:', error);
     return false;
   }
 };
 
 // Initialize database
 export const initializeDatabase = async (): Promise<void> => {
-  // First ensure the check_table_exists function exists
-  await createCheckTableExistsFunction();
-  
-  // Check if essential tables exist and handle accordingly
-  const usersTableExists = await checkTableExists('users');
+  // Check if essential tables exist
   const eventsTableExists = await checkTableExists('events');
   const participantsTableExists = await checkTableExists('participants');
   
-  if (!usersTableExists || !eventsTableExists || !participantsTableExists) {
+  // Check if database functions exist and create them if needed
+  await createDatabaseFunctions();
+  
+  if (!eventsTableExists || !participantsTableExists) {
     console.warn('Some essential tables are missing. The application may not function correctly.');
   }
 };
