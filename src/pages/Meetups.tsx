@@ -141,12 +141,16 @@ const Meetups = () => {
         return;
       }
       
+      // Create a numeric creator_id based on current timestamp
+      // This is a temporary solution until the database schema is updated
+      const numericCreatorId = Math.floor(Date.now() / 1000);
+      
       const { data, error } = await supabase.from('events').insert({
         title: values.title,
         description: values.description,
         location: values.location,
         event_date: eventDate,
-        creator_id: user.id,
+        creator_id: numericCreatorId, // Use the numeric creator ID
         created_at: new Date().toISOString(),
         semester: "Spring 2025",
         xp_reward: 3,
