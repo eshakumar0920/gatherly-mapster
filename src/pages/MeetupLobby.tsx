@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
+import { ArrowLeft, User, Users, Calendar, Clock, MapPin, QrCode, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -88,7 +89,7 @@ const MeetupLobby = () => {
         const { data: meetupData, error } = await supabase
           .from('events')
           .select('*')
-          .eq('event_id', parseInt(meetupId as string))
+          .eq('event_id', parseInt(meetupId || '0'))
           .single();
 
         if (error) {
@@ -103,6 +104,30 @@ const MeetupLobby = () => {
         }
 
         if (meetupData) {
+          // Try to fetch creator information if available
+          let creatorName = "Student";
+          let creatorAvatar = null;
+          
+          try {
+            // If there's a creator_id, try to fetch the creator's info from a user table
+            // This is just a placeholder - adjust according to your actual schema
+            if (meetupData.creator_id) {
+              const { data: creatorData } = await supabase
+                .from('users')  // Replace with your actual users table name
+                .select('name, avatar_url')
+                .eq('id', meetupData.creator_id)
+                .single();
+                
+              if (creatorData) {
+                creatorName = creatorData.name || "Student";
+                creatorAvatar = creatorData.avatar_url;
+              }
+            }
+          } catch (creatorError) {
+            console.log("Creator info not available:", creatorError);
+            // Fallback to default values already set
+          }
+
           const formattedMeetup: Meetup = {
             id: meetupData.event_id.toString(),
             title: meetupData.title,
@@ -110,7 +135,7 @@ const MeetupLobby = () => {
             dateTime: format(new Date(meetupData.event_time), "MM/dd/yyyy h:mm a"),
             location: meetupData.location,
             points: 3,
-            createdBy: "Student",
+            createdBy: creatorName,
             creatorAvatar: meetupData.image,
             lobbySize: 5,
             attendees: []

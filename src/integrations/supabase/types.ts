@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alembic_version: {
+        Row: {
+          created_at: string
+          id: number
+          version_num: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          version_num?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          version_num?: string | null
+        }
+        Relationships: []
+      }
       event_metadata: {
         Row: {
           created_at: string | null
