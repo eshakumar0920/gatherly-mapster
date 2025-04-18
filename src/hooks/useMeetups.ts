@@ -19,7 +19,7 @@ export const useMeetups = (selectedCategory: string | null) => {
           query = query.eq('category', selectedCategory);
         }
         
-        const { data: rawData, error } = await query;
+        const { data, error } = await query;
         
         if (error) {
           console.error("Error fetching meetups:", error);
@@ -31,9 +31,9 @@ export const useMeetups = (selectedCategory: string | null) => {
           return;
         }
         
-        if (rawData && rawData.length > 0) {
-          const supabaseMeetups = (rawData as Array<any>).map((event) => {
-            const typedEvent = event as EventRow;
+        if (data && data.length > 0) {
+          const supabaseMeetups: Meetup[] = data.map((event: any) => {
+            const typedEvent: EventRow = event;
             const meetup: Meetup = {
               id: typedEvent.id.toString(),
               title: typedEvent.title,
