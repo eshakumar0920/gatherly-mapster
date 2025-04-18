@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,9 +14,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { categories } from "@/services/eventService";
 
-// Define the type for the data returned from Supabase
 interface EventRow {
   event_id: number;
   title: string;
@@ -47,6 +45,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [allMeetups, setAllMeetups] = useState(getMeetups());
   const [isLoading, setIsLoading] = useState(true);
@@ -54,12 +53,17 @@ const Meetups = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch meetups from Supabase
   useEffect(() => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase.from('events').select('*');  // Using 'events' instead of 'meetups'
+        let query = supabase.from('events').select('*');
+        
+        if (selectedCategory) {
+          query = query.eq('category', selectedCategory);
+        }
+        
+        const { data, error } = await query;
         
         if (error) {
           console.error("Error fetching meetups:", error);
@@ -72,17 +76,17 @@ const Meetups = () => {
         }
         
         if (data && data.length > 0) {
-          // Convert Supabase data to the Meetup type
-          const supabaseMeetups = (data as EventRow[]).map(event => ({
-            id: event.event_id.toString(),  // Using event_id instead of meetup_id
+          const supabaseMeetups = data.map(event => ({
+            id: event.event_id.toString(),
             title: event.title,
             description: event.description || "No description available",
             dateTime: new Date(event.event_time).toLocaleString(),
             location: event.location,
-            points: 3, // Default value
-            createdBy: "Student", // Default value
+            points: 3,
+            createdBy: "Student",
             creatorAvatar: event.image || undefined,
-            lobbySize: 5, // Default value
+            lobbySize: event.lobby_size || 5,
+            category: event.category,
             attendees: []
           }));
           
@@ -96,7 +100,14 @@ const Meetups = () => {
     };
     
     fetchMeetups();
-  }, []);
+  }, [selectedCategory, toast]);
+
+  const filteredMeetups = allMeetups.filter(meetup => {
+    if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -109,34 +120,24 @@ const Meetups = () => {
     },
   });
 
-  const filteredMeetups = allMeetups.filter(meetup => {
-    if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
-
   const onSubmit = async (values: FormValues) => {
     try {
-      // Generate random coordinates near UTD for the new meetup
       const UTD_CENTER_LAT = 32.9886;
       const UTD_CENTER_LNG = -96.7479;
       const randomLat = UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01;
       const randomLng = UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01;
       
-      // Format the date string to ISO format
       const eventTime = new Date().toISOString();
       
-      // Insert the new meetup into Supabase
-      const { data, error } = await supabase.from('events').insert({  // Using 'events' instead of 'meetups'
+      const { data, error } = await supabase.from('events').insert({
         title: values.title,
         description: values.description,
         location: values.location,
         event_time: eventTime,
-        creator_id: 1, // Using a default creator_id of 1
+        creator_id: 1,
         lat: randomLat,
         lng: randomLng,
-        category: "Other" // Default category
+        category: "Other"
       }).select();
       
       if (error) {
@@ -157,11 +158,10 @@ const Meetups = () => {
       setIsDialogOpen(false);
       form.reset();
       
-      // Refresh the meetups list
-      const { data: updatedMeetups } = await supabase.from('events').select('*');  // Using 'events' instead of 'meetups'
+      const { data: updatedMeetups } = await supabase.from('events').select('*');
       if (updatedMeetups) {
-        const supabaseMeetups = (updatedMeetups as EventRow[]).map(event => ({
-          id: event.event_id.toString(),  // Using event_id instead of meetup_id
+        const supabaseMeetups = updatedMeetups.map(event => ({
+          id: event.event_id.toString(),
           title: event.title,
           description: event.description || "No description available",
           dateTime: new Date(event.event_time).toLocaleString(),
@@ -169,7 +169,8 @@ const Meetups = () => {
           points: 3,
           createdBy: "Student",
           creatorAvatar: event.image || undefined,
-          lobbySize: 5,
+          lobbySize: event.lobby_size || 5,
+          category: event.category,
           attendees: []
         }));
         
@@ -222,6 +223,28 @@ const Meetups = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+        </div>
+      </div>
+
+      <div className="px-4 pb-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <Button
+            variant={selectedCategory === null ? "default" : "outline"}
+            className="rounded-full text-xs whitespace-nowrap"
+            onClick={() => setSelectedCategory(null)}
+          >
+            All
+          </Button>
+          {categories.map(category => (
+            <Button
+              key={category.id}
+              variant={selectedCategory === category.id ? "default" : "outline"}
+              className="rounded-full text-xs whitespace-nowrap"
+              onClick={() => setSelectedCategory(category.id)}
+            >
+              {category.name}
+            </Button>
+          ))}
         </div>
       </div>
 
