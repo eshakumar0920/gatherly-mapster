@@ -48,7 +48,7 @@ async function fetchFromApi<T>(
     console.error('API request failed:', error);
     return {
       error: error instanceof Error ? error.message : 'An unexpected error occurred',
-      status: 500
+      status: 0 // Use 0 to indicate network/offline error
     };
   }
 }
