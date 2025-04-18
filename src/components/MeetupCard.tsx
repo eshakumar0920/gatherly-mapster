@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Meetup, useUserStore } from "@/services/meetupService";
@@ -20,7 +21,36 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const currentAttendees = meetup.attendees?.length || 0;
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
   
-  const formattedDateTime = format(new Date(meetup.dateTime), "MM/dd/yyyy h:mm a");
+  // Handle date formatting with validation
+  const formattedDateTime = (() => {
+    try {
+      // First, check if dateTime is already a valid Date object
+      if (meetup.dateTime instanceof Date && !isNaN(meetup.dateTime.getTime())) {
+        return format(meetup.dateTime, "MM/dd/yyyy h:mm a");
+      }
+      
+      // If it's a string, try to parse it
+      if (typeof meetup.dateTime === 'string') {
+        // Try parsing as ISO format first
+        const date = parseISO(meetup.dateTime);
+        if (isValid(date)) {
+          return format(date, "MM/dd/yyyy h:mm a");
+        }
+        
+        // If not ISO format, try direct Date constructor
+        const fallbackDate = new Date(meetup.dateTime);
+        if (isValid(fallbackDate)) {
+          return format(fallbackDate, "MM/dd/yyyy h:mm a");
+        }
+      }
+      
+      // If we can't parse it, return a placeholder
+      return "Date unavailable";
+    } catch (error) {
+      console.error("Error formatting date:", error, "Date value:", meetup.dateTime);
+      return "Date unavailable";
+    }
+  })();
 
   const handleJoinMeetup = (e: React.MouseEvent) => {
     e.stopPropagation();
