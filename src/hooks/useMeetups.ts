@@ -32,23 +32,21 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
         
         if (data && data.length > 0) {
-          // Explicitly cast the data to an array of any type to avoid deep type instantiation
-          const events = data as any[];
-          const supabaseMeetups: Meetup[] = events.map((event) => {
-            return {
-              id: event.id.toString(),
-              title: event.title,
-              description: event.description || "No description available",
-              dateTime: new Date(event.event_date).toLocaleString(),
-              location: event.location,
-              points: event.xp_reward || 3,
-              createdBy: "Student",
-              creatorAvatar: undefined,
-              lobbySize: 5,
-              category: event.category || "Other",
-              attendees: []
-            };
-          });
+          // Use a type assertion to avoid deep instantiation
+          const eventRows = data as unknown as EventRow[];
+          const supabaseMeetups: Meetup[] = eventRows.map(event => ({
+            id: event.id.toString(),
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_date).toLocaleString(),
+            location: event.location,
+            points: event.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: event.category || "Other",
+            attendees: []
+          }));
           
           setAllMeetups(supabaseMeetups);
         } else {
