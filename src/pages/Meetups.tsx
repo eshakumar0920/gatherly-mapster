@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Search, Plus, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { categories } from "@/services/eventService";
 import { useAuth } from "@/hooks/useAuth";
-import { Meetup } from "@/types/meetup";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
 import { useMeetups } from "@/hooks/useMeetups";
@@ -21,15 +21,18 @@ const Meetups = () => {
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups(null); // Changed to null to fetch all meetups initially
 
   const filteredMeetups = allMeetups.filter(meetup => {
-    if (selectedCategory && selectedCategory !== "all" && meetup.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
-      return false;
-    }
+    // If we have a search query, filter by title
     if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
+    // If we have a selected category (not "all"), filter by category
+    if (selectedCategory && selectedCategory !== "all") {
+      return meetup.category?.toLowerCase() === selectedCategory.toLowerCase();
+    }
+    // If no category is selected or "all" is selected, show all meetups
     return true;
   });
 
