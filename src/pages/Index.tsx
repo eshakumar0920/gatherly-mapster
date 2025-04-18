@@ -1,17 +1,17 @@
+
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import EventCard from "@/components/EventCard";
-import Navigation from "@/components/Navigation";
-import { getFeaturedEvents, categories } from "@/services/eventService";
-import { getMeetups } from "@/services/meetupService";
-import MeetupCard from "@/components/MeetupCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { getFeaturedEvents } from "@/services/eventService";
+import { getMeetups } from "@/services/meetupService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import EventCard from "@/components/EventCard";
+import MeetupCard from "@/components/MeetupCard";
+import Navigation from "@/components/Navigation";
 import { Meetup } from "@/types/meetup";
+import AppHeader from "@/components/home/AppHeader";
+import CategoryFilter from "@/components/home/CategoryFilter";
+import SectionHeader from "@/components/home/SectionHeader";
+import ContentLoader from "@/components/home/ContentLoader";
 
 interface Event {
   id: string;
@@ -23,8 +23,6 @@ interface Event {
   location: string;
   category: string;
 }
-
-// Remove the local Meetup interface since we're importing it
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -65,29 +63,7 @@ const Index = () => {
 
   return (
     <div className="pb-20">
-      {/* App Name */}
-      <div className="p-4 pt-6 flex items-center justify-center">
-        <h1 className="text-2xl font-medium">
-          <span className="font-bold">i</span>mpulse
-        </h1>
-      </div>
-
-      {/* Header */}
-      <header className="p-4">
-        <h1 className="text-2xl font-bold">UTD Events</h1>
-        <p className="text-muted-foreground">Discover student-led events and meetups around campus</p>
-      </header>
-
-      {/* Search bar */}
-      <div className="px-4 pb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="Search events & meetups..." 
-            className="pl-10 rounded-full bg-muted/50"
-          />
-        </div>
-      </div>
+      <AppHeader />
 
       {/* Tabs for Events and Meetups */}
       <Tabs defaultValue="all" className="w-full px-4">
@@ -99,42 +75,18 @@ const Index = () => {
         
         {/* All Content Tab */}
         <TabsContent value="all">
-          {/* Categories */}
-          <div className="pb-4">
-            <h2 className="text-lg font-semibold mb-2">Categories</h2>
-            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                className="rounded-full text-xs"
-                onClick={() => setSelectedCategory(null)}
-              >
-                All
-              </Button>
-              {categories.map(category => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  className="rounded-full text-xs whitespace-nowrap"
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  {category.name}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <CategoryFilter 
+            selectedCategory={selectedCategory} 
+            onCategorySelect={setSelectedCategory}
+          />
 
           {isLoading ? (
-            <div className="py-20 text-center">
-              <p>Loading content...</p>
-            </div>
+            <ContentLoader />
           ) : (
             <>
               {/* Featured Events */}
               <div className="pb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-lg font-semibold">Featured Events</h2>
-                  <Button variant="link" className="text-sm p-0">See all</Button>
-                </div>
+                <SectionHeader title="Featured Events" />
                 <div className="space-y-4">
                   {featuredEvents.map(event => (
                     <EventCard key={event.id} event={event} featured />
@@ -144,10 +96,7 @@ const Index = () => {
 
               {/* Student Meetups */}
               <div className="pb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-lg font-semibold">Student Meetups</h2>
-                  <Button variant="link" className="text-sm p-0">See all</Button>
-                </div>
+                <SectionHeader title="Student Meetups" />
                 <div className="space-y-4">
                   {meetups.slice(0, 3).map(meetup => (
                     <MeetupCard key={meetup.id} meetup={meetup} />
@@ -163,7 +112,7 @@ const Index = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Campus Events</h2>
             {isLoading ? (
-              <p className="text-center py-8">Loading events...</p>
+              <ContentLoader />
             ) : (
               featuredEvents.map(event => (
                 <EventCard key={event.id} event={event} featured />
@@ -177,7 +126,7 @@ const Index = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Student Meetups</h2>
             {isLoading ? (
-              <p className="text-center py-8">Loading meetups...</p>
+              <ContentLoader />
             ) : (
               meetups.map(meetup => (
                 <MeetupCard key={meetup.id} meetup={meetup} />
@@ -187,7 +136,6 @@ const Index = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Navigation */}
       <Navigation />
     </div>
   );
