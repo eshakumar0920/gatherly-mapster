@@ -10,22 +10,20 @@ import { getEvents, categories } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 
 const Events = () => {
-  const [filter, setFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [events, setEvents] = useState(getEvents());
   
   // Filter events by category and search query
   const filteredEvents = events.filter(event => {
-    // Filter by type
-    if (filter !== "all" && event.category.toLowerCase() !== filter.toLowerCase()) {
-      return false;
-    }
-    
     // Filter by search query
     if (searchQuery && !event.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    
+    // Filter by category if not "all"
+    if (selectedCategory !== "all") {
+      return event.category.toLowerCase() === selectedCategory.toLowerCase();
+    }
     return true;
   });
 
@@ -57,13 +55,13 @@ const Events = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Categories Tabs */}
       <div className="px-4 pb-4">
-        <Tabs defaultValue="all" onValueChange={setFilter} className="w-full">
+        <Tabs defaultValue="all" onValueChange={setSelectedCategory} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
             <TabsTrigger value="all">All</TabsTrigger>
             {categories.map(category => (
-              <TabsTrigger key={category.id} value={category.id}>
+              <TabsTrigger key={category.id} value={category.id.toLowerCase()}>
                 {category.name}
               </TabsTrigger>
             ))}
@@ -86,7 +84,7 @@ const Events = () => {
               variant="outline"
               className="mt-4"
               onClick={() => {
-                setFilter("all");
+                setSelectedCategory("all");
                 setSearchQuery("");
               }}
             >
@@ -96,7 +94,6 @@ const Events = () => {
         )}
       </div>
 
-      {/* Navigation */}
       <Navigation />
     </div>
   );
