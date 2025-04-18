@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -7,6 +6,7 @@ import { Meetup, useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -21,9 +21,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const currentAttendees = meetup.attendees?.length || 0;
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
   
-  // Handle date formatting with validation and null check
   const formattedDateTime = (() => {
-    // If dateTime is null or undefined, return a default message
     if (meetup.dateTime == null) {
       return "Date unavailable";
     }
@@ -31,32 +29,25 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     try {
       let dateObj: Date | null = null;
 
-      // Handle different possible input types
       if (typeof meetup.dateTime === 'string') {
-        // Try parsing as ISO format
         const parsedDate = parseISO(meetup.dateTime);
         if (isValid(parsedDate)) {
           dateObj = parsedDate;
         } else {
-          // Try direct Date constructor
           const fallbackDate = new Date(meetup.dateTime);
           if (isValid(fallbackDate)) {
             dateObj = fallbackDate;
           }
         }
       } else if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime) {
-        // Check if it's a Date object by checking for a getTime method
         dateObj = meetup.dateTime as Date;
       }
 
-      // If we successfully parsed a date, format it
       if (dateObj && isValid(dateObj)) {
         return format(dateObj, "MM/dd/yyyy h:mm a");
       }
 
-      // If all parsing methods fail
       return "Date unavailable";
-
     } catch (error) {
       console.error("Error formatting date:", error, "Date value:", meetup.dateTime);
       return "Date unavailable";
@@ -93,7 +84,14 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     <div className="border rounded-lg p-4 bg-card animate-fade-in" onClick={handleViewDetails}>
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="font-semibold text-base line-clamp-1">{meetup.title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-base line-clamp-1">{meetup.title}</h3>
+            {meetup.category && (
+              <Badge variant="outline" className="text-xs">
+                {meetup.category}
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
             {meetup.description}
           </p>

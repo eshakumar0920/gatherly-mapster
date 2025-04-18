@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
@@ -11,11 +10,13 @@ import MeetupCard from "@/components/MeetupCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { categories } from "@/services/eventService";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define the event structure from the Supabase events table
 interface EventRow {
@@ -31,11 +32,13 @@ interface EventRow {
   xp_reward: number | null;
 }
 
+// Update the form schema to include category
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
   location: z.string().min(3, "Location is required"),
+  category: z.string().min(1, "Category is required"),
   lobbySize: z.preprocess(
     (val) => Number(val),
     z.number().int().positive("Lobby size must be greater than 0")
@@ -109,6 +112,9 @@ const Meetups = () => {
   }, [selectedCategory, toast]);
 
   const filteredMeetups = allMeetups.filter(meetup => {
+    if (selectedCategory && selectedCategory !== "all" && meetup.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
+      return false;
+    }
     if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -122,6 +128,7 @@ const Meetups = () => {
       description: "",
       dateTime: "",
       location: "",
+      category: "",
       lobbySize: 5,
     },
   });
@@ -168,12 +175,12 @@ const Meetups = () => {
           title: event.title,
           description: event.description || "No description available",
           dateTime: new Date(event.event_date).toLocaleString(),
-          location: event.location,
+          location: values.location,
           points: event.xp_reward || 3,
           createdBy: "Student",
           creatorAvatar: undefined,
           lobbySize: 5,
-          category: "Other",
+          category: values.category,
           attendees: []
         }));
         
@@ -230,25 +237,16 @@ const Meetups = () => {
       </div>
 
       <div className="px-4 pb-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <Button
-            variant={selectedCategory === null ? "default" : "outline"}
-            className="rounded-full text-xs whitespace-nowrap"
-            onClick={() => setSelectedCategory(null)}
-          >
-            All
-          </Button>
-          {categories.map(category => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              className="rounded-full text-xs whitespace-nowrap"
-              onClick={() => setSelectedCategory(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
+        <Tabs defaultValue="all" onValueChange={setSelectedCategory} className="w-full">
+          <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
+            <TabsTrigger value="all">All</TabsTrigger>
+            {categories.map(category => (
+              <TabsTrigger key={category.id} value={category.id}>
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="px-4 pb-4">
@@ -350,6 +348,31 @@ const Meetups = () => {
                 />
               </div>
 
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <FormField
                 control={form.control}
                 name="lobbySize"
