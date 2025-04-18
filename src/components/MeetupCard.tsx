@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -22,37 +23,39 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   
   // Handle date formatting with validation and null check
   const formattedDateTime = (() => {
-    // Explicitly check if dateTime is null or undefined
-    if (!meetup.dateTime) {
+    // If dateTime is null or undefined, return a default message
+    if (meetup.dateTime == null) {
       return "Date unavailable";
     }
 
     try {
-      // First, check if dateTime is already a valid Date object
-      if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime) {
-        const dateObj = meetup.dateTime as Date;
-        return isValid(dateObj) 
-          ? format(dateObj, "MM/dd/yyyy h:mm a") 
-          : "Invalid date";
-      }
-      
-      // If it's a string, try to parse it
+      let dateObj: Date | null = null;
+
+      // Handle different possible input types
       if (typeof meetup.dateTime === 'string') {
-        // Try parsing as ISO format first
-        const date = parseISO(meetup.dateTime);
-        if (isValid(date)) {
-          return format(date, "MM/dd/yyyy h:mm a");
+        // Try parsing as ISO format
+        const parsedDate = parseISO(meetup.dateTime);
+        if (isValid(parsedDate)) {
+          dateObj = parsedDate;
+        } else {
+          // Try direct Date constructor
+          const fallbackDate = new Date(meetup.dateTime);
+          if (isValid(fallbackDate)) {
+            dateObj = fallbackDate;
+          }
         }
-        
-        // If not ISO format, try direct Date constructor
-        const fallbackDate = new Date(meetup.dateTime);
-        if (isValid(fallbackDate)) {
-          return format(fallbackDate, "MM/dd/yyyy h:mm a");
-        }
+      } else if (meetup.dateTime instanceof Date) {
+        dateObj = meetup.dateTime;
       }
-      
-      // If we can't parse it, return a placeholder
+
+      // If we successfully parsed a date, format it
+      if (dateObj && isValid(dateObj)) {
+        return format(dateObj, "MM/dd/yyyy h:mm a");
+      }
+
+      // If all parsing methods fail
       return "Date unavailable";
+
     } catch (error) {
       console.error("Error formatting date:", error, "Date value:", meetup.dateTime);
       return "Date unavailable";
