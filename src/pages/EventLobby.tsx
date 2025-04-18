@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format } from "date-fns";
 
 const mockAttendees = [
   { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -38,11 +37,7 @@ const EventLobby = () => {
     const events = getEvents();
     const foundEvent = events.find(e => e.id === eventId);
     if (foundEvent) {
-      const updatedEvent = {
-        ...foundEvent,
-        time: format(new Date(`2024-01-01 ${foundEvent.time}`), "h:mm a")
-      };
-      setEvent(updatedEvent);
+      setEvent(foundEvent);
     } else {
       console.log("Event not found for ID:", eventId);
     }
