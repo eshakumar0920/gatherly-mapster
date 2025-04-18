@@ -151,21 +151,8 @@ interface UserState {
   setSelectedSticker: (stickerIndex: number | null) => void;
 }
 
-// Sample friends data
-const sampleFriends: Friend[] = [
-  {
-    id: "friend1",
-    name: "Taylor Swift",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&auto=format&fit=crop",
-    tags: ['Music', 'Arts']
-  },
-  {
-    id: "friend2",
-    name: "Raj Patel",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop",
-    tags: ['Technology', 'Gaming']
-  }
-];
+// Import sample friends from types.ts
+import { sampleFriends } from './types';
 
 export const useUserStore = create<UserState>()(
   persist(

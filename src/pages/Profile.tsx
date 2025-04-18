@@ -1,10 +1,12 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
-import { Friend, Tag as TagType, useUserStore } from "@/services/meetupService";
+import { useUserStore } from "@/services/meetupService";
+import { Friend, Tag as TagType } from "@/services/types";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";

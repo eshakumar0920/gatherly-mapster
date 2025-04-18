@@ -11,7 +11,7 @@ export interface Meetup {
   creatorAvatar?: string;
   lobbySize: number;
   category: string;
-  attendees: string[];
+  attendees?: string[];
 }
 
 // Event data as it comes from Supabase
