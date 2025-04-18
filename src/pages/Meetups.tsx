@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
@@ -20,6 +19,7 @@ import { categories } from "@/services/eventService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { Meetup, EventRow } from "@/types/meetup";
+import ContentLoader from "@/components/home/ContentLoader";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -69,7 +69,8 @@ const Meetups = () => {
         }
         
         if (data && data.length > 0) {
-          const supabaseMeetups: Meetup[] = data.map((event: EventRow) => ({
+          const typedData = data as EventRow[];
+          const supabaseMeetups: Meetup[] = typedData.map((event: EventRow) => ({
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
@@ -132,7 +133,6 @@ const Meetups = () => {
         return;
       }
       
-      // First, let's verify if there's a user record in the users table
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id')
@@ -142,12 +142,11 @@ const Meetups = () => {
       if (usersError || !usersData) {
         console.log("User not found in users table, creating a new record");
         
-        // Create a new user record if one doesn't exist
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert({
             email: user.email,
-            username: user.email.split('@')[0], // Simple username from email
+            username: user.email.split('@')[0],
             join_date: new Date().toISOString()
           })
           .select('id')
@@ -163,7 +162,6 @@ const Meetups = () => {
           return;
         }
         
-        // Use the newly created user ID
         const { data, error } = await supabase.from('events').insert({
           title: values.title,
           description: values.description,
@@ -187,7 +185,6 @@ const Meetups = () => {
           return;
         }
       } else {
-        // Use the existing user ID
         const { data, error } = await supabase.from('events').insert({
           title: values.title,
           description: values.description,
@@ -220,10 +217,10 @@ const Meetups = () => {
       setIsDialogOpen(false);
       form.reset();
       
-      // Refresh the meetups list
       const { data: updatedMeetups } = await supabase.from('events').select('*');
       if (updatedMeetups) {
-        const supabaseMeetups = updatedMeetups.map((event: EventRow) => ({
+        const typedData = updatedMeetups as EventRow[];
+        const supabaseMeetups = typedData.map((event: EventRow) => ({
           id: event.id.toString(),
           title: event.title,
           description: event.description || "No description available",
@@ -310,9 +307,7 @@ const Meetups = () => {
 
       <div className="px-4">
         {isLoading ? (
-          <div className="py-8 text-center">
-            <p>Loading meetups...</p>
-          </div>
+          <ContentLoader message="Loading meetups..." />
         ) : filteredMeetups.length === 0 ? (
           <div className="py-8 text-center">
             <p>No meetups found. Create one!</p>
