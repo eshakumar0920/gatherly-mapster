@@ -1,29 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface Meetup {
-  id: string;
-  title: string;
-  description: string;
-  dateTime: string;
-  location: string;
-  points: number;
-  createdBy: string;
-  creatorAvatar?: string;
-  lobbySize: number;
-  attendees?: string[];
-  category: string;
-}
-
-export type Tag = 'Gaming' | 'Sports' | 'Academic' | 'Arts' | 'Music' | 'Technology' | 'Food' | 'Outdoors' | 
-                  'Reading' | 'Photography' | 'Fitness' | 'Movies' | 'Science' | 'Cooking' | 'Fashion' | 'Design' | 'Travel';
-
-export interface Friend {
-  id: string;
-  name: string;
-  avatar?: string;
-  tags?: Tag[];
-}
+import { Meetup } from "@/types/meetup";
+import type { Tag, Friend } from "./types";
 
 // Mock data for meetups
 export const meetups: Meetup[] = [

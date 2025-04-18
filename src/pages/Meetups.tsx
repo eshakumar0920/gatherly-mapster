@@ -18,34 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { categories } from "@/services/eventService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-
-interface EventRow {
-  id: number;
-  title: string;
-  description: string | null;
-  location: string;
-  event_date: string;
-  created_at: string;
-  creator_id: number;
-  semester: string | null;
-  organizer_xp_reward: number | null;
-  xp_reward: number | null;
-}
-
-// Define meetup interface separately to avoid deep type instantiation
-interface Meetup {
-  id: string;
-  title: string;
-  description: string;
-  dateTime: string;
-  location: string;
-  points: number;
-  createdBy: string;
-  creatorAvatar?: string;
-  lobbySize: number;
-  category: string;
-  attendees: string[];
-}
+import { Meetup, EventRow } from "@/types/meetup";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -105,7 +78,7 @@ const Meetups = () => {
             createdBy: "Student",
             creatorAvatar: undefined,
             lobbySize: 5,
-            category: "Other",
+            category: event.category || "Other",
             attendees: []
           }));
           
@@ -199,7 +172,8 @@ const Meetups = () => {
           created_at: new Date().toISOString(),
           semester: "Spring 2025",
           xp_reward: 3,
-          organizer_xp_reward: 5
+          organizer_xp_reward: 5,
+          category: values.category
         }).select();
         
         if (error) {
@@ -222,7 +196,8 @@ const Meetups = () => {
           created_at: new Date().toISOString(),
           semester: "Spring 2025",
           xp_reward: 3,
-          organizer_xp_reward: 5
+          organizer_xp_reward: 5,
+          category: values.category
         }).select();
         
         if (error) {
@@ -252,12 +227,12 @@ const Meetups = () => {
           title: event.title,
           description: event.description || "No description available",
           dateTime: new Date(event.event_date).toLocaleString(),
-          location: values.location,
+          location: event.location,
           points: event.xp_reward || 3,
           createdBy: "Student",
           creatorAvatar: undefined,
           lobbySize: 5,
-          category: values.category,
+          category: event.category || "Other",
           attendees: []
         }));
         

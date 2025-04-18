@@ -2,11 +2,12 @@ import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Meetup, useUserStore } from "@/services/meetupService";
+import { useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Meetup } from "@/types/meetup";
 
 interface MeetupCardProps {
   meetup: Meetup;
