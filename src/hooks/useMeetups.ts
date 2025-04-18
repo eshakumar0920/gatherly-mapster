@@ -32,7 +32,7 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
         
         if (rawData && rawData.length > 0) {
-          const supabaseMeetups = rawData.map((event) => {
+          const supabaseMeetups = (rawData as Array<any>).map((event) => {
             const typedEvent = event as EventRow;
             const meetup: Meetup = {
               id: typedEvent.id.toString(),
