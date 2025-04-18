@@ -29,7 +29,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
 
     try {
       // First, check if dateTime is already a valid Date object
-      if (meetup.dateTime instanceof Date && !isNaN(meetup.dateTime.getTime())) {
+      if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime && !isNaN(meetup.dateTime.getTime())) {
         return format(meetup.dateTime, "MM/dd/yyyy h:mm a");
       }
       
