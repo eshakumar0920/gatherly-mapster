@@ -1,5 +1,6 @@
 
-import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { Search, Plus, Star, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
-import { initializeDatabase } from '@/services/dbHelpers';
+import { useEffect } from "react";
+
+// Define the type for the data returned from Supabase
+interface EventRow {
+  event_id: number;
+  title: string;
+  description: string | null;
+  location: string;
+  event_time: string;
+  created_at: string | null;
+  creator_id: number;
+  image: string | null;
+  category: string | null;
+  lat: number | null;
+  lng: number | null;
+}
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -38,17 +54,42 @@ const Meetups = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch meetups - using mock data only since we don't have the actual database tables
+  // Fetch meetups from Supabase
   useEffect(() => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
+        const { data, error } = await supabase.from('events').select('*');  // Using 'events' instead of 'meetups'
         
-        // Initialize the database helpers
-        await initializeDatabase();
+        if (error) {
+          console.error("Error fetching meetups:", error);
+          toast({
+            title: "Error fetching meetups",
+            description: "Could not load meetups from the database",
+            variant: "destructive"
+          });
+          return;
+        }
         
-        // Just use mock data since we don't have the actual database tables
-        setAllMeetups(getMeetups());
+        if (data && data.length > 0) {
+          // Convert Supabase data to the Meetup type
+          const supabaseMeetups = (data as EventRow[]).map(event => ({
+            id: event.event_id.toString(),  // Using event_id instead of meetup_id
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_time).toLocaleString(),
+            location: event.location,
+            points: 3, // Default value
+            createdBy: "Student", // Default value
+            creatorAvatar: event.image || undefined,
+            lobbySize: 5, // Default value
+            attendees: []
+          }));
+          
+          setAllMeetups(supabaseMeetups);
+        }
+      } catch (error) {
+        console.error("Error in fetching meetups:", error);
       } finally {
         setIsLoading(false);
       }
@@ -77,21 +118,36 @@ const Meetups = () => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      // Instead of trying to use Supabase, just update the local state with new meetup
-      const newMeetup = {
-        id: (allMeetups.length + 1).toString(),
+      // Generate random coordinates near UTD for the new meetup
+      const UTD_CENTER_LAT = 32.9886;
+      const UTD_CENTER_LNG = -96.7479;
+      const randomLat = UTD_CENTER_LAT + (Math.random() - 0.5) * 0.01;
+      const randomLng = UTD_CENTER_LNG + (Math.random() - 0.5) * 0.01;
+      
+      // Format the date string to ISO format
+      const eventTime = new Date().toISOString();
+      
+      // Insert the new meetup into Supabase
+      const { data, error } = await supabase.from('events').insert({  // Using 'events' instead of 'meetups'
         title: values.title,
         description: values.description,
-        dateTime: values.dateTime,
         location: values.location,
-        points: 3, // Default points
-        createdBy: "You",
-        creatorAvatar: undefined,
-        lobbySize: values.lobbySize,
-        attendees: []
-      };
+        event_time: eventTime,
+        creator_id: 1, // Using a default creator_id of 1
+        lat: randomLat,
+        lng: randomLng,
+        category: "Other" // Default category
+      }).select();
       
-      setAllMeetups([newMeetup, ...allMeetups]);
+      if (error) {
+        console.error("Error creating meetup:", error);
+        toast({
+          title: "Error creating meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
       
       toast({
         title: "Meetup created!",
@@ -101,8 +157,26 @@ const Meetups = () => {
       setIsDialogOpen(false);
       form.reset();
       
+      // Refresh the meetups list
+      const { data: updatedMeetups } = await supabase.from('events').select('*');  // Using 'events' instead of 'meetups'
+      if (updatedMeetups) {
+        const supabaseMeetups = (updatedMeetups as EventRow[]).map(event => ({
+          id: event.event_id.toString(),  // Using event_id instead of meetup_id
+          title: event.title,
+          description: event.description || "No description available",
+          dateTime: new Date(event.event_time).toLocaleString(),
+          location: event.location,
+          points: 3,
+          createdBy: "Student",
+          creatorAvatar: event.image || undefined,
+          lobbySize: 5,
+          attendees: []
+        }));
+        
+        setAllMeetups(supabaseMeetups);
+      }
     } catch (error) {
-      console.error("Error in form submission:", error);
+      console.error("Error in meetup creation:", error);
       toast({
         title: "Error creating meetup",
         description: "An unexpected error occurred",

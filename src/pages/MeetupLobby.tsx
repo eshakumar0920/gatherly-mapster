@@ -14,19 +14,20 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMeetupService, FlaskMeetup } from "@/services/flaskService";
-import { getMeetups } from "@/services/meetupService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EventRow {
-  id: number;
+  event_id: number;
   title: string;
   description: string | null;
   location: string;
-  event_date: string;
-  created_at: string;
+  event_time: string;
+  created_at: string | null;
   creator_id: number;
-  xp_reward: number | null;
-  organizer_xp_reward: number | null;
-  semester: string | null;
+  image: string | null;
+  category: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface Meetup {
@@ -83,19 +84,40 @@ const MeetupLobby = () => {
           return;
         }
         
-        const allMeetups = getMeetups();
-        const foundMeetup = allMeetups.find(m => m.id === meetupId);
-        
-        if (foundMeetup) {
-          setMeetup(foundMeetup);
-          setIsJoinedLobby(joinedLobbies?.includes(foundMeetup.id));
-          setIsCheckedIn(attendedMeetups?.includes(foundMeetup.id));
-        } else {
+        const { data: meetupData, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('event_id', parseInt(meetupId as string))
+          .single();
+
+        if (error) {
+          console.error("Error fetching meetup:", error);
           toast({
             title: "Error",
-            description: "Meetup not found",
+            description: "Failed to load meetup details",
             variant: "destructive"
           });
+          setLoading(false);
+          return;
+        }
+
+        if (meetupData) {
+          const formattedMeetup: Meetup = {
+            id: meetupData.event_id.toString(),
+            title: meetupData.title,
+            description: meetupData.description || "No description available",
+            dateTime: new Date(meetupData.event_time).toLocaleString(),
+            location: meetupData.location,
+            points: 3,
+            createdBy: "Student",
+            creatorAvatar: meetupData.image,
+            lobbySize: 5,
+            attendees: []
+          };
+
+          setMeetup(formattedMeetup);
+          setIsJoinedLobby(joinedLobbies?.includes(formattedMeetup.id));
+          setIsCheckedIn(attendedMeetups?.includes(formattedMeetup.id));
         }
       } catch (error) {
         console.error("Error in fetching meetup:", error);

@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -268,7 +269,3 @@ export const useUserStore = create<UserState>()(
     }
   )
 );
-
-export const getMeetupDetails = async (meetupId: string) => {
-  return meetups.find(m => m.id === meetupId);
-};

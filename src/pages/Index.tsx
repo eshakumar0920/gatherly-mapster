@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
@@ -38,16 +37,17 @@ interface Meetup {
 }
 
 interface EventRow {
-  id: number;
+  event_id: number;
   title: string;
   description: string | null;
   location: string;
-  event_date: string;
-  created_at: string;
+  event_time: string;
+  created_at: string | null;
   creator_id: number;
-  xp_reward: number | null;
-  organizer_xp_reward: number | null;
-  semester: string | null;
+  image: string | null;
+  category: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 const Index = () => {
@@ -57,15 +57,47 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Fetch data from Supabase
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Since we don't have access to the events table directly, we'll use mock data
-        const mockMeetups = getMeetups();
-        setMeetups(mockMeetups);
+        // Fetch meetups from Supabase
+        const { data: meetupsData, error: meetupsError } = await supabase
+          .from('events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (meetupsError) {
+          console.error("Error fetching meetups:", meetupsError);
+          // Fall back to mock data for meetups
+          setMeetups(getMeetups());
+        } else if (meetupsData && meetupsData.length > 0) {
+          // Map Supabase meetups data to our app structure
+          const mappedMeetups: Meetup[] = meetupsData.map(item => ({
+            id: item.event_id.toString(),
+            title: item.title,
+            description: item.description || "No description available",
+            dateTime: new Date(item.event_time).toLocaleString(),
+            location: item.location,
+            points: 3, // Default points value
+            createdBy: "Student", // Default creator
+            lobbySize: 5, // Default lobby size
+            attendees: []
+          }));
+          
+          setMeetups(mappedMeetups);
+        } else {
+          // Fall back to mock data if no meetups found
+          setMeetups(getMeetups());
+        }
+        
+        // For now, continue using mock data for featured events
+        // In a full implementation, you'd fetch these from Supabase too
         setFeaturedEvents(getFeaturedEvents());
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -75,6 +107,7 @@ const Index = () => {
           variant: "destructive"
         });
         
+        // Fall back to mock data on errors
         setFeaturedEvents(getFeaturedEvents());
         setMeetups(getMeetups());
         setIsLoading(false);
@@ -86,17 +119,20 @@ const Index = () => {
 
   return (
     <div className="pb-20">
+      {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
           <span className="font-bold">i</span>mpulse
         </h1>
       </div>
 
+      {/* Header */}
       <header className="p-4">
         <h1 className="text-2xl font-bold">UTD Events</h1>
         <p className="text-muted-foreground">Discover student-led events and meetups around campus</p>
       </header>
 
+      {/* Search bar */}
       <div className="px-4 pb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -107,6 +143,7 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Tabs for Events and Meetups */}
       <Tabs defaultValue="all" className="w-full px-4">
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="all">All</TabsTrigger>
@@ -114,7 +151,9 @@ const Index = () => {
           <TabsTrigger value="meetups">Meetups</TabsTrigger>
         </TabsList>
         
+        {/* All Content Tab */}
         <TabsContent value="all">
+          {/* Categories */}
           <div className="pb-4">
             <h2 className="text-lg font-semibold mb-2">Categories</h2>
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
@@ -144,6 +183,7 @@ const Index = () => {
             </div>
           ) : (
             <>
+              {/* Featured Events */}
               <div className="pb-6">
                 <div className="flex justify-between items-center mb-2">
                   <h2 className="text-lg font-semibold">Featured Events</h2>
@@ -156,6 +196,7 @@ const Index = () => {
                 </div>
               </div>
 
+              {/* Student Meetups */}
               <div className="pb-6">
                 <div className="flex justify-between items-center mb-2">
                   <h2 className="text-lg font-semibold">Student Meetups</h2>
@@ -171,6 +212,7 @@ const Index = () => {
           )}
         </TabsContent>
         
+        {/* Events Tab */}
         <TabsContent value="events">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Campus Events</h2>
@@ -184,6 +226,7 @@ const Index = () => {
           </div>
         </TabsContent>
         
+        {/* Meetups Tab */}
         <TabsContent value="meetups">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Student Meetups</h2>
@@ -198,6 +241,7 @@ const Index = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Navigation */}
       <Navigation />
     </div>
   );
