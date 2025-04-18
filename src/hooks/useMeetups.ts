@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
+import { meetups as sampleMeetups } from "@/services/meetupService";
 
 export const useMeetups = (selectedCategory: string | null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
@@ -32,9 +33,8 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
         
         if (data && data.length > 0) {
-          // Use a type assertion to avoid deep instantiation
           const eventRows = data as unknown as EventRow[];
-          const supabaseMeetups: Meetup[] = eventRows.map(event => ({
+          const databaseMeetups: Meetup[] = eventRows.map(event => ({
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
@@ -48,12 +48,23 @@ export const useMeetups = (selectedCategory: string | null) => {
             attendees: []
           }));
           
-          setAllMeetups(supabaseMeetups);
+          // Combine sample meetups with database meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups([...databaseMeetups, ...filteredSampleMeetups]);
         } else {
-          setAllMeetups([]);
+          // If no database meetups, just show sample meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups(filteredSampleMeetups);
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
+        setAllMeetups(sampleMeetups); // Fallback to sample meetups on error
       } finally {
         setIsLoading(false);
       }
