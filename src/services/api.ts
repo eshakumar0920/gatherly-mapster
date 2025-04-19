@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
@@ -18,6 +17,49 @@ export interface EventSearchParams {
   location?: string;
   date_from?: string;
   date_to?: string;
+}
+
+// Define interfaces for the leveling system
+export interface UserProgress {
+  user_id: number;
+  username: string;
+  current_level: number;
+  current_xp: number;
+  total_xp_earned: number;
+  current_tier: string;
+  active_weeks_streak: number;
+  activity_bonus: string;
+  next_level: number | null;
+  xp_for_next_level: number;
+  xp_needed_for_level: number;
+  progress_percent: number;
+  max_level_reached: boolean;
+  current_semester: string;
+  recent_activities: {
+    timestamp: string;
+    activity_type: string;
+    xp_earned: number;
+    description: string;
+  }[];
+}
+
+export interface LevelInfo {
+  level_number: number;
+  level_xp: number;
+  total_xp: number;
+  tier: string;
+}
+
+export interface LootBox {
+  id: number;
+  type_name: string;
+  description: string;
+  tier: string;
+  icon_url: string;
+  is_opened: boolean;
+  awarded_at: string;
+  opened_at: string | null;
+  awarded_for: string;
 }
 
 // Generic function to handle API requests
@@ -119,6 +161,32 @@ export const eventsApi = {
   // Create a new event
   createEvent: (eventData: any) => 
     fetchFromApi<any>('/events', 'POST', eventData)
+};
+
+// API endpoints for leveling system
+export const levelingApi = {
+  // Get user progress
+  getUserProgress: (userId: number) => 
+    fetchFromApi<UserProgress>(`/users/${userId}/progress`),
+  
+  // Get all level definitions
+  getLevels: () => 
+    fetchFromApi<LevelInfo[]>('/levels'),
+  
+  // Get user lootboxes
+  getUserLootboxes: (userId: number) => 
+    fetchFromApi<LootBox[]>(`/users/${userId}/lootboxes`),
+  
+  // Open a lootbox
+  openLootbox: (userId: number, lootboxId: number) => 
+    fetchFromApi<any>(`/users/${userId}/lootboxes/${lootboxId}/open`, 'POST'),
+  
+  // Start new semester (admin only)
+  startNewSemester: (semesterData: { 
+    name: string; 
+    start_date: string; 
+    end_date: string; 
+  }) => fetchFromApi<any>('/admin/semester', 'POST', semesterData)
 };
 
 // API endpoints for user-related operations
