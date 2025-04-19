@@ -1,5 +1,4 @@
-
-import { meetupsApi, eventsApi, userApi, useApiErrorHandling } from './api';
+import { meetupsApi, eventsApi, userApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
@@ -170,6 +169,109 @@ export function useMeetupService() {
 // Example usage for events and user services
 export function useEventService() {
   const { handleApiError } = useApiErrorHandling();
+  const { toast } = useToast();
+  
+  // Search events
+  const searchEvents = useCallback(async (params: EventSearchParams) => {
+    try {
+      const response = await eventsApi.searchEvents(params);
+      
+      if (response.error) {
+        handleApiError(response.error);
+        console.log("Flask API error, falling back to local data:", response.error);
+        
+        // Fall back to Supabase or mock data
+        const { data, error } = await supabase.from('events').select('*');
+        
+        if (error) {
+          console.error("Supabase error:", error);
+          return [];
+        }
+        
+        if (data && data.length > 0) {
+          // Transform Supabase data
+          return data.map(event => ({
+            id: event.id.toString(),
+            title: event.title,
+            description: event.description || "No description available",
+            date: new Date(event.event_date).toLocaleDateString(),
+            time: new Date(event.event_date).toLocaleTimeString(),
+            location: event.location,
+            category: event.category || "Other",
+            image: `https://source.unsplash.com/random/300x200?${encodeURIComponent(event.category || 'event')}`
+          }));
+        }
+        
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error("Error searching events:", error);
+      return [];
+    }
+  }, [handleApiError]);
+  
+  // Join an event
+  const joinEvent = useCallback(async (eventId: string, userId: string) => {
+    try {
+      const response = await eventsApi.joinEvent(eventId, userId);
+      
+      if (response.error) {
+        handleApiError(response.error);
+        return false;
+      }
+      
+      toast({
+        title: "Success",
+        description: "You have successfully joined this event!",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error joining event:", error);
+      return false;
+    }
+  }, [handleApiError, toast]);
+  
+  // Leave an event
+  const leaveEvent = useCallback(async (eventId: string, userId: string) => {
+    try {
+      const response = await eventsApi.leaveEvent(eventId, userId);
+      
+      if (response.error) {
+        handleApiError(response.error);
+        return false;
+      }
+      
+      toast({
+        title: "Success",
+        description: "You have successfully left this event.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error leaving event:", error);
+      return false;
+    }
+  }, [handleApiError, toast]);
+  
+  // Get event details
+  const getEventById = useCallback(async (eventId: string) => {
+    try {
+      const response = await eventsApi.getEventById(eventId);
+      
+      if (response.error) {
+        handleApiError(response.error);
+        return null;
+      }
+      
+      return response.data || null;
+    } catch (error) {
+      console.error("Error getting event details:", error);
+      return null;
+    }
+  }, [handleApiError]);
   
   // Fetch all events
   const fetchEvents = useCallback(async () => {
@@ -181,11 +283,13 @@ export function useEventService() {
     }
     
     return response.data || [];
-  }, []);
-  
-  // Other event-related functions...
+  }, [handleApiError]);
   
   return {
+    searchEvents,
+    joinEvent,
+    leaveEvent,
+    getEventById,
     fetchEvents
   };
 }
@@ -203,7 +307,7 @@ export function useUserService() {
     }
     
     return response.data || 0;
-  }, []);
+  }, [handleApiError]);
   
   // Other user-related functions...
   

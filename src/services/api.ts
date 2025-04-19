@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
@@ -9,6 +10,14 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   status: number;
+}
+
+// Define search parameters interface for events
+export interface EventSearchParams {
+  query?: string;
+  location?: string;
+  date_from?: string;
+  date_to?: string;
 }
 
 // Generic function to handle API requests
@@ -53,6 +62,16 @@ async function fetchFromApi<T>(
   }
 }
 
+// Helper function to build query string from parameters
+function buildQueryString(params: Record<string, any>): string {
+  const query = Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&');
+  
+  return query ? `?${query}` : '';
+}
+
 // API endpoints for meetups
 export const meetupsApi = {
   // Get all meetups
@@ -81,7 +100,25 @@ export const eventsApi = {
   // Get a single event by ID
   getEventById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
-  // Other event-related API calls
+  // Search events with filters
+  searchEvents: (params: EventSearchParams) => 
+    fetchFromApi<any[]>(`/search${buildQueryString(params)}`),
+  
+  // Join an event
+  joinEvent: (eventId: string, userId: string) => 
+    fetchFromApi<any>(`/events/${eventId}/join`, 'POST', { user_id: userId }),
+  
+  // Leave an event
+  leaveEvent: (eventId: string, userId: string) => 
+    fetchFromApi<any>(`/events/${eventId}/leave`, 'POST', { user_id: userId }),
+  
+  // Get event participants
+  getEventParticipants: (eventId: string) => 
+    fetchFromApi<any[]>(`/events/${eventId}/participants`),
+  
+  // Create a new event
+  createEvent: (eventData: any) => 
+    fetchFromApi<any>('/events', 'POST', eventData)
 };
 
 // API endpoints for user-related operations
