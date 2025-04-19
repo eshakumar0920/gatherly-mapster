@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 const mockAttendees = [
   { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -38,9 +38,33 @@ const EventLobby = () => {
     const events = getEvents();
     const foundEvent = events.find(e => e.id === eventId);
     if (foundEvent) {
+      let formattedTime = foundEvent.time;
+      try {
+        const timeString = foundEvent.time.split(" - ")[0].trim();
+        if (timeString.includes("AM") || timeString.includes("PM") || 
+            timeString.includes("am") || timeString.includes("pm")) {
+          formattedTime = timeString;
+        } else {
+          const timeParts = timeString.split(":");
+          if (timeParts.length >= 2) {
+            const hour = parseInt(timeParts[0], 10);
+            const minute = parseInt(timeParts[1], 10);
+            
+            if (!isNaN(hour) && !isNaN(minute)) {
+              const ampm = hour >= 12 ? "PM" : "AM";
+              const hour12 = hour % 12 || 12;
+              formattedTime = `${hour12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing time:", error);
+        formattedTime = foundEvent.time;
+      }
+      
       const updatedEvent = {
         ...foundEvent,
-        time: format(new Date(`2024-01-01 ${foundEvent.time}`), "h:mm a")
+        time: formattedTime
       };
       setEvent(updatedEvent);
     } else {

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -35,9 +36,15 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         if (isValid(parsedDate)) {
           dateObj = parsedDate;
         } else {
-          const fallbackDate = new Date(meetup.dateTime);
-          if (isValid(fallbackDate)) {
-            dateObj = fallbackDate;
+          // Try with a more lenient approach to parse the date string
+          try {
+            const fallbackDate = new Date(meetup.dateTime);
+            if (isValid(fallbackDate)) {
+              dateObj = fallbackDate;
+            }
+          } catch (innerError) {
+            console.error("Inner parsing error:", innerError);
+            // If this also fails, we'll return the unparsed string later
           }
         }
       } else if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime) {
@@ -48,10 +55,11 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         return format(dateObj, "MM/dd/yyyy h:mm a");
       }
 
-      return "Date unavailable";
+      // If we couldn't parse it, just return the original string
+      return typeof meetup.dateTime === 'string' ? meetup.dateTime : "Date unavailable";
     } catch (error) {
       console.error("Error formatting date:", error, "Date value:", meetup.dateTime);
-      return "Date unavailable";
+      return typeof meetup.dateTime === 'string' ? meetup.dateTime : "Date unavailable";
     }
   })();
 

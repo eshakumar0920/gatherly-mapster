@@ -5,13 +5,28 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Friend, Tag, sampleFriends } from "./types";
 
-// Mock data for meetups updated to 2025
+// Create valid dates for the mock meetups
+const createValidDate = (year: number, month: number, day: number, hour: number, minute: number) => {
+  try {
+    const date = new Date(year, month - 1, day, hour, minute);
+    // Check if date is valid before formatting
+    if (isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+    return format(date, "yyyy-MM-dd HH:mm:ss");
+  } catch (error) {
+    console.error("Error creating date:", error);
+    return "Invalid date";
+  }
+};
+
+// Mock data for meetups updated to 2025 with safer date creation
 export const meetups: Meetup[] = [
   {
     id: "1",
     title: "Tech Innovators Meetup",
     description: "Connect with fellow tech enthusiasts and discuss the latest innovations!",
-    dateTime: format(new Date(2025, 1, 15, 18, 0), "yyyy-MM-dd HH:mm:ss"),
+    dateTime: createValidDate(2025, 2, 15, 18, 0),
     location: "ECSW Building, Room 2.412",
     points: 5,
     createdBy: "Alex Johnson",
@@ -24,7 +39,7 @@ export const meetups: Meetup[] = [
     id: "2",
     title: "Art & Design Networking",
     description: "A casual meetup for artists, designers, and creative minds to share ideas and inspiration.",
-    dateTime: format(new Date(2025, 2, 22, 19, 30), "yyyy-MM-dd HH:mm:ss"),
+    dateTime: createValidDate(2025, 3, 22, 19, 30),
     location: "SP/N Gallery Lounge",
     points: 3,
     createdBy: "Emma Rodriguez",
@@ -37,7 +52,7 @@ export const meetups: Meetup[] = [
     id: "3",
     title: "Entrepreneurship Workshop",
     description: "Learn from successful student entrepreneurs and network with like-minded peers.",
-    dateTime: format(new Date(2025, 3, 10, 16, 0), "yyyy-MM-dd HH:mm:ss"),
+    dateTime: createValidDate(2025, 4, 10, 16, 0),
     location: "Blackstone LaunchPad",
     points: 7,
     createdBy: "Michael Chen",
@@ -50,7 +65,7 @@ export const meetups: Meetup[] = [
     id: "4",
     title: "Music Jam Session",
     description: "Open mic and jam session for musicians of all skill levels.",
-    dateTime: format(new Date(2025, 4, 5, 20, 0), "yyyy-MM-dd HH:mm:ss"),
+    dateTime: createValidDate(2025, 5, 5, 20, 0),
     location: "Student Union Music Room",
     points: 4,
     createdBy: "Sophia Williams",
@@ -63,7 +78,7 @@ export const meetups: Meetup[] = [
     id: "5",
     title: "Wellness and Mindfulness",
     description: "Guided meditation and stress-relief techniques for students.",
-    dateTime: format(new Date(2025, 5, 18, 17, 30), "yyyy-MM-dd HH:mm:ss"),
+    dateTime: createValidDate(2025, 6, 18, 17, 30),
     location: "Recreation Center Yoga Studio",
     points: 3,
     createdBy: "Daniel Kim",
