@@ -12,7 +12,6 @@ import Navigation from "@/components/Navigation";
 import { getEvents, categories } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import { eventsApi, EventSearchParams } from "@/services/api";
-import { supabase } from "@/integrations/supabase/client";
 
 const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -24,128 +23,79 @@ const Events = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Function to search events with improved error handling and fallbacks
+  // Function to search events
   const searchEvents = async () => {
     setIsLoading(true);
     
     try {
-      console.log("Searching events with params:", { searchQuery, locationFilter, startDate, endDate, selectedCategory });
-      
-      // First try the API
       const params: EventSearchParams = {
-        query: searchQuery || undefined,
+        query: searchQuery,
         location: locationFilter || undefined,
         date_from: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
         date_to: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
       };
       
-      try {
-        console.log("Trying to fetch from API...");
-        const response = await eventsApi.searchEvents(params);
-        
-        if (!response.error && response.data) {
-          console.log("Successfully got events from API:", response.data);
-          setEvents(response.data);
-          return;
-        } else {
-          console.log("API returned error:", response.error);
-          throw new Error(response.error || "API request failed");
-        }
-      } catch (apiError) {
-        console.log("Failed to fetch from API, trying Supabase...", apiError);
-        
-        // Try Supabase as fallback
-        try {
-          let query = supabase.from('events').select('*');
-          
-          // Apply filters if possible
-          if (searchQuery) {
-            // Note: this is a simplified approach - in a real app we'd need more complex filtering
-            query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-          }
-          
-          if (locationFilter) {
-            query = query.ilike('location', `%${locationFilter}%`);
-          }
-          
-          // Get results
-          const { data: supabaseEvents, error } = await query;
-          
-          if (!error && supabaseEvents && supabaseEvents.length > 0) {
-            console.log("Got events from Supabase:", supabaseEvents);
-            
-            // Transform Supabase data to match expected format
-            const transformedEvents = supabaseEvents.map(event => ({
-              id: event.id.toString(),
-              title: event.title,
-              description: event.description || "",
-              date: new Date(event.event_date).toLocaleDateString(),
-              time: new Date(event.event_date).toLocaleTimeString(),
-              location: event.location,
-              category: event.category || "Other",
-              image: `https://source.unsplash.com/random/300x200?${encodeURIComponent(event.category || 'event')}`
-            }));
-            
-            setEvents(transformedEvents);
-            return;
-          } else {
-            console.log("Supabase error or no results:", error);
-            throw new Error(error?.message || "No results from database");
-          }
-        } catch (supabaseError) {
-          console.log("Supabase fallback failed, using mock data:", supabaseError);
-          // Final fallback to mock data with client-side filtering
-        }
-      }
+      const response = await eventsApi.searchEvents(params);
       
-      // If we got here, use mock data with client-side filtering
-      console.log("Using mock data with client-side filtering");
-      let filteredMockEvents = getEvents();
-      
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filteredMockEvents = filteredMockEvents.filter(event => 
-          event.title.toLowerCase().includes(query) || 
-          event.description.toLowerCase().includes(query)
-        );
-      }
-      
-      if (locationFilter) {
-        const location = locationFilter.toLowerCase();
-        filteredMockEvents = filteredMockEvents.filter(event =>
-          event.location.toLowerCase().includes(location)
-        );
-      }
-      
-      if (startDate) {
-        filteredMockEvents = filteredMockEvents.filter(event => {
-          const eventDate = new Date(event.date);
-          return eventDate >= startDate;
+      if (response.error) {
+        toast({
+          title: "Search Error",
+          description: response.error,
+          variant: "destructive"
         });
+        // Fall back to mock data on error
+        console.log("Failed to get API events, using mock data");
+        
+        // Apply filters to mock data as a fallback
+        let filteredMockEvents = getEvents();
+        
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filteredMockEvents = filteredMockEvents.filter(event => 
+            event.title.toLowerCase().includes(query) || 
+            event.description.toLowerCase().includes(query)
+          );
+        }
+        
+        if (locationFilter) {
+          const location = locationFilter.toLowerCase();
+          filteredMockEvents = filteredMockEvents.filter(event =>
+            event.location.toLowerCase().includes(location)
+          );
+        }
+        
+        if (startDate) {
+          filteredMockEvents = filteredMockEvents.filter(event => {
+            const eventDate = new Date(event.date);
+            return eventDate >= startDate;
+          });
+        }
+        
+        if (endDate) {
+          filteredMockEvents = filteredMockEvents.filter(event => {
+            const eventDate = new Date(event.date);
+            return eventDate <= endDate;
+          });
+        }
+        
+        if (selectedCategory !== "all") {
+          filteredMockEvents = filteredMockEvents.filter(event => 
+            event.category.toLowerCase() === selectedCategory.toLowerCase()
+          );
+        }
+        
+        setEvents(filteredMockEvents);
+      } else {
+        // Successfully got events from API
+        setEvents(response.data || []);
       }
-      
-      if (endDate) {
-        filteredMockEvents = filteredMockEvents.filter(event => {
-          const eventDate = new Date(event.date);
-          return eventDate <= endDate;
-        });
-      }
-      
-      setEvents(filteredMockEvents);
-      
     } catch (error) {
       console.error("Error searching events:", error);
       toast({
         title: "Search Error",
-        description: "Failed to search events. Using locally filtered data instead.",
+        description: "Failed to search events",
         variant: "destructive"
       });
-      
-      // Use mock data as final fallback
-      setEvents(getEvents().filter(event => 
-        selectedCategory === "all" || event.category.toLowerCase() === selectedCategory.toLowerCase()
-      ));
-      
     } finally {
       setIsLoading(false);
     }

@@ -24,16 +24,14 @@ const Maps = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  // Generate map locations from events with better error handling
+  // Generate map locations from events
   useEffect(() => {
     const loadLocations = async () => {
       try {
         setIsLoading(true);
-        console.log("Loading map locations...");
         
         // Try to get events from API first
         try {
-          console.log("Attempting to fetch from API...");
           const params: EventSearchParams = {
             query: searchQuery || undefined
           };
@@ -42,7 +40,6 @@ const Maps = () => {
           
           if (!response.error && response.data && response.data.length > 0) {
             // Successfully got events from API
-            console.log("Successfully got API data:", response.data);
             const apiLocations = response.data.map(event => ({
               id: String(event.id),
               title: event.title,
@@ -54,7 +51,6 @@ const Maps = () => {
             }));
             
             setMapLocations(apiLocations);
-            console.log("Using provided location data:", apiLocations);
             return;
           }
         } catch (apiError) {
@@ -63,18 +59,12 @@ const Maps = () => {
         
         // Try Supabase if API fails
         try {
-          console.log("Attempting to fetch from Supabase...");
-          let query = supabase.from('events').select('*');
-          
-          // Apply search filter if available
-          if (searchQuery) {
-            query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-          }
-          
-          const { data: supabaseEvents, error } = await query;
+          const { data: supabaseEvents, error } = await supabase
+            .from('events')
+            .select('*')
+            .ilike(searchQuery ? 'title' : 'id', searchQuery ? `%${searchQuery}%` : '%');
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
-            console.log("Successfully got Supabase data:", supabaseEvents);
             const supabaseLocations = supabaseEvents.map(event => ({
               id: String(event.id),
               title: event.title,
@@ -86,17 +76,13 @@ const Maps = () => {
             }));
             
             setMapLocations(supabaseLocations);
-            console.log("Using provided location data:", supabaseLocations);
             return;
-          } else {
-            console.log("Supabase error or no results:", error);
           }
         } catch (supabaseError) {
           console.error("Error fetching from Supabase, falling back to mock data:", supabaseError);
         }
         
         // Fall back to mock data if both API and Supabase fail
-        console.log("Using mock data as fallback");
         const mockEvents = getEvents();
         const mockLocations = mockEvents.map(event => ({
           id: event.id,
@@ -109,7 +95,6 @@ const Maps = () => {
         }));
         
         setMapLocations(mockLocations);
-        console.log("Using provided location data:", mockLocations);
       } catch (error) {
         console.error("Error loading map locations:", error);
         toast({

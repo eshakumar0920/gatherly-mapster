@@ -3,9 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
 // In production, you would likely use an environment variable
-// const API_BASE_URL = 'http://localhost:5000/api';
-// Using a relative URL to avoid CORS issues with localhost
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
@@ -75,7 +73,7 @@ async function fetchFromApi<T>(
   try {
     const controller = new AbortController();
     // Set a timeout for the fetch request to avoid long waiting times
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const requestOptions: RequestInit = {
       method,
@@ -88,7 +86,6 @@ async function fetchFromApi<T>(
       signal: controller.signal
     };
 
-    console.log(`Making API request to: ${API_BASE_URL}${endpoint}`);
     const response = await fetch(`${API_BASE_URL}${endpoint}`, requestOptions);
     clearTimeout(timeoutId);
     
@@ -96,7 +93,6 @@ async function fetchFromApi<T>(
     const data = isJson ? await response.json() : await response.text();
     
     if (!response.ok) {
-      console.log("API error response:", data);
       return {
         error: data.message || 'An error occurred',
         status: response.status
