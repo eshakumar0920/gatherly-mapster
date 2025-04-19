@@ -1,24 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Calendar, MapPin, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import EventCard from "@/components/EventCard";
-import Navigation from "@/components/Navigation";
 import { getEvents, categories } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
-import { eventsApi, EventSearchParams } from "@/services/api";
+import { eventsApi } from "@/services/api";
+import EventCard from "@/components/EventCard";
+import Navigation from "@/components/Navigation";
 
 const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<any[]>(getEvents());
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -28,25 +21,13 @@ const Events = () => {
     setIsLoading(true);
     
     try {
-      const params: EventSearchParams = {
-        query: searchQuery,
-        location: locationFilter || undefined,
-        date_from: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
-        date_to: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
-      };
-      
-      const response = await eventsApi.searchEvents(params);
+      const response = await eventsApi.searchEvents({ query: searchQuery });
       
       if (response.error) {
-        toast({
-          title: "Search Error",
-          description: response.error,
-          variant: "destructive"
-        });
         // Fall back to mock data on error
         console.log("Failed to get API events, using mock data");
         
-        // Apply filters to mock data as a fallback
+        // Filter mock data based on search query
         let filteredMockEvents = getEvents();
         
         if (searchQuery) {
@@ -55,27 +36,6 @@ const Events = () => {
             event.title.toLowerCase().includes(query) || 
             event.description.toLowerCase().includes(query)
           );
-        }
-        
-        if (locationFilter) {
-          const location = locationFilter.toLowerCase();
-          filteredMockEvents = filteredMockEvents.filter(event =>
-            event.location.toLowerCase().includes(location)
-          );
-        }
-        
-        if (startDate) {
-          filteredMockEvents = filteredMockEvents.filter(event => {
-            const eventDate = new Date(event.date);
-            return eventDate >= startDate;
-          });
-        }
-        
-        if (endDate) {
-          filteredMockEvents = filteredMockEvents.filter(event => {
-            const eventDate = new Date(event.date);
-            return eventDate <= endDate;
-          });
         }
         
         if (selectedCategory !== "all") {
@@ -87,18 +47,12 @@ const Events = () => {
         setEvents(filteredMockEvents);
       } else {
         // Successfully got events from API
-        // Ensure that response.data is always an array
         const eventArray = Array.isArray(response.data) ? response.data : [];
         console.log("Events from API:", eventArray);
         setEvents(eventArray);
       }
     } catch (error) {
       console.error("Error searching events:", error);
-      toast({
-        title: "Search Error",
-        description: "Failed to search events",
-        variant: "destructive"
-      });
       // Fallback to mock events on error
       setEvents(getEvents());
     } finally {
@@ -106,35 +60,24 @@ const Events = () => {
     }
   };
 
-  // Filter events by category after they're loaded
+  // Filter events by category
   const filteredEvents = selectedCategory !== "all" && Array.isArray(events)
     ? events.filter(event => event.category && event.category.toLowerCase() === selectedCategory.toLowerCase())
     : events;
 
-  // Search when filters change or category changes
+  // Search when filters change
   useEffect(() => {
     const delaySearch = setTimeout(() => {
       searchEvents();
     }, 500); // Debounce searches
     
     return () => clearTimeout(delaySearch);
-  }, [selectedCategory, searchQuery, locationFilter, startDate, endDate]);
+  }, [selectedCategory, searchQuery]);
 
-  // Clear all filters
+  // Clear filters
   const clearFilters = () => {
     setSearchQuery("");
-    setLocationFilter("");
-    setStartDate(null);
-    setEndDate(null);
     setSelectedCategory("all");
-  };
-
-  // Handle Enter key press in search fields
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      searchEvents();
-    }
   };
 
   return (
@@ -161,97 +104,22 @@ const Events = () => {
             className="pl-10 rounded-full bg-muted/50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
           />
         </div>
       </div>
 
-      {/* Filter options */}
-      <div className="px-4 pb-4 flex flex-wrap gap-2">
-        {/* Location filter */}
-        <div className="relative">
-          <Input
-            placeholder="Location" 
-            className="pl-8 w-full max-w-[180px]"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <MapPin className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        </div>
-
-        {/* Date range picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              {startDate ? (
-                endDate ? (
-                  <span>
-                    {format(startDate, "MMM d")} - {format(endDate, "MMM d")}
-                  </span>
-                ) : (
-                  <span>From {format(startDate, "MMM d")}</span>
-                )
-              ) : (
-                <span>Date Range</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
-            <div className="p-3">
-              <h4 className="font-medium mb-2">Select Range</h4>
-              <div className="grid gap-2">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Start date</div>
-                  <CalendarComponent
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                  />
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">End date</div>
-                  <CalendarComponent
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                    disabled={date => !startDate || date < startDate}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setStartDate(null);
-                      setEndDate(null);
-                    }}
-                  >
-                    Clear
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => searchEvents()}
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Clear filters button - only show when filters are applied */}
-        {(searchQuery || locationFilter || startDate || endDate || selectedCategory !== "all") && (
-          <Button variant="ghost" onClick={clearFilters} className="flex items-center gap-1">
+      {/* Clear filters button - only show when filters are applied */}
+      {(searchQuery || selectedCategory !== "all") && (
+        <div className="px-4 pb-4">
+          <button 
+            onClick={clearFilters}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
             <X className="h-4 w-4" />
-            Clear
-          </Button>
-        )}
-      </div>
+            Clear filters
+          </button>
+        </div>
+      )}
 
       {/* Categories Tabs */}
       <div className="px-4 pb-4">
@@ -282,13 +150,12 @@ const Events = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No events found matching your criteria.</p>
-            <Button 
-              variant="outline"
-              className="mt-4"
+            <button 
               onClick={clearFilters}
+              className="mt-4 text-sm text-foreground hover:underline"
             >
               Clear filters
-            </Button>
+            </button>
           </div>
         )}
       </div>
@@ -299,3 +166,4 @@ const Events = () => {
 };
 
 export default Events;
+
