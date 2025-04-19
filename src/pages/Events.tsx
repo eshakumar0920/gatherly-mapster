@@ -19,7 +19,7 @@ const Events = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [events, setEvents] = useState(getEvents());
+  const [events, setEvents] = useState<any[]>(getEvents());
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -87,7 +87,10 @@ const Events = () => {
         setEvents(filteredMockEvents);
       } else {
         // Successfully got events from API
-        setEvents(response.data || []);
+        // Ensure that response.data is always an array
+        const eventArray = Array.isArray(response.data) ? response.data : [];
+        console.log("Events from API:", eventArray);
+        setEvents(eventArray);
       }
     } catch (error) {
       console.error("Error searching events:", error);
@@ -96,24 +99,26 @@ const Events = () => {
         description: "Failed to search events",
         variant: "destructive"
       });
+      // Fallback to mock events on error
+      setEvents(getEvents());
     } finally {
       setIsLoading(false);
     }
   };
 
   // Filter events by category after they're loaded
-  const filteredEvents = selectedCategory !== "all"
-    ? events.filter(event => event.category.toLowerCase() === selectedCategory.toLowerCase())
+  const filteredEvents = selectedCategory !== "all" && Array.isArray(events)
+    ? events.filter(event => event.category && event.category.toLowerCase() === selectedCategory.toLowerCase())
     : events;
 
-  // Search when filters change
+  // Search when filters change or category changes
   useEffect(() => {
     const delaySearch = setTimeout(() => {
       searchEvents();
     }, 500); // Debounce searches
     
     return () => clearTimeout(delaySearch);
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery, locationFilter, startDate, endDate]);
 
   // Clear all filters
   const clearFilters = () => {
@@ -124,9 +129,12 @@ const Events = () => {
     setSelectedCategory("all");
   };
 
-  // Handle search button click
-  const handleSearch = () => {
-    searchEvents();
+  // Handle Enter key press in search fields
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      searchEvents();
+    }
   };
 
   return (
@@ -153,7 +161,7 @@ const Events = () => {
             className="pl-10 rounded-full bg-muted/50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyDown={handleKeyDown}
           />
         </div>
       </div>
@@ -167,7 +175,7 @@ const Events = () => {
             className="pl-8 w-full max-w-[180px]"
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyDown={handleKeyDown}
           />
           <MapPin className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         </div>
@@ -226,7 +234,7 @@ const Events = () => {
                   </Button>
                   <Button 
                     size="sm"
-                    onClick={handleSearch}
+                    onClick={() => searchEvents()}
                   >
                     Apply
                   </Button>
@@ -235,11 +243,6 @@ const Events = () => {
             </div>
           </PopoverContent>
         </Popover>
-
-        {/* Search button */}
-        <Button onClick={handleSearch} disabled={isLoading}>
-          {isLoading ? "Searching..." : "Search"}
-        </Button>
 
         {/* Clear filters button - only show when filters are applied */}
         {(searchQuery || locationFilter || startDate || endDate || selectedCategory !== "all") && (
@@ -270,7 +273,7 @@ const Events = () => {
           <div className="flex justify-center py-20">
             <div className="animate-pulse">Loading events...</div>
           </div>
-        ) : filteredEvents.length > 0 ? (
+        ) : Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
             {filteredEvents.map(event => (
               <EventCard key={event.id} event={event} />
