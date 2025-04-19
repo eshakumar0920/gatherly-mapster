@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
@@ -70,6 +71,10 @@ async function fetchFromApi<T>(
   headers?: Record<string, string>
 ): Promise<ApiResponse<T>> {
   try {
+    const controller = new AbortController();
+    // Set a timeout for the fetch request to avoid long waiting times
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     const requestOptions: RequestInit = {
       method,
       headers: {
@@ -77,10 +82,13 @@ async function fetchFromApi<T>(
         ...headers
       },
       credentials: 'include', // Includes cookies for cross-domain requests if needed
-      ...(body && { body: JSON.stringify(body) })
+      ...(body && { body: JSON.stringify(body) }),
+      signal: controller.signal
     };
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, requestOptions);
+    clearTimeout(timeoutId);
+    
     const isJson = response.headers.get('content-type')?.includes('application/json');
     const data = isJson ? await response.json() : await response.text();
     
@@ -98,7 +106,9 @@ async function fetchFromApi<T>(
   } catch (error) {
     console.error('API request failed:', error);
     return {
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      error: error instanceof Error ? 
+        (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
+        'An unexpected error occurred',
       status: 0 // Use 0 to indicate network/offline error
     };
   }

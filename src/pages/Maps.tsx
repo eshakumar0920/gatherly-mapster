@@ -6,6 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import GoogleMapView from "@/components/GoogleMapView";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
+import { useToast } from "@/hooks/use-toast";
+import { EventSearchParams, eventsApi } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MapLocation {
   id: string;
@@ -19,16 +22,69 @@ const Maps = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mapLocations, setMapLocations] = useState<MapLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
   // Generate map locations from events
   useEffect(() => {
-    const loadLocations = () => {
+    const loadLocations = async () => {
       try {
         setIsLoading(true);
         
-        // Get events data and convert to map locations
-        const events = getEvents();
-        const locations = events.map(event => ({
+        // Try to get events from API first
+        try {
+          const params: EventSearchParams = {
+            query: searchQuery || undefined
+          };
+          
+          const response = await eventsApi.searchEvents(params);
+          
+          if (!response.error && response.data && response.data.length > 0) {
+            // Successfully got events from API
+            const apiLocations = response.data.map(event => ({
+              id: String(event.id),
+              title: event.title,
+              // Generate locations around UTD
+              lat: 32.9886 + (Math.random() - 0.5) * 0.01,
+              lng: -96.7479 + (Math.random() - 0.5) * 0.01,
+              description: event.description,
+              isEvent: true
+            }));
+            
+            setMapLocations(apiLocations);
+            return;
+          }
+        } catch (apiError) {
+          console.error("Error fetching from API, falling back to Supabase:", apiError);
+        }
+        
+        // Try Supabase if API fails
+        try {
+          const { data: supabaseEvents, error } = await supabase
+            .from('events')
+            .select('*')
+            .ilike(searchQuery ? 'title' : 'id', searchQuery ? `%${searchQuery}%` : '%');
+          
+          if (!error && supabaseEvents && supabaseEvents.length > 0) {
+            const supabaseLocations = supabaseEvents.map(event => ({
+              id: String(event.id),
+              title: event.title,
+              // Generate locations around UTD
+              lat: 32.9886 + (Math.random() - 0.5) * 0.01,
+              lng: -96.7479 + (Math.random() - 0.5) * 0.01,
+              description: event.description || null,
+              isEvent: true
+            }));
+            
+            setMapLocations(supabaseLocations);
+            return;
+          }
+        } catch (supabaseError) {
+          console.error("Error fetching from Supabase, falling back to mock data:", supabaseError);
+        }
+        
+        // Fall back to mock data if both API and Supabase fail
+        const mockEvents = getEvents();
+        const mockLocations = mockEvents.map(event => ({
           id: event.id,
           title: event.title,
           // Generate locations around UTD
@@ -38,24 +94,48 @@ const Maps = () => {
           isEvent: true
         }));
         
-        setMapLocations(locations);
+        setMapLocations(mockLocations);
       } catch (error) {
         console.error("Error loading map locations:", error);
+        toast({
+          title: "Error loading map",
+          description: "Could not load map locations. Using mock data instead.",
+          variant: "destructive"
+        });
+        
+        // Use mock data as last resort
+        const events = getEvents();
+        const locations = events.map(event => ({
+          id: event.id,
+          title: event.title,
+          lat: 32.9886 + (Math.random() - 0.5) * 0.01,
+          lng: -96.7479 + (Math.random() - 0.5) * 0.01,
+          description: event.description,
+          isEvent: true
+        }));
+        
+        setMapLocations(locations);
       } finally {
         setIsLoading(false);
       }
     };
     
     loadLocations();
-  }, []);
+  }, [searchQuery, toast]);
 
-  // Filter locations based on search query
-  const filteredLocations = searchQuery 
-    ? mapLocations.filter(location => 
-        location.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (location.description && location.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : mapLocations;
+  // Handle search submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    // The effect will run because searchQuery changed
+  };
+
+  // Filter locations based on search query - client-side filtering as backup
+  const filteredLocations = mapLocations.filter(location => 
+    !searchQuery || 
+    location.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (location.description && location.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   return (
     <div className="h-screen flex flex-col">
@@ -71,15 +151,17 @@ const Maps = () => {
       </header>
 
       <div className="px-4 pb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="Search locations..." 
-            className="pl-10 rounded-full bg-muted/50"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <form onSubmit={handleSearch}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input 
+              placeholder="Search locations..." 
+              className="pl-10 rounded-full bg-muted/50"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </form>
       </div>
 
       <div className="px-4 flex-1 pb-20">
