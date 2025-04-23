@@ -1,7 +1,11 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+// Adjust the auth base URL - removing the /api part as auth routes are at /auth
+const AUTH_BASE_URL = 'http://localhost:5000'; 
 
 export const useAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -30,7 +34,7 @@ export const useAuth = () => {
   // Verify user token if needed
   const verify = async (token: string) => {
     try {
-      const resp = await fetch("/auth/verify", {
+      const resp = await fetch(`${AUTH_BASE_URL}/auth/verify`, {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -50,7 +54,7 @@ export const useAuth = () => {
       
       // First try Flask backend
       try {
-        const response = await fetch("/auth/login", {
+        const response = await fetch(`${AUTH_BASE_URL}/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -154,7 +158,7 @@ export const useAuth = () => {
       
       // First try Flask backend
       try {
-        const response = await fetch("/auth/register", {
+        const response = await fetch(`${AUTH_BASE_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password, ...metadata })
