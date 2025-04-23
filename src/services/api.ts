@@ -11,7 +11,6 @@ export interface ApiResponse<T> {
   status: number;
 }
 
-// Define search parameters interface for events
 export interface EventSearchParams {
   query?: string;
   location?: string;
@@ -19,7 +18,6 @@ export interface EventSearchParams {
   date_to?: string;
 }
 
-// Define interfaces for the leveling system
 export interface UserProgress {
   user_id: number;
   username: string;
@@ -62,9 +60,7 @@ export interface LootBox {
   awarded_for: string;
 }
 
-// Generic fetch wrapper with error handling
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  // Get token from localStorage if it exists
   const token = localStorage.getItem('impulse_access_token');
   
   const headers: HeadersInit = {
@@ -72,12 +68,10 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     ...options.headers,
   };
   
-  // Add authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  // Determine the full URL based on the endpoint
   const fullUrl = endpoint.startsWith('/auth/') 
     ? `${API_BASE_URL}${endpoint}` 
     : `${API_BASE_URL}/api${endpoint}`;
@@ -87,12 +81,10 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers,
   });
 
-  // Try to parse response safely
   let responseData;
   try {
     responseData = await response.json();
   } catch (error) {
-    // If JSON parsing fails, throw an error
     throw new Error('Failed to parse server response');
   }
 
@@ -103,7 +95,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
   return responseData;
 }
 
-// Auth API
 export const authApi = {
   register: (email: string, password: string, metadata?: { name?: string }) => 
     fetchApi('/auth/register', {
@@ -120,7 +111,6 @@ export const authApi = {
   verifyToken: () => fetchApi('/auth/verify'),
 };
 
-// Generic function to handle API requests
 async function fetchFromApi<T>(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
@@ -129,7 +119,6 @@ async function fetchFromApi<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const controller = new AbortController();
-    // Set a timeout for the fetch request to avoid long waiting times
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const requestOptions: RequestInit = {
@@ -138,7 +127,7 @@ async function fetchFromApi<T>(
         'Content-Type': 'application/json',
         ...headers
       },
-      credentials: 'include', // Includes cookies for cross-domain requests if needed
+      credentials: 'include',
       ...(body && { body: JSON.stringify(body) }),
       signal: controller.signal
     };
@@ -166,12 +155,11 @@ async function fetchFromApi<T>(
       error: error instanceof Error ? 
         (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
         'An unexpected error occurred',
-      status: 0 // Use 0 to indicate network/offline error
+      status: 0
     };
   }
 }
 
-// Helper function to build query string from parameters
 function buildQueryString(params: Record<string, any>): string {
   const query = Object.entries(params)
     .filter(([_, value]) => value !== undefined && value !== '')
@@ -181,86 +169,63 @@ function buildQueryString(params: Record<string, any>): string {
   return query ? `?${query}` : '';
 }
 
-// API endpoints for meetups
 export const meetupsApi = {
-  // Get all meetups
   getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
   
-  // Get a single meetup by ID
   getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
   
-  // Create a new meetup
   createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
   
-  // Join a meetup lobby
   joinMeetupLobby: (meetupId: string, userData: any) => 
     fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
   
-  // Check in to a meetup
   checkInToMeetup: (meetupId: string, userData: any) => 
     fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
 };
 
-// API endpoints for events
 export const eventsApi = {
-  // Get all events
   getAllEvents: () => fetchFromApi<any[]>('/events'),
   
-  // Get a single event by ID
   getEventById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
-  // Search events with filters
   searchEvents: (params: EventSearchParams) => 
     fetchFromApi<any[]>(`/search${buildQueryString(params)}`),
   
-  // Join an event
   joinEvent: (eventId: string, userId: string) => 
     fetchFromApi<any>(`/events/${eventId}/join`, 'POST', { user_id: userId }),
   
-  // Leave an event
   leaveEvent: (eventId: string, userId: string) => 
     fetchFromApi<any>(`/events/${eventId}/leave`, 'POST', { user_id: userId }),
   
-  // Get event participants
   getEventParticipants: (eventId: string) => 
     fetchFromApi<any[]>(`/events/${eventId}/participants`),
   
-  // Create a new event
   createEvent: (eventData: any) => 
     fetchFromApi<any>('/events', 'POST', eventData),
     
-  // Get events by category
   getEventsByCategory: (category: string) =>
     fetchFromApi<any[]>(`/events?category=${category}`),
   
-  // Get events by location
   getEventsByLocation: (location: string) =>
     fetchFromApi<any[]>(`/events?location=${location}`),
   
-  // Get events by date
   getEventsByDate: (date: string) =>
     fetchFromApi<any[]>(`/events?date=${date}`)
 };
 
-// API endpoints for leveling system
 export const levelingApi = {
-  // Get user progress
   getUserProgress: (userId: number) => 
     fetchFromApi<UserProgress>(`/users/${userId}/progress`),
   
-  // Get all level definitions
   getLevels: () => 
     fetchFromApi<LevelInfo[]>('/levels'),
   
-  // Get user lootboxes
   getUserLootboxes: (userId: number) => 
     fetchFromApi<LootBox[]>(`/users/${userId}/lootboxes`),
   
-  // Open a lootbox
   openLootbox: (userId: number, lootboxId: number) => 
     fetchFromApi<any>(`/users/${userId}/lootboxes/${lootboxId}/open`, 'POST'),
   
-  // Start new semester (admin only)
   startNewSemester: (semesterData: { 
     name: string; 
     start_date: string; 
@@ -268,17 +233,13 @@ export const levelingApi = {
   }) => fetchFromApi<any>('/admin/semester', 'POST', semesterData)
 };
 
-// API endpoints for rewards
 export const rewardsApi = {
-  // Get user rewards
   getUserRewards: (userId: number) =>
     fetchFromApi<any[]>(`/users/${userId}/rewards`),
   
-  // Get all reward types
   getRewardTypes: (filters = {}) => {
     const queryParams = new URLSearchParams();
     
-    // Add any filters to query params
     Object.entries(filters).forEach(([key, value]) => {
       if (value) queryParams.set(key, String(value));
     });
@@ -287,29 +248,19 @@ export const rewardsApi = {
     return fetchFromApi<any[]>(`/reward-types${queryString}`);
   },
   
-  // Equip a reward
   equipReward: (userId: number, rewardId: number) =>
-    fetchFromApi<any>(`/users/${userId}/rewards/${rewardId}/equip`, {
-      method: 'POST',
-    }),
+    fetchFromApi<any>(`/users/${userId}/rewards/${rewardId}/equip`, 'POST'),
   
-  // Get all categories and themes
   getCategories: () =>
     fetchFromApi<any[]>(`/categories`),
 };
 
-// API endpoints for user-related operations
 export const userApi = {
-  // Get user points
   getUserPoints: (userId: string) => fetchFromApi<number>(`/users/${userId}/points`),
   
-  // Get user level
   getUserLevel: (userId: string) => fetchFromApi<number>(`/users/${userId}/level`),
-  
-  // Other user-related API calls
 };
 
-// Custom hook for handling API errors
 export function useApiErrorHandling() {
   const { toast } = useToast();
   
