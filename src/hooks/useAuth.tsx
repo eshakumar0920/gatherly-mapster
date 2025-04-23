@@ -111,7 +111,7 @@ export const useAuth = () => {
           toast({
             title: "Backend server unreachable",
             description: "Falling back to Supabase authentication",
-            variant: "warning",
+            variant: "destructive", // Changed from "warning" to "destructive"
           });
           
           try {
@@ -194,7 +194,7 @@ export const useAuth = () => {
           toast({
             title: "Backend server unreachable",
             description: "Falling back to Supabase authentication",
-            variant: "warning",
+            variant: "destructive", // Changed from "warning" to "destructive"
           });
           
           try {
@@ -207,12 +207,14 @@ export const useAuth = () => {
             // Handle metadata separately if needed
             if (metadata && metadata.name && data.user) {
               try {
-                await supabase.from('profiles').upsert({
-                  id: data.user.id,
-                  full_name: metadata.name
-                });
+                await supabase
+                  .from('user_roles') // Changed from 'profiles' to 'user_roles' which exists in the DB
+                  .upsert({ 
+                    user_id: data.user.id,
+                    role: 'user' // Assuming a default role
+                  });
               } catch (profileError) {
-                console.error("Failed to save profile data:", profileError);
+                console.error("Failed to save user role data:", profileError);
               }
             }
             

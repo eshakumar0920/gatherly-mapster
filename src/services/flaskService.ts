@@ -1,4 +1,4 @@
-import { meetupsApi, eventsApi, userApi, useApiErrorHandling, EventSearchParams } from './api';
+import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
@@ -294,22 +294,31 @@ export function useEventService() {
   };
 }
 
+// Create a simple getUserPoints function to replace the userApi reference
 export function useUserService() {
   const { handleApiError } = useApiErrorHandling();
   
   // Get user points
   const getUserPoints = useCallback(async (userId: string) => {
-    const response = await userApi.getUserPoints(userId);
-    
-    if (response.error) {
-      handleApiError(response.error);
+    // Instead of using userApi, we'll implement a direct approach
+    try {
+      // Try fetch from Supabase first
+      const { data, error } = await supabase
+        .from('users')
+        .select('current_xp')
+        .eq('id', userId)
+        .single();
+      
+      if (error || !data) {
+        return 0;
+      }
+      
+      return data.current_xp || 0;
+    } catch (error) {
+      console.error("Error getting user points:", error);
       return 0;
     }
-    
-    return response.data || 0;
-  }, [handleApiError]);
-  
-  // Other user-related functions...
+  }, []);
   
   return {
     getUserPoints
