@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { eventsApi } from "@/services/api";
 import EventCard from "@/components/EventCard";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/integrations/supabase/client";
 
 const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -16,16 +16,67 @@ const Events = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Function to search events
+  // Function to search events with improved error handling
   const searchEvents = async () => {
     setIsLoading(true);
     
     try {
+      console.log("Attempting to search events with query:", searchQuery);
       const response = await eventsApi.searchEvents({ query: searchQuery });
       
       if (response.error) {
-        // Fall back to mock data on error
-        console.log("Failed to get API events, using mock data");
+        console.log("API search failed, attempting Supabase fallback");
+        
+        try {
+          // Try to fetch from Supabase directly
+          let query = supabase
+            .from('events')
+            .select('*');
+          
+          // Apply search filter if there's a query
+          if (searchQuery) {
+            const likeQuery = `%${searchQuery.toLowerCase()}%`;
+            query = query.or(`title.ilike.${likeQuery},description.ilike.${likeQuery}`);
+          }
+          
+          // Apply category filter if not "all"
+          if (selectedCategory !== "all") {
+            query = query.eq('category', selectedCategory);
+          }
+          
+          const { data: supabaseData, error: supabaseError } = await query;
+          
+          if (supabaseError) {
+            throw supabaseError;
+          }
+          
+          if (supabaseData && supabaseData.length > 0) {
+            console.log("Successfully fetched data from Supabase:", supabaseData);
+            
+            // Transform Supabase data to match expected format
+            const formattedEvents = supabaseData.map(event => ({
+              id: event.id,
+              title: event.title,
+              description: event.description || "No description",
+              date: new Date(event.event_date).toLocaleDateString(),
+              time: new Date(event.event_date).toLocaleTimeString(),
+              location: event.location,
+              category: event.category || "Other",
+              points: event.xp_reward || 3,
+              image: `https://source.unsplash.com/random/300x200?${encodeURIComponent(event.category || 'event')}`
+            }));
+            
+            setEvents(formattedEvents);
+            setIsLoading(false);
+            return;
+          }
+        } catch (supabaseError) {
+          console.error("Supabase fallback also failed:", supabaseError);
+          // Continue to mock data fallback
+        }
+        
+        // Fall back to mock data
+        console.log("Both API and Supabase failed, using mock data");
         
         // Filter mock data based on search query
         let filteredMockEvents = getEvents();
@@ -55,6 +106,12 @@ const Events = () => {
       console.error("Error searching events:", error);
       // Fallback to mock events on error
       setEvents(getEvents());
+      
+      toast({
+        title: "Error searching events",
+        description: "Could not connect to the server. Using sample data instead.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -166,4 +223,3 @@ const Events = () => {
 };
 
 export default Events;
-
