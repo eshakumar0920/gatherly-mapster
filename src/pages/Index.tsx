@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,30 +38,39 @@ const Index = () => {
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
+      
+      // Try to fetch real data, fall back to mock data if it fails
       try {
-        setIsLoading(true);
-        
-        // Try to fetch real data, fall back to mock data if it fails
         let meetupsData;
         try {
           meetupsData = await fetchMeetups();
+          if (meetupsData && Array.isArray(meetupsData) && meetupsData.length > 0) {
+            setMeetups(meetupsData);
+          } else {
+            console.log("Using mock meetups data due to empty response");
+            setMeetups(mockMeetups);
+          }
         } catch (error) {
           console.log("Failed to fetch meetups from API, using mock data");
-          meetupsData = mockMeetups;
+          setMeetups(mockMeetups);
         }
-        setMeetups(meetupsData || mockMeetups);
         
         let eventsData;
         try {
           eventsData = await searchEvents({});
+          if (eventsData && Array.isArray(eventsData) && eventsData.length > 0) {
+            setFeaturedEvents(eventsData);
+          } else {
+            console.log("Using mock events data due to empty response");
+            setFeaturedEvents(mockEvents);
+          }
         } catch (error) {
           console.log("Failed to fetch events from API, using mock data");
-          eventsData = mockEvents;
+          setFeaturedEvents(mockEvents);
         }
-        setFeaturedEvents(Array.isArray(eventsData) ? eventsData : mockEvents);
-        
       } catch (error) {
-        console.error("Error in data fetching:", error);
+        console.error("General error in data fetching:", error);
         // Set mock data as fallback
         setFeaturedEvents(mockEvents);
         setMeetups(mockMeetups);
