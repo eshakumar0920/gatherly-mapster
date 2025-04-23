@@ -1,110 +1,77 @@
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
-import { eventsApi } from "@/services/api";
-import { useAuth } from "@/hooks/useAuth";
+import { meetups as sampleMeetups } from "@/services/meetupService";
 
 export const useMeetups = (selectedCategory: string | null) => {
-  const [allMeetups, setAllMeetups] = useState<any[]>([]);
+  const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { isLoggedIn, user } = useAuth(); // Add authentication state
 
   useEffect(() => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        console.log("Fetching meetups with auth state:", { isLoggedIn });
-
-        // Don't check login status here, just fetch the events
-        // The API will handle unauthorized access
+        let query = supabase.from('events').select('*');
         
-        // Use events API
-        const response = await eventsApi.getAllEvents();
-        let events = Array.isArray(response.data) ? response.data : [];
-
-        if (response.error) {
-          console.error("Error fetching events:", response.error);
+        if (selectedCategory) {
+          query = query.eq('category', selectedCategory);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching meetups:", error);
           toast({
-            title: "Error fetching events",
-            description: "Could not load events from the API. " + 
-                         (response.error?.includes("fetch") ? "Server connection issue." : response.error),
+            title: "Error fetching meetups",
+            description: "Could not load meetups from the database",
             variant: "destructive"
           });
-          
-          // Provide some sample data when API fails
-          events = getSampleMeetupData();
+          return;
         }
-
-        console.log("Events before filtering:", events);
-        console.log("Selected category:", selectedCategory);
-
-        // Filter by category if provided
-        const filteredEvents = selectedCategory 
-          ? events.filter((e: any) => {
-              const eventCategory = (e.category || '').toLowerCase();
-              const filterCategory = selectedCategory.toLowerCase();
-              console.log(`Comparing: '${eventCategory}' with '${filterCategory}'`);
-              return eventCategory === filterCategory;
-            })
-          : events;
-
-        console.log("Filtered events:", filteredEvents);
-        setAllMeetups(filteredEvents);
+        
+        if (data && data.length > 0) {
+          const eventRows = data as unknown as EventRow[];
+          const databaseMeetups: Meetup[] = eventRows.map(event => ({
+            id: event.id.toString(),
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_date).toLocaleString(),
+            location: event.location,
+            points: event.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: event.category || "Other",
+            attendees: []
+          }));
+          
+          // Combine sample meetups with database meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups([...databaseMeetups, ...filteredSampleMeetups]);
+        } else {
+          // If no database meetups, just show sample meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups(filteredSampleMeetups);
+        }
       } catch (error) {
-        console.error("Error in fetching events:", error);
-        setAllMeetups(getSampleMeetupData());
-        toast({
-          title: "Error fetching events",
-          description: "An unexpected error occurred. Using sample data instead.",
-          variant: "destructive"
-        });
+        console.error("Error in fetching meetups:", error);
+        setAllMeetups(sampleMeetups); // Fallback to sample meetups on error
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     fetchMeetups();
-  }, [selectedCategory, toast, isLoggedIn]); // Add isLoggedIn to dependencies
-
-  // Function to provide sample data when API fails
-  const getSampleMeetupData = () => {
-    return [
-      {
-        id: "sample-1",
-        title: "Study Group: Computer Science",
-        description: "Weekly study group for computer science students",
-        dateTime: new Date().toLocaleString(),
-        location: "Library Room 204",
-        points: 5,
-        createdBy: "Student",
-        lobbySize: 10,
-        category: "Academic"
-      },
-      {
-        id: "sample-2",
-        title: "Gaming in the Library",
-        description: "Join us for board games and video games in the library",
-        dateTime: new Date(Date.now() + 86400000).toLocaleString(),
-        location: "Library Commons",
-        points: 3,
-        createdBy: "Student",
-        lobbySize: 15,
-        category: "Technology"
-      },
-      {
-        id: "sample-3",
-        title: "Fitness Club Meetup",
-        description: "Weekly fitness club meetup for all students",
-        dateTime: new Date(Date.now() + 172800000).toLocaleString(),
-        location: "Student Recreation Center",
-        points: 4,
-        createdBy: "Student",
-        lobbySize: 8,
-        category: "Sports"
-      }
-    ];
-  };
+  }, [selectedCategory, toast]);
 
   return { allMeetups, isLoading, setAllMeetups };
 };

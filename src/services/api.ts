@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
-// Use environment variable or fallback to localhost with correct port
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000'; 
+// Use a fallback value if the environment variable is not set
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
@@ -83,8 +84,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const response = await fetch(fullUrl, {
       ...options,
       headers,
-      credentials: 'include',
-      mode: 'cors', // Explicitly set CORS mode
     });
 
     let responseData;
@@ -131,14 +130,13 @@ async function fetchFromApi<T>(
     // Skip adding /api/ for authentication routes
     const fullEndpoint = endpoint.startsWith('/auth/') 
       ? endpoint 
-      : endpoint; // Removed prepending /api since it's already included in API_BASE_URL + endpoint
+      : `/api${endpoint}`;
 
-    const fullUrl = `${API_BASE_URL}${fullEndpoint}`;
-    console.log(`Making request to: ${fullUrl}`); // Debug log
+    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`); // Debug log
     
     const controller = new AbortController();
-    // Increase timeout from 10 seconds to 15 seconds
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    // Increase timeout from 5000ms to 10000ms (10 seconds)
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     
     const requestOptions: RequestInit = {
       method,
@@ -147,21 +145,19 @@ async function fetchFromApi<T>(
         ...headers
       },
       credentials: 'include',
-      mode: 'cors', // Explicitly set CORS mode
       ...(body && { body: JSON.stringify(body) }),
       signal: controller.signal
     };
 
-    const response = await fetch(fullUrl, requestOptions);
+    const response = await fetch(`${API_BASE_URL}${fullEndpoint}`, requestOptions);
     clearTimeout(timeoutId);
     
     const isJson = response.headers.get('content-type')?.includes('application/json');
     const data = isJson ? await response.json() : await response.text();
     
     if (!response.ok) {
-      console.warn(`API request to ${fullEndpoint} failed with status ${response.status}`);
       return {
-        error: data.message || `Request failed with status ${response.status}`,
+        error: data.message || 'An error occurred',
         status: response.status
       };
     }
@@ -172,14 +168,10 @@ async function fetchFromApi<T>(
     };
   } catch (error) {
     console.error('API request failed:', error);
-    const errorMessage = error instanceof Error ? 
-      (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
-      'An unexpected error occurred';
-    
-    console.warn(`API error details: ${errorMessage}`);
-    
     return {
-      error: errorMessage,
+      error: error instanceof Error ? 
+        (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
+        'An unexpected error occurred',
       status: 0
     };
   }
@@ -194,60 +186,48 @@ function buildQueryString(params: Record<string, any>): string {
   return query ? `?${query}` : '';
 }
 
-// Deprecated: meetupsApi now points to eventsApi (for transition, in case any references remain)
 export const meetupsApi = {
-  getAllMeetups: async () => {
-    // Use /events endpoint instead of /meetups
-    try {
-      return await eventsApi.getAllEvents();
-    } catch (error) {
-      console.error('Error getting meetups (now coming from events):', error);
-      return { error: 'Failed to fetch meetups', status: 0 };
-    }
-  },
-  getMeetupById: async (id: string) => {
-    try {
-      return await eventsApi.getEventById(id);
-    } catch (error) {
-      console.error('Error getting meetup details (now coming from events):', error);
-      return { error: 'Failed to fetch meetup details', status: 0 };
-    }
-  },
-  createMeetup: (meetupData: any) => eventsApi.createEvent(meetupData),
-  joinMeetupLobby: (meetupId: string, userData: any) =>
-    eventsApi.joinEvent(meetupId, userData?.user_id ?? ""),
+  getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
+  
+  getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
+  
+  createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
+  
+  joinMeetupLobby: (meetupId: string, userData: any) => 
+    fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
+  
   checkInToMeetup: (meetupId: string, userData: any) => 
-    ({ data: null, error: null, status: 200 }) // Not implemented: placeholder for checkin in events (if there's a checkin endpoint, map it here)
+    fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
 };
 
 export const eventsApi = {
-  getAllEvents: () => fetchFromApi<any[]>('/api/events'),
+  getAllEvents: () => fetchFromApi<any[]>('/events'),
   
-  getEventById: (id: string) => fetchFromApi<any>(`/api/events/${id}`),
+  getEventById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
   searchEvents: (params: EventSearchParams) => 
-    fetchFromApi<any[]>(`/api/search${buildQueryString(params)}`),
+    fetchFromApi<any[]>(`/search${buildQueryString(params)}`),
   
   joinEvent: (eventId: string, userId: string) => 
-    fetchFromApi<any>(`/api/events/${eventId}/join`, 'POST', { user_id: userId }),
+    fetchFromApi<any>(`/events/${eventId}/join`, 'POST', { user_id: userId }),
   
   leaveEvent: (eventId: string, userId: string) => 
-    fetchFromApi<any>(`/api/events/${eventId}/leave`, 'POST', { user_id: userId }),
+    fetchFromApi<any>(`/events/${eventId}/leave`, 'POST', { user_id: userId }),
   
   getEventParticipants: (eventId: string) => 
-    fetchFromApi<any[]>(`/api/events/${eventId}/participants`),
+    fetchFromApi<any[]>(`/events/${eventId}/participants`),
   
   createEvent: (eventData: any) => 
-    fetchFromApi<any>('/api/events', 'POST', eventData),
+    fetchFromApi<any>('/events', 'POST', eventData),
     
   getEventsByCategory: (category: string) =>
-    fetchFromApi<any[]>(`/api/events?category=${category}`),
+    fetchFromApi<any[]>(`/events?category=${category}`),
   
   getEventsByLocation: (location: string) =>
-    fetchFromApi<any[]>(`/api/events?location=${location}`),
+    fetchFromApi<any[]>(`/events?location=${location}`),
   
   getEventsByDate: (date: string) =>
-    fetchFromApi<any[]>(`/api/events?date=${date}`)
+    fetchFromApi<any[]>(`/events?date=${date}`)
 };
 
 export const levelingApi = {

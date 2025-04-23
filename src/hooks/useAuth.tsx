@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,112 +14,21 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [lastVerified, setLastVerified] = useState<number>(0);
 
   const { toast } = useToast();
 
-  // Restore session from localStorage on mount and set up listener
+  // Restore session from localStorage on mount
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session ? "Session exists" : "No session");
-      
-      if (session) {
-        setIsLoggedIn(true);
-        setAccessToken(session.access_token);
-        setUser(session.user);
-        setVerifiedEmail(session.user.email || "");
-        setIsEmailVerified(true);
-        setLastVerified(Date.now());
-        
-        // Store in localStorage as backup
-        window.localStorage.setItem("impulse_access_token", session.access_token);
-        window.localStorage.setItem("impulse_user_email", session.user.email || "");
-        window.localStorage.setItem("impulse_last_verified", Date.now().toString());
-      } else if (event === 'SIGNED_OUT') {
-        setIsLoggedIn(false);
-        setIsEmailVerified(false);
-        setVerifiedEmail("");
-        setUser(null);
-        setAccessToken(null);
-        setLastVerified(0);
-        window.localStorage.removeItem("impulse_access_token");
-        window.localStorage.removeItem("impulse_user_email");
-        window.localStorage.removeItem("impulse_last_verified");
-      }
-    });
-
-    // Then check for existing session
-    const initializeAuthState = async () => {
-      try {
-        // First try to get active Supabase session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log("Found existing Supabase session");
-          setIsLoggedIn(true);
-          setAccessToken(session.access_token);
-          setUser(session.user);
-          setVerifiedEmail(session.user.email || "");
-          setIsEmailVerified(true);
-          setLastVerified(Date.now());
-          window.localStorage.setItem("impulse_last_verified", Date.now().toString());
-        } else {
-          // Fall back to localStorage tokens
-          console.log("No Supabase session, checking localStorage");
-          const token = window.localStorage.getItem("impulse_access_token");
-          const email = window.localStorage.getItem("impulse_user_email");
-          const storedLastVerified = window.localStorage.getItem("impulse_last_verified");
-          
-          if (token && email) {
-            console.log("Found token in localStorage, verifying");
-            // Check if the token was recently verified (within the last 5 minutes)
-            const tokenRecentlyVerified = storedLastVerified && 
-              (Date.now() - Number(storedLastVerified)) < 5 * 60 * 1000;
-            
-            if (tokenRecentlyVerified) {
-              console.log("Token was recently verified, skipping verification");
-              setIsLoggedIn(true);
-              setAccessToken(token);
-              setVerifiedEmail(email);
-              setUser({ email });
-              setIsEmailVerified(true);
-              setLastVerified(Number(storedLastVerified));
-            } else {
-              const isValid = await verify(token);
-              
-              if (isValid) {
-                setIsLoggedIn(true);
-                setAccessToken(token);
-                setVerifiedEmail(email);
-                setUser({ email });
-                setIsEmailVerified(true);
-                setLastVerified(Date.now());
-                window.localStorage.setItem("impulse_last_verified", Date.now().toString());
-                console.log("Local token verified successfully");
-              } else {
-                console.log("Local token invalid, clearing");
-                window.localStorage.removeItem("impulse_access_token");
-                window.localStorage.removeItem("impulse_user_email");
-                window.localStorage.removeItem("impulse_last_verified");
-              }
-            }
-          } else {
-            console.log("No auth tokens found");
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing auth state:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuthState();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    const token = window.localStorage.getItem("impulse_access_token");
+    const email = window.localStorage.getItem("impulse_user_email");
+    if (token && email) {
+      setIsLoggedIn(true);
+      setAccessToken(token);
+      setVerifiedEmail(email);
+      setUser({ email });
+      setIsEmailVerified(true); // No email_confirmed_at in custom backend, assume true after login
+    }
+    setIsLoading(false);
   }, []);
 
   // Verify user token if needed
@@ -137,47 +47,6 @@ export const useAuth = () => {
       return false;
     }
   };
-
-  // New method to verify the current session
-  const verifyCurrentSession = useCallback(async () => {
-    // If we verified the token recently (within the last minute), skip verification
-    if (Date.now() - lastVerified < 60 * 1000) {
-      console.log("Session was recently verified, skipping verification");
-      return true;
-    }
-
-    console.log("Verifying current session...");
-    
-    try {
-      // First try Supabase session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        console.log("Current Supabase session is valid");
-        setLastVerified(Date.now());
-        window.localStorage.setItem("impulse_last_verified", Date.now().toString());
-        return true;
-      }
-      
-      // If no Supabase session, check localStorage token
-      const token = window.localStorage.getItem("impulse_access_token");
-      if (token) {
-        const isValid = await verify(token);
-        if (isValid) {
-          console.log("Local token is valid");
-          setLastVerified(Date.now());
-          window.localStorage.setItem("impulse_last_verified", Date.now().toString());
-          return true;
-        }
-      }
-      
-      console.log("Session verification failed");
-      return false;
-    } catch (error) {
-      console.error("Error verifying session:", error);
-      return false;
-    }
-  }, [lastVerified]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -392,8 +261,7 @@ export const useAuth = () => {
     accessToken,
     login,
     signup,
-    logout,
-    verifyCurrentSession
+    logout
   };
 };
 

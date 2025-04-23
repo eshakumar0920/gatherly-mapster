@@ -20,8 +20,8 @@ const Meetups = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { points, level } = useUserStore();
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
-  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
+  const { user } = useAuth();
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups(null); // Changed to null to fetch all meetups initially
 
   const filteredMeetups = allMeetups.filter(meetup => {
     // If we have a search query, filter by title
@@ -38,14 +38,6 @@ const Meetups = () => {
 
   const handleMeetupClick = (meetupId: string) => {
     navigate(`/meetups/${meetupId}`);
-  };
-
-  const handleCreateMeetupClick = () => {
-    if (!isLoggedIn) {
-      navigate("/auth");
-    } else {
-      setIsDialogOpen(true);
-    }
   };
 
   return (
@@ -98,7 +90,7 @@ const Meetups = () => {
       </div>
 
       <div className="px-4 pb-4">
-        <Button className="w-full" onClick={handleCreateMeetupClick}>
+        <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Create New Meetup
         </Button>
       </div>
