@@ -36,9 +36,10 @@ interface CreateMeetupFormProps {
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, verifyCurrentSession } = useAuth();
   const navigate = useNavigate();
   const [authStatus, setAuthStatus] = useState<string>("Checking auth status...");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
     console.log("Auth state in CreateMeetupForm:", { isLoggedIn, user });
@@ -63,6 +64,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
     try {
       console.log("Submit attempted with auth state:", { isLoggedIn, userExists: !!user, userEmail: user?.email });
       
@@ -70,6 +74,19 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
+          variant: "destructive"
+        });
+        onClose();
+        navigate("/auth");
+        return;
+      }
+      
+      const isSessionValid = await verifyCurrentSession();
+      
+      if (!isSessionValid) {
+        toast({
+          title: "Session expired",
+          description: "Your login session has expired. Please sign in again.",
           variant: "destructive"
         });
         onClose();
@@ -171,6 +188,8 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
