@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,6 +12,7 @@ import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { Meetup, EventRow } from "@/types/meetup";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -35,7 +35,8 @@ interface CreateMeetupFormProps {
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const navigate = useNavigate();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,6 +52,17 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      if (!isLoggedIn || !user || !user.email) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to create meetups",
+          variant: "destructive"
+        });
+        onClose();
+        navigate("/auth");
+        return;
+      }
+      
       const eventDate = new Date().toISOString();
       
       if (!user || !user.id) {
@@ -160,6 +172,15 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       description: "Your meetup has been successfully created.",
     });
   };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="p-4 text-center">
+        <p className="mb-4 text-destructive">You must be logged in to create meetups</p>
+        <Button onClick={() => navigate("/auth")}>Go to Login</Button>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>

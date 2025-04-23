@@ -1,16 +1,27 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { eventsApi } from "@/services/api"; // <-- NEW import
+import { eventsApi } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
 
 export const useMeetups = (selectedCategory: string | null) => {
   const [allMeetups, setAllMeetups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { isLoggedIn, user } = useAuth(); // Add authentication state
 
   useEffect(() => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
+
+        // Check if user is logged in before fetching
+        if (!isLoggedIn) {
+          console.log("User not logged in, will not fetch events");
+          setAllMeetups([]);
+          setIsLoading(false);
+          return;
+        }
 
         // Use events API instead of old meetups logic
         const response = await eventsApi.getAllEvents();
@@ -39,7 +50,7 @@ export const useMeetups = (selectedCategory: string | null) => {
     };
 
     fetchMeetups();
-  }, [selectedCategory, toast]);
+  }, [selectedCategory, toast, isLoggedIn]); // Add isLoggedIn to dependencies
 
   return { allMeetups, isLoading, setAllMeetups };
 };
