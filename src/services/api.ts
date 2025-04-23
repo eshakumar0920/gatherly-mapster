@@ -77,7 +77,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const expiresAt = localStorage.getItem('impulse_session_expires_at');
   if (expiresAt && parseInt(expiresAt) < Date.now()) {
     console.warn("Token expired, requests may fail until user re-authenticates");
-    // We don't remove the token here as that would be handled by the auth system
   }
   
   // Handle authentication routes differently - they should go directly to /auth endpoint
@@ -86,11 +85,11 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     : `${API_BASE_URL}/api${endpoint}`;
 
   try {
-    console.log(`Fetching from: ${fullUrl}`); // Add logging to debug URL construction
+    console.log(`Fetching from: ${fullUrl}`);
     const response = await fetch(fullUrl, {
       ...options,
       headers,
-      credentials: 'include',
+      credentials: 'include', // Important for cookies
       mode: 'cors', // Explicitly set CORS mode
     });
 
@@ -105,7 +104,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
       // Handle auth errors specially
       if (response.status === 401) {
         console.error("Authentication error detected in API request");
-        throw new Error("Session expired - please log in again");
+        throw new Error(responseData.message || responseData.error || "Session expired - please log in again");
       }
       throw new Error(responseData.message || responseData.error || 'An error occurred');
     }
@@ -130,7 +129,12 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     }),
   
-  verifyToken: () => fetchApi('/auth/verify'),
+  verifyToken: (token?: string) => {
+    const authToken = token || localStorage.getItem('impulse_access_token');
+    return fetchApi('/auth/verify', {
+      headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+    });
+  },
 };
 
 async function fetchFromApi<T>(
@@ -144,15 +148,19 @@ async function fetchFromApi<T>(
     const expiresAt = localStorage.getItem('impulse_session_expires_at');
     if (expiresAt && parseInt(expiresAt) < Date.now()) {
       console.warn("Token expired, API request may fail");
+      return {
+        error: "Authentication expired - please log in again",
+        status: 401
+      };
     }
 
-    // Skip adding /api/ for authentication routes
+    // Handle auth endpoints differently
     const fullEndpoint = endpoint.startsWith('/auth/') 
       ? endpoint 
-      : endpoint; // Removed prepending /api since it's already included in API_BASE_URL + endpoint
+      : endpoint.startsWith('/api/') ? endpoint : `/api${endpoint}`;
 
     const fullUrl = `${API_BASE_URL}${fullEndpoint}`;
-    console.log(`Making request to: ${fullUrl}`); // Debug log
+    console.log(`Making request to: ${fullUrl}`);
     
     const controller = new AbortController();
     // Increase timeout from 10 seconds to 15 seconds
@@ -166,8 +174,8 @@ async function fetchFromApi<T>(
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...headers
       },
-      credentials: 'include',
-      mode: 'cors', // Explicitly set CORS mode
+      credentials: 'include', // Important for cookies
+      mode: 'cors',
       ...(body && { body: JSON.stringify(body) }),
       signal: controller.signal
     };
@@ -181,6 +189,11 @@ async function fetchFromApi<T>(
     // Special handling for auth errors
     if (response.status === 401) {
       console.warn(`Authentication error from ${fullEndpoint} - session may be expired`);
+      // Clear the session token if it's expired
+      localStorage.removeItem("impulse_access_token");
+      localStorage.removeItem("impulse_user_email");
+      localStorage.removeItem("impulse_session_expires_at");
+      
       return {
         error: "Authentication expired - please log in again",
         status: 401
@@ -190,7 +203,7 @@ async function fetchFromApi<T>(
     if (!response.ok) {
       console.warn(`API request to ${fullEndpoint} failed with status ${response.status}`);
       return {
-        error: data.message || `Request failed with status ${response.status}`,
+        error: data.message || data.error || `Request failed with status ${response.status}`,
         status: response.status
       };
     }
@@ -326,6 +339,32 @@ export function useApiErrorHandling() {
   
   const handleApiError = (error: string | undefined) => {
     if (error) {
+      // Special handling for auth errors
+      if (error.toLowerCase().includes('authentication') || 
+          error.toLowerCase().includes('session expired') ||
+          error.toLowerCase().includes('log in again')) {
+        
+        // Clear local storage auth items
+        localStorage.removeItem("impulse_access_token");
+        localStorage.removeItem("impulse_user_email");
+        localStorage.removeItem("impulse_session_expires_at");
+        
+        // Show a more specific toast for auth errors
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive"
+        });
+        
+        // Redirect to auth page after a short delay
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 1500);
+        
+        return;
+      }
+      
+      // Regular error handling
       toast({
         title: "API Error",
         description: error,
