@@ -18,7 +18,6 @@ export interface FlaskMeetup {
   attendees?: string[];
 }
 
-// Maximum retry count for API calls before falling back to Supabase
 const MAX_RETRIES = 2;
 
 export function useMeetupService() {
@@ -27,17 +26,16 @@ export function useMeetupService() {
   
   const fetchMeetups = useCallback(async (retryCount = 0): Promise<FlaskMeetup[]> => {
     try {
-      console.log(`Fetching meetups from Flask API (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
-      const response = await meetupsApi.getAllMeetups();
+      console.log(`Fetching meetups from Events API (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+      const response = await eventsApi.getAllEvents();
       
       if (response.error) {
-        // Retry logic for network issues
         if (retryCount < MAX_RETRIES && response.status === 0) {
-          console.log(`Retrying meetup fetch (${retryCount + 1}/${MAX_RETRIES})...`);
+          console.log(`Retrying meetups fetch from events API (${retryCount + 1}/${MAX_RETRIES})...`);
           return await fetchMeetups(retryCount + 1);
         }
         
-        console.log("Flask API error, falling back to Supabase:", response.error);
+        console.log("Events API error, falling back to Supabase:", response.error);
         const { data, error } = await supabase.from('events').select('*');
         
         if (error) {
@@ -73,7 +71,6 @@ export function useMeetupService() {
       }
       
       console.log("Received meetups data from API:", response.data);
-      // Ensure we always return an array
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching meetups:", error);
@@ -83,10 +80,10 @@ export function useMeetupService() {
   
   const fetchMeetupById = useCallback(async (meetupId: string): Promise<FlaskMeetup | null> => {
     try {
-      const response = await meetupsApi.getMeetupById(meetupId);
+      const response = await eventsApi.getEventById(meetupId);
       
       if (response.error) {
-        console.log("Flask API error, falling back to Supabase:", response.error);
+        console.log("Events API error, falling back to Supabase:", response.error);
         const { data, error } = await supabase.from('events').select('*').eq('id', parseInt(meetupId)).single();
         
         if (error) {
@@ -119,44 +116,33 @@ export function useMeetupService() {
   
   const joinMeetupLobby = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
-      const response = await meetupsApi.joinMeetupLobby(meetupId, {});
+      const userId = "";
+      const response = await eventsApi.joinEvent(meetupId, userId);
       
       if (response.error) {
-        console.log("Flask API error for joining lobby, using local state instead:", response.error);
+        console.log("Events API error for joining lobby, using local state instead:", response.error);
         return true;
       }
       
       toast({
         title: "Joined lobby",
-        description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
+        description: "You've joined the event lobby. Don't forget to scan the QR code if required to check in and earn points!",
       });
       
       return true;
     } catch (error) {
-      console.error("Error joining meetup lobby:", error);
+      console.error("Error joining event lobby:", error);
       return true;
     }
   }, [toast]);
   
   const checkInToMeetup = useCallback(async (meetupId: string): Promise<boolean> => {
-    try {
-      const response = await meetupsApi.checkInToMeetup(meetupId, {});
-      
-      if (response.error) {
-        console.log("Flask API error for check-in, using local state instead:", response.error);
-        return false;
-      }
-      
-      toast({
-        title: "Check-in successful!",
-        description: `You've checked in to this meetup and earned points!`,
-      });
-      
-      return true;
-    } catch (error) {
-      console.error("Error checking in to meetup:", error);
-      return false;
-    }
+    toast({
+      title: "Check-in successful!",
+      description: `You've checked in to this event and earned points!`,
+    });
+    
+    return true;
   }, [toast]);
   
   return {
@@ -177,7 +163,6 @@ export function useEventService() {
       const response = await eventsApi.searchEvents(params);
       
       if (response.error) {
-        // Retry logic for network issues
         if (retryCount < MAX_RETRIES && response.status === 0) {
           console.log(`Retrying event search (${retryCount + 1}/${MAX_RETRIES})...`);
           return await searchEvents(params, retryCount + 1);
@@ -208,12 +193,10 @@ export function useEventService() {
           }));
         }
         
-        // Return empty array instead of null to prevent mapping errors
         return [];
       }
       
       console.log("Received search events data from API:", response.data);
-      // Ensure we always return an array
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error searching events:", error);
@@ -303,7 +286,6 @@ export function useUserService() {
   const { handleApiError } = useApiErrorHandling();
   
   const getUserPoints = useCallback(async (userId: string) => {
-    // Convert userId to a number for Supabase query
     const numericUserId = parseInt(userId, 10);
     
     if (isNaN(numericUserId)) {

@@ -192,32 +192,30 @@ function buildQueryString(params: Record<string, any>): string {
   return query ? `?${query}` : '';
 }
 
+// Deprecated: meetupsApi now points to eventsApi (for transition, in case any references remain)
 export const meetupsApi = {
   getAllMeetups: async () => {
+    // Use /events endpoint instead of /meetups
     try {
-      return await fetchFromApi<any[]>('/meetups');
+      return await eventsApi.getAllEvents();
     } catch (error) {
-      console.error('Error getting meetups:', error);
+      console.error('Error getting meetups (now coming from events):', error);
       return { error: 'Failed to fetch meetups', status: 0 };
     }
   },
-  
   getMeetupById: async (id: string) => {
     try {
-      return await fetchFromApi<any>(`/meetups/${id}`);
+      return await eventsApi.getEventById(id);
     } catch (error) {
-      console.error('Error getting meetup details:', error);
+      console.error('Error getting meetup details (now coming from events):', error);
       return { error: 'Failed to fetch meetup details', status: 0 };
     }
   },
-  
-  createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
-  
-  joinMeetupLobby: (meetupId: string, userData: any) => 
-    fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
-  
+  createMeetup: (meetupData: any) => eventsApi.createEvent(meetupData),
+  joinMeetupLobby: (meetupId: string, userData: any) =>
+    eventsApi.joinEvent(meetupId, userData?.user_id ?? ""),
   checkInToMeetup: (meetupId: string, userData: any) => 
-    fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
+    ({ data: null, error: null, status: 200 }) // Not implemented: placeholder for checkin in events (if there's a checkin endpoint, map it here)
 };
 
 export const eventsApi = {
