@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -37,20 +36,19 @@ interface CreateMeetupFormProps {
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user, isLoggedIn, accessToken } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const [authStatus, setAuthStatus] = useState<string>("Checking auth status...");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
-    console.log("Auth state in CreateMeetupForm:", { isLoggedIn, user, tokenExists: !!accessToken });
+    console.log("Auth state in CreateMeetupForm:", { isLoggedIn, user });
     
     if (isLoggedIn && user) {
       setAuthStatus(`Logged in as: ${user.email || "Unknown email"}`);
     } else {
       setAuthStatus("Not logged in");
     }
-  }, [isLoggedIn, user, accessToken]);
+  }, [isLoggedIn, user]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -65,20 +63,19 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!isLoggedIn || !user) {
-      toast({
-        title: "Authentication required",
-        description: "You must be logged in to create meetups",
-        variant: "destructive"
-      });
-      onClose();
-      navigate("/auth");
-      return;
-    }
-    
     try {
-      setIsSubmitting(true);
       console.log("Submit attempted with auth state:", { isLoggedIn, userExists: !!user, userEmail: user?.email });
+      
+      if (!isLoggedIn) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to create meetups",
+          variant: "destructive"
+        });
+        onClose();
+        navigate("/auth");
+        return;
+      }
       
       if (!user || !user.email) {
         toast({
@@ -89,7 +86,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      // Check if session is still valid
+      const eventDate = new Date().toISOString();
+      console.log("Creating meetup with user:", user);
+      
       const { data: sessionData } = await supabase.auth.getSession();
       console.log("Current session:", sessionData?.session ? "Valid" : "Invalid");
       
@@ -104,9 +103,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      const eventDate = new Date().toISOString();
-      
-      // Try to find the user first
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id')
@@ -115,12 +111,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       
       console.log("User lookup result:", { usersData, usersError });
       
-      let userId: number;
-      
       if (usersError || !usersData) {
         console.log("User not found in users table, creating a new record");
         
-        // Create a new user record
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert({
@@ -141,41 +134,11 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
           return;
         }
         
-        userId = newUser.id;
+        await createMeetup(values, eventDate, newUser.id);
       } else {
-        userId = usersData.id;
+        await createMeetup(values, eventDate, usersData.id);
       }
       
-      // Create the meetup with the user ID
-      const { error } = await supabase.from('events').insert({
-        title: values.title,
-        description: values.description,
-        location: values.location,
-        event_date: eventDate,
-        creator_id: userId,
-        created_at: new Date().toISOString(),
-        semester: "Spring 2025",
-        xp_reward: 3,
-        organizer_xp_reward: 5,
-        category: values.category
-      });
-      
-      if (error) {
-        console.error("Error creating meetup:", error);
-        toast({
-          title: "Error creating meetup",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      toast({
-        title: "Meetup created!",
-        description: "Your meetup has been successfully created.",
-      });
-      
-      // Fetch updated meetups list
       const { data: updatedRawData } = await supabase.from('events').select('*');
       if (updatedRawData) {
         const supabaseMeetups = updatedRawData.map((event) => {
@@ -208,9 +171,37 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
-      setIsSubmitting(false);
     }
+  };
+
+  const createMeetup = async (values: FormValues, eventDate: string, userId: number) => {
+    const { error } = await supabase.from('events').insert({
+      title: values.title,
+      description: values.description,
+      location: values.location,
+      event_date: eventDate,
+      creator_id: userId,
+      created_at: new Date().toISOString(),
+      semester: "Spring 2025",
+      xp_reward: 3,
+      organizer_xp_reward: 5,
+      category: values.category
+    });
+    
+    if (error) {
+      console.error("Error creating meetup:", error);
+      toast({
+        title: "Error creating meetup",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Meetup created!",
+      description: "Your meetup has been successfully created.",
+    });
   };
 
   if (isLoggedIn && !user) {
@@ -350,13 +341,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         />
         
         <DialogFooter>
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Creating..." : "Create Meetup"}
-          </Button>
+          <Button type="submit" className="w-full">Create Meetup</Button>
         </DialogFooter>
       </form>
     </Form>
