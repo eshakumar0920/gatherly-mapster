@@ -17,18 +17,84 @@ export const useAuth = () => {
 
   const { toast } = useToast();
 
-  // Restore session from localStorage on mount
+  // Restore session from localStorage on mount and set up listener
   useEffect(() => {
-    const token = window.localStorage.getItem("impulse_access_token");
-    const email = window.localStorage.getItem("impulse_user_email");
-    if (token && email) {
-      setIsLoggedIn(true);
-      setAccessToken(token);
-      setVerifiedEmail(email);
-      setUser({ email });
-      setIsEmailVerified(true); // No email_confirmed_at in custom backend, assume true after login
-    }
-    setIsLoading(false);
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session ? "Session exists" : "No session");
+      
+      if (session) {
+        setIsLoggedIn(true);
+        setAccessToken(session.access_token);
+        setUser(session.user);
+        setVerifiedEmail(session.user.email || "");
+        setIsEmailVerified(true);
+        
+        // Store in localStorage as backup
+        window.localStorage.setItem("impulse_access_token", session.access_token);
+        window.localStorage.setItem("impulse_user_email", session.user.email || "");
+      } else if (event === 'SIGNED_OUT') {
+        setIsLoggedIn(false);
+        setIsEmailVerified(false);
+        setVerifiedEmail("");
+        setUser(null);
+        setAccessToken(null);
+        window.localStorage.removeItem("impulse_access_token");
+        window.localStorage.removeItem("impulse_user_email");
+      }
+    });
+
+    // Then check for existing session
+    const initializeAuthState = async () => {
+      try {
+        // First try to get active Supabase session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          console.log("Found existing Supabase session");
+          setIsLoggedIn(true);
+          setAccessToken(session.access_token);
+          setUser(session.user);
+          setVerifiedEmail(session.user.email || "");
+          setIsEmailVerified(true);
+        } else {
+          // Fall back to localStorage tokens
+          console.log("No Supabase session, checking localStorage");
+          const token = window.localStorage.getItem("impulse_access_token");
+          const email = window.localStorage.getItem("impulse_user_email");
+          
+          if (token && email) {
+            console.log("Found token in localStorage, verifying");
+            const isValid = await verify(token);
+            
+            if (isValid) {
+              setIsLoggedIn(true);
+              setAccessToken(token);
+              setVerifiedEmail(email);
+              setUser({ email });
+              setIsEmailVerified(true);
+              console.log("Local token verified successfully");
+            } else {
+              console.log("Local token invalid, clearing");
+              window.localStorage.removeItem("impulse_access_token");
+              window.localStorage.removeItem("impulse_user_email");
+            }
+          } else {
+            console.log("No auth tokens found");
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing auth state:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuthState();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Verify user token if needed
