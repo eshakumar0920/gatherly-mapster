@@ -68,7 +68,8 @@ export const useMeetups = (selectedCategory: string | null) => {
             console.error("Supabase fallback also failed:", supabaseError);
             // Continue to sample data fallback
           }
-        } else if (response.data) {
+        } else if ('data' in response && response.data) {
+          // Fix: Check if 'data' property exists in the response object
           // Normal API success case
           let events = Array.isArray(response.data) ? response.data : [];
           console.log("Events before filtering:", events);
