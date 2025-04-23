@@ -10,6 +10,7 @@ import AppHeader from "@/components/home/AppHeader";
 import CategoryFilter from "@/components/home/CategoryFilter";
 import SectionHeader from "@/components/home/SectionHeader";
 import ContentLoader from "@/components/home/ContentLoader";
+import { useMeetups } from "@/hooks/useMeetups";
 
 interface Event {
   id: string;
@@ -25,23 +26,21 @@ interface Event {
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [meetups, setMeetups] = useState<FlaskMeetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
   // Use our Flask services
   const { fetchMeetups } = useMeetupService();
   const { searchEvents } = useEventService();
+  
+  // Use the consistent meetups hook for category filtering
+  const { allMeetups: meetups, isLoading: isMeetupsLoading } = useMeetups(selectedCategory);
 
-  // Fetch data
+  // Fetch events data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch real data using our services
-        const meetupsData = await fetchMeetups();
-        setMeetups(meetupsData || []);
         
         const eventsData = await searchEvents({});
         // Ensure eventsData is always an array
@@ -60,16 +59,21 @@ const Index = () => {
     };
     
     fetchData();
-  }, [fetchMeetups, searchEvents, toast]);
+  }, [searchEvents, toast]);
 
-  // Filter events and meetups based on selected category
+  // Filter events based on selected category
   const filteredEvents = selectedCategory && Array.isArray(featuredEvents)
-    ? featuredEvents.filter(event => event.category?.toLowerCase() === selectedCategory.toLowerCase())
+    ? featuredEvents.filter(event => {
+        const eventCategory = event.category?.toLowerCase() || '';
+        const filterCategory = selectedCategory.toLowerCase();
+        return eventCategory === filterCategory;
+      })
     : featuredEvents;
 
-  const filteredMeetups = selectedCategory && Array.isArray(meetups)
-    ? meetups.filter(meetup => meetup.category?.toLowerCase() === selectedCategory.toLowerCase())
-    : meetups;
+  // Log for debugging
+  console.log("Home page - Current category filter:", selectedCategory);
+  console.log("Home page - Available meetups:", meetups);
+  console.log("Home page - Available events:", filteredEvents);
 
   return (
     <div className="pb-20">
@@ -90,14 +94,14 @@ const Index = () => {
             onCategorySelect={setSelectedCategory}
           />
 
-          {isLoading ? (
+          {isLoading || isMeetupsLoading ? (
             <ContentLoader />
           ) : (
             <>
               {/* Featured Events */}
               <div className="pb-6">
                 <SectionHeader title="Featured Events" />
-                {Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
+                {filteredEvents.length > 0 ? (
                   <div className="space-y-4">
                     {filteredEvents.map(event => (
                       <EventCard key={event.id} event={event} featured />
@@ -111,9 +115,9 @@ const Index = () => {
               {/* Student Meetups */}
               <div className="pb-6">
                 <SectionHeader title="Student Meetups" />
-                {Array.isArray(filteredMeetups) && filteredMeetups.length > 0 ? (
+                {meetups.length > 0 ? (
                   <div className="space-y-4">
-                    {filteredMeetups.slice(0, 3).map(meetup => (
+                    {meetups.slice(0, 3).map(meetup => (
                       <MeetupCard key={meetup.id} meetup={meetup} />
                     ))}
                   </div>
@@ -135,7 +139,7 @@ const Index = () => {
             <h2 className="text-lg font-semibold">Campus Events</h2>
             {isLoading ? (
               <ContentLoader />
-            ) : Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
+            ) : filteredEvents.length > 0 ? (
               filteredEvents.map(event => (
                 <EventCard key={event.id} event={event} featured />
               ))
@@ -153,10 +157,10 @@ const Index = () => {
           />
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Student Meetups</h2>
-            {isLoading ? (
+            {isMeetupsLoading ? (
               <ContentLoader />
-            ) : Array.isArray(filteredMeetups) && filteredMeetups.length > 0 ? (
-              filteredMeetups.map(meetup => (
+            ) : meetups.length > 0 ? (
+              meetups.map(meetup => (
                 <MeetupCard key={meetup.id} meetup={meetup} />
               ))
             ) : (
