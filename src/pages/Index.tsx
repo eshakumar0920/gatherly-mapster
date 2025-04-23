@@ -64,11 +64,6 @@ const Index = () => {
         // Set mock data as fallback
         setFeaturedEvents(mockEvents);
         setMeetups(mockMeetups);
-        toast({
-          title: "Using offline data",
-          description: "Could not connect to server, showing available events",
-          variant: "default"
-        });
       } finally {
         setIsLoading(false);
       }
