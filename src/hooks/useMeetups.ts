@@ -3,101 +3,54 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { eventsApi } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 
 export const useMeetups = (selectedCategory: string | null) => {
   const [allMeetups, setAllMeetups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user } = useAuth(); // Add authentication state
 
   useEffect(() => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
         console.log("Fetching meetups with auth state:", { isLoggedIn });
+
+        // Don't check login status here, just fetch the events
+        // The API will handle unauthorized access
         
-        // First try the enhanced API method that has better error handling
-        const response = await eventsApi.getAllEventsWithFallback();
-        
-        // Check if we need to fall back to Supabase
-        if (response.error === "API_FALLBACK_TO_SUPABASE") {
-          console.log("API request failed, falling back to Supabase");
+        // Use events API
+        const response = await eventsApi.getAllEvents();
+        let events = Array.isArray(response.data) ? response.data : [];
+
+        if (response.error) {
+          console.error("Error fetching events:", response.error);
+          toast({
+            title: "Error fetching events",
+            description: "Could not load events from the API. " + 
+                         (response.error?.includes("fetch") ? "Server connection issue." : response.error),
+            variant: "destructive"
+          });
           
-          try {
-            // Try to fetch from Supabase directly
-            const { data: supabaseData, error: supabaseError } = await supabase
-              .from('events')
-              .select('*');
-            
-            if (supabaseError) {
-              throw supabaseError;
-            }
-            
-            console.log("Successfully fetched data from Supabase:", supabaseData);
-            
-            // Transform Supabase data to match the expected format
-            const events = supabaseData.map(event => ({
-              id: event.id,
-              title: event.title,
-              description: event.description || "No description available",
-              dateTime: new Date(event.event_date).toLocaleString(),
-              location: event.location,
-              points: event.xp_reward || 3,
-              createdBy: "Student",
-              lobbySize: 5,
-              category: event.category || "Other",
-              attendees: []
-            }));
-            
-            console.log("Events before filtering:", events);
-            
-            // Filter by category if provided
-            const filteredEvents = selectedCategory 
-              ? events.filter((e: any) => {
-                  const eventCategory = (e.category || '').toLowerCase();
-                  const filterCategory = selectedCategory.toLowerCase();
-                  console.log(`Comparing: '${eventCategory}' with '${filterCategory}'`);
-                  return eventCategory === filterCategory;
-                })
-              : events;
-            
-            setAllMeetups(filteredEvents);
-            return; // Exit early since we've handled the data
-          } catch (supabaseError) {
-            console.error("Supabase fallback also failed:", supabaseError);
-            // Continue to sample data fallback
-          }
-        } else if ('data' in response && response.data) {
-          // Fix: Check if 'data' property exists in the response object
-          // Normal API success case
-          let events = Array.isArray(response.data) ? response.data : [];
-          console.log("Events before filtering:", events);
-          
-          // Filter by category if provided
-          const filteredEvents = selectedCategory 
-            ? events.filter((e: any) => {
-                const eventCategory = (e.category || '').toLowerCase();
-                const filterCategory = selectedCategory.toLowerCase();
-                console.log(`Comparing: '${eventCategory}' with '${filterCategory}'`);
-                return eventCategory === filterCategory;
-              })
-            : events;
-          
-          console.log("Filtered events:", filteredEvents);
-          setAllMeetups(filteredEvents);
-          return; // Exit early since we've handled the data
+          // Provide some sample data when API fails
+          events = getSampleMeetupData();
         }
-        
-        // If we reach here, both API and Supabase failed, use sample data
-        console.log("Both API and Supabase failed, using sample data");
-        toast({
-          title: "Error fetching events",
-          description: "Could not connect to either API or database. Using sample data instead.",
-          variant: "destructive"
-        });
-        setAllMeetups(getSampleMeetupData());
-        
+
+        console.log("Events before filtering:", events);
+        console.log("Selected category:", selectedCategory);
+
+        // Filter by category if provided
+        const filteredEvents = selectedCategory 
+          ? events.filter((e: any) => {
+              const eventCategory = (e.category || '').toLowerCase();
+              const filterCategory = selectedCategory.toLowerCase();
+              console.log(`Comparing: '${eventCategory}' with '${filterCategory}'`);
+              return eventCategory === filterCategory;
+            })
+          : events;
+
+        console.log("Filtered events:", filteredEvents);
+        setAllMeetups(filteredEvents);
       } catch (error) {
         console.error("Error in fetching events:", error);
         setAllMeetups(getSampleMeetupData());

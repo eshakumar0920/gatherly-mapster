@@ -137,8 +137,8 @@ async function fetchFromApi<T>(
     console.log(`Making request to: ${fullUrl}`); // Debug log
     
     const controller = new AbortController();
-    // Increase timeout from 30 seconds to prevent premature timeouts
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    // Increase timeout from 10 seconds to 15 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     
     const requestOptions: RequestInit = {
       method,
@@ -152,27 +152,11 @@ async function fetchFromApi<T>(
       signal: controller.signal
     };
 
-    // Log the full request for debugging
-    console.log(`Request options:`, { method, headers: requestOptions.headers });
-
     const response = await fetch(fullUrl, requestOptions);
     clearTimeout(timeoutId);
     
-    // Log response details for debugging
-    console.log(`Response status: ${response.status}, headers:`, response.headers);
-
     const isJson = response.headers.get('content-type')?.includes('application/json');
-    let data;
-    
-    try {
-      data = isJson ? await response.json() : await response.text();
-    } catch (e) {
-      console.error("Error parsing response:", e);
-      return {
-        error: "Failed to parse server response",
-        status: response.status
-      };
-    }
+    const data = isJson ? await response.json() : await response.text();
     
     if (!response.ok) {
       console.warn(`API request to ${fullEndpoint} failed with status ${response.status}`);
@@ -189,18 +173,10 @@ async function fetchFromApi<T>(
   } catch (error) {
     console.error('API request failed:', error);
     const errorMessage = error instanceof Error ? 
-      (error.name === 'AbortError' ? 'Request timeout - server did not respond in time' : error.message) : 
+      (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
       'An unexpected error occurred';
     
     console.warn(`API error details: ${errorMessage}`);
-    
-    // Return a more helpful error message for connection issues
-    if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-      return {
-        error: "Server connection issue. Please check if the API server is running.",
-        status: 0
-      };
-    }
     
     return {
       error: errorMessage,
@@ -271,32 +247,7 @@ export const eventsApi = {
     fetchFromApi<any[]>(`/api/events?location=${location}`),
   
   getEventsByDate: (date: string) =>
-    fetchFromApi<any[]>(`/api/events?date=${date}`),
-  
-  getAllEventsWithFallback: async () => {
-    try {
-      console.log("Attempting to fetch events with improved error handling");
-      const response = await fetchFromApi<any[]>('/api/events');
-      
-      if (response.error || !response.data) {
-        console.warn("Error fetching events, falling back to Supabase:", response.error);
-        // Return a special error object that indicates we should try Supabase
-        return { 
-          error: "API_FALLBACK_TO_SUPABASE", 
-          status: response.status,
-          originalError: response.error
-        };
-      }
-      
-      return response;
-    } catch (error) {
-      console.error("Unexpected error in getAllEventsWithFallback:", error);
-      return {
-        error: "Unexpected error fetching events",
-        status: 0
-      };
-    }
-  }
+    fetchFromApi<any[]>(`/api/events?date=${date}`)
 };
 
 export const levelingApi = {
