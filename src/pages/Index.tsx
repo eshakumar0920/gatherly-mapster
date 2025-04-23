@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +9,8 @@ import AppHeader from "@/components/home/AppHeader";
 import CategoryFilter from "@/components/home/CategoryFilter";
 import SectionHeader from "@/components/home/SectionHeader";
 import ContentLoader from "@/components/home/ContentLoader";
+import { events as mockEvents } from "@/services/eventService";
+import { meetups as mockMeetups } from "@/services/meetupService";
 
 interface Event {
   id: string;
@@ -39,22 +40,36 @@ const Index = () => {
       try {
         setIsLoading(true);
         
-        // Fetch real data using our services
-        const meetupsData = await fetchMeetups();
-        setMeetups(meetupsData || []);
+        // Try to fetch real data, fall back to mock data if it fails
+        let meetupsData;
+        try {
+          meetupsData = await fetchMeetups();
+        } catch (error) {
+          console.log("Failed to fetch meetups from API, using mock data");
+          meetupsData = mockMeetups;
+        }
+        setMeetups(meetupsData || mockMeetups);
         
-        const eventsData = await searchEvents({});
-        // Ensure eventsData is always an array
-        setFeaturedEvents(Array.isArray(eventsData) ? eventsData : []);
+        let eventsData;
+        try {
+          eventsData = await searchEvents({});
+        } catch (error) {
+          console.log("Failed to fetch events from API, using mock data");
+          eventsData = mockEvents;
+        }
+        setFeaturedEvents(Array.isArray(eventsData) ? eventsData : mockEvents);
         
-        setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error in data fetching:", error);
+        // Set mock data as fallback
+        setFeaturedEvents(mockEvents);
+        setMeetups(mockMeetups);
         toast({
-          title: "Error loading data",
-          description: "Could not load data, please try again later",
-          variant: "destructive"
+          title: "Using offline data",
+          description: "Could not connect to server, showing available events",
+          variant: "default"
         });
+      } finally {
         setIsLoading(false);
       }
     };
