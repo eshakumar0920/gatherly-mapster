@@ -1,9 +1,8 @@
-
+import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
-// In production, you would likely use an environment variable
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000'; 
 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
@@ -62,6 +61,64 @@ export interface LootBox {
   opened_at: string | null;
   awarded_for: string;
 }
+
+// Generic fetch wrapper with error handling
+async function fetchApi(endpoint: string, options: RequestInit = {}) {
+  // Get token from localStorage if it exists
+  const token = localStorage.getItem('impulse_access_token');
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  // Add authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Determine the full URL based on the endpoint
+  const fullUrl = endpoint.startsWith('/auth/') 
+    ? `${API_BASE_URL}${endpoint}` 
+    : `${API_BASE_URL}/api${endpoint}`;
+
+  const response = await fetch(fullUrl, {
+    ...options,
+    headers,
+  });
+
+  // Try to parse response safely
+  let responseData;
+  try {
+    responseData = await response.json();
+  } catch (error) {
+    // If JSON parsing fails, throw an error
+    throw new Error('Failed to parse server response');
+  }
+
+  if (!response.ok) {
+    throw new Error(responseData.message || responseData.error || 'An error occurred');
+  }
+
+  return responseData;
+}
+
+// Auth API
+export const authApi = {
+  register: (email: string, password: string, metadata?: { name?: string }) => 
+    fetchApi('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, ...metadata }),
+    }),
+  
+  login: (email: string, password: string) => 
+    fetchApi('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  
+  verifyToken: () => fetchApi('/auth/verify'),
+};
 
 // Generic function to handle API requests
 async function fetchFromApi<T>(
@@ -170,7 +227,19 @@ export const eventsApi = {
   
   // Create a new event
   createEvent: (eventData: any) => 
-    fetchFromApi<any>('/events', 'POST', eventData)
+    fetchFromApi<any>('/events', 'POST', eventData),
+    
+  // Get events by category
+  getEventsByCategory: (category: string) =>
+    fetchFromApi<any[]>(`/events?category=${category}`),
+  
+  // Get events by location
+  getEventsByLocation: (location: string) =>
+    fetchFromApi<any[]>(`/events?location=${location}`),
+  
+  // Get events by date
+  getEventsByDate: (date: string) =>
+    fetchFromApi<any[]>(`/events?date=${date}`)
 };
 
 // API endpoints for leveling system
@@ -197,6 +266,36 @@ export const levelingApi = {
     start_date: string; 
     end_date: string; 
   }) => fetchFromApi<any>('/admin/semester', 'POST', semesterData)
+};
+
+// API endpoints for rewards
+export const rewardsApi = {
+  // Get user rewards
+  getUserRewards: (userId: number) =>
+    fetchFromApi<any[]>(`/users/${userId}/rewards`),
+  
+  // Get all reward types
+  getRewardTypes: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    // Add any filters to query params
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.set(key, String(value));
+    });
+    
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return fetchFromApi<any[]>(`/reward-types${queryString}`);
+  },
+  
+  // Equip a reward
+  equipReward: (userId: number, rewardId: number) =>
+    fetchFromApi<any>(`/users/${userId}/rewards/${rewardId}/equip`, {
+      method: 'POST',
+    }),
+  
+  // Get all categories and themes
+  getCategories: () =>
+    fetchFromApi<any[]>(`/categories`),
 };
 
 // API endpoints for user-related operations
