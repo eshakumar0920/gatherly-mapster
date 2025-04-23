@@ -1,36 +1,14 @@
 
 import { useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isLoggedIn, isLoading, verifyCurrentSession } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  // Verify the current session when the component mounts
-  useEffect(() => {
-    const checkSession = async () => {
-      if (!isLoading && isLoggedIn) {
-        const isSessionValid = await verifyCurrentSession();
-        if (!isSessionValid) {
-          toast({
-            title: "Session expired",
-            description: "Your login session has expired. Please sign in again.",
-            variant: "destructive",
-          });
-          navigate("/auth", { replace: true });
-        }
-      }
-    };
-    
-    checkSession();
-  }, [isLoggedIn, isLoading, navigate, toast, verifyCurrentSession]);
+  const { isLoggedIn, isLoading } = useAuth();
 
   // Show loading indicator while checking auth status
   if (isLoading) {

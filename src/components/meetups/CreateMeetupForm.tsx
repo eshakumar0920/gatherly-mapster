@@ -36,7 +36,7 @@ interface CreateMeetupFormProps {
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user, isLoggedIn, verifyCurrentSession } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const [authStatus, setAuthStatus] = useState<string>("Checking auth status...");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +70,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
     try {
       console.log("Submit attempted with auth state:", { isLoggedIn, userExists: !!user, userEmail: user?.email });
       
-      if (!isLoggedIn) {
+      if (!isLoggedIn || !user) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
@@ -81,44 +81,8 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      const isSessionValid = await verifyCurrentSession();
-      
-      if (!isSessionValid) {
-        toast({
-          title: "Session expired",
-          description: "Your login session has expired. Please sign in again.",
-          variant: "destructive"
-        });
-        onClose();
-        navigate("/auth");
-        return;
-      }
-      
-      if (!user || !user.email) {
-        toast({
-          title: "User data missing",
-          description: "Your login session appears incomplete. Please try logging in again.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
       const eventDate = new Date().toISOString();
       console.log("Creating meetup with user:", user);
-      
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log("Current session:", sessionData?.session ? "Valid" : "Invalid");
-      
-      if (!sessionData?.session) {
-        toast({
-          title: "Session expired",
-          description: "Your login session has expired. Please log in again.",
-          variant: "destructive"
-        });
-        onClose();
-        navigate("/auth");
-        return;
-      }
       
       const { data: usersData, error: usersError } = await supabase
         .from('users')
