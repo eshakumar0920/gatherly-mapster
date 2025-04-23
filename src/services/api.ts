@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
-// Use a fallback value if the environment variable is not set
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
+// Use environment variable or fallback to localhost with correct port
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5000'; 
 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
@@ -83,6 +83,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const response = await fetch(fullUrl, {
       ...options,
       headers,
+      credentials: 'include',
       mode: 'cors', // Explicitly set CORS mode
     });
 
@@ -130,9 +131,10 @@ async function fetchFromApi<T>(
     // Skip adding /api/ for authentication routes
     const fullEndpoint = endpoint.startsWith('/auth/') 
       ? endpoint 
-      : `/api${endpoint}`;
+      : endpoint; // Removed prepending /api since it's already included in API_BASE_URL + endpoint
 
-    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`); // Debug log
+    const fullUrl = `${API_BASE_URL}${fullEndpoint}`;
+    console.log(`Making request to: ${fullUrl}`); // Debug log
     
     const controller = new AbortController();
     // Increase timeout from 10 seconds to 15 seconds
@@ -150,7 +152,7 @@ async function fetchFromApi<T>(
       signal: controller.signal
     };
 
-    const response = await fetch(`${API_BASE_URL}${fullEndpoint}`, requestOptions);
+    const response = await fetch(fullUrl, requestOptions);
     clearTimeout(timeoutId);
     
     const isJson = response.headers.get('content-type')?.includes('application/json');
@@ -219,33 +221,33 @@ export const meetupsApi = {
 };
 
 export const eventsApi = {
-  getAllEvents: () => fetchFromApi<any[]>('/events'),
+  getAllEvents: () => fetchFromApi<any[]>('/api/events'),
   
-  getEventById: (id: string) => fetchFromApi<any>(`/events/${id}`),
+  getEventById: (id: string) => fetchFromApi<any>(`/api/events/${id}`),
   
   searchEvents: (params: EventSearchParams) => 
-    fetchFromApi<any[]>(`/search${buildQueryString(params)}`),
+    fetchFromApi<any[]>(`/api/search${buildQueryString(params)}`),
   
   joinEvent: (eventId: string, userId: string) => 
-    fetchFromApi<any>(`/events/${eventId}/join`, 'POST', { user_id: userId }),
+    fetchFromApi<any>(`/api/events/${eventId}/join`, 'POST', { user_id: userId }),
   
   leaveEvent: (eventId: string, userId: string) => 
-    fetchFromApi<any>(`/events/${eventId}/leave`, 'POST', { user_id: userId }),
+    fetchFromApi<any>(`/api/events/${eventId}/leave`, 'POST', { user_id: userId }),
   
   getEventParticipants: (eventId: string) => 
-    fetchFromApi<any[]>(`/events/${eventId}/participants`),
+    fetchFromApi<any[]>(`/api/events/${eventId}/participants`),
   
   createEvent: (eventData: any) => 
-    fetchFromApi<any>('/events', 'POST', eventData),
+    fetchFromApi<any>('/api/events', 'POST', eventData),
     
   getEventsByCategory: (category: string) =>
-    fetchFromApi<any[]>(`/events?category=${category}`),
+    fetchFromApi<any[]>(`/api/events?category=${category}`),
   
   getEventsByLocation: (location: string) =>
-    fetchFromApi<any[]>(`/events?location=${location}`),
+    fetchFromApi<any[]>(`/api/events?location=${location}`),
   
   getEventsByDate: (date: string) =>
-    fetchFromApi<any[]>(`/events?date=${date}`)
+    fetchFromApi<any[]>(`/api/events?date=${date}`)
 };
 
 export const levelingApi = {

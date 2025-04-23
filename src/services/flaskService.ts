@@ -27,6 +27,11 @@ export function useMeetupService() {
   const fetchMeetups = useCallback(async (retryCount = 0): Promise<FlaskMeetup[]> => {
     try {
       console.log(`Fetching meetups from Events API (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+      
+      if (retryCount > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+      }
+      
       const response = await eventsApi.getAllEvents();
       
       if (response.error) {
@@ -45,7 +50,7 @@ export function useMeetupService() {
             description: "Could not retrieve meetups. Using sample data instead.",
             variant: "destructive"
           });
-          return [];
+          return getSampleMeetups();
         }
         
         console.log("Supabase events data:", data);
@@ -67,14 +72,14 @@ export function useMeetupService() {
           }));
         }
         
-        return [];
+        return getSampleMeetups();
       }
       
       console.log("Received meetups data from API:", response.data);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching meetups:", error);
-      return [];
+      return getSampleMeetups();
     }
   }, [toast]);
   
@@ -145,6 +150,44 @@ export function useMeetupService() {
     return true;
   }, [toast]);
   
+  const getSampleMeetups = (): FlaskMeetup[] => {
+    return [
+      {
+        id: "sample-1",
+        title: "Study Group: Computer Science",
+        description: "Weekly study group for computer science students",
+        dateTime: new Date().toLocaleString(),
+        location: "Library Room 204",
+        points: 5,
+        createdBy: "Student",
+        lobbySize: 10,
+        category: "Academic"
+      },
+      {
+        id: "sample-2",
+        title: "Gaming in the Library",
+        description: "Join us for board games and video games in the library",
+        dateTime: new Date(Date.now() + 86400000).toLocaleString(),
+        location: "Library Commons",
+        points: 3,
+        createdBy: "Student",
+        lobbySize: 15,
+        category: "Technology"
+      },
+      {
+        id: "sample-3",
+        title: "Fitness Club Meetup",
+        description: "Weekly fitness club meetup for all students",
+        dateTime: new Date(Date.now() + 172800000).toLocaleString(),
+        location: "Student Recreation Center",
+        points: 4,
+        createdBy: "Student",
+        lobbySize: 8,
+        category: "Sports"
+      }
+    ];
+  };
+  
   return {
     fetchMeetups,
     fetchMeetupById,
@@ -160,6 +203,11 @@ export function useEventService() {
   const searchEvents = useCallback(async (params: EventSearchParams, retryCount = 0) => {
     try {
       console.log(`Searching events with params: ${JSON.stringify(params)} (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+      
+      if (retryCount > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+      }
+      
       const response = await eventsApi.searchEvents(params);
       
       if (response.error) {
@@ -175,7 +223,7 @@ export function useEventService() {
         
         if (error) {
           console.error("Supabase error:", error);
-          return [];
+          return getSampleEvents();
         }
         
         console.log("Supabase events data:", data);
@@ -193,14 +241,14 @@ export function useEventService() {
           }));
         }
         
-        return [];
+        return getSampleEvents();
       }
       
       console.log("Received search events data from API:", response.data);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error searching events:", error);
-      return [];
+      return getSampleEvents();
     }
   }, [handleApiError]);
   
@@ -272,6 +320,41 @@ export function useEventService() {
     
     return response.data || [];
   }, [handleApiError]);
+  
+  const getSampleEvents = () => {
+    return [
+      {
+        id: "sample-e1",
+        title: "Campus Technology Fair",
+        description: "Explore the latest in tech innovations from student projects",
+        date: new Date().toLocaleDateString(),
+        time: "10:00 AM",
+        location: "Student Union",
+        category: "Technology",
+        image: "https://source.unsplash.com/random/300x200?technology"
+      },
+      {
+        id: "sample-e2",
+        title: "Arts & Culture Exhibition",
+        description: "Student artwork and cultural performances",
+        date: new Date(Date.now() + 86400000).toLocaleDateString(),
+        time: "2:00 PM",
+        location: "Arts Building",
+        category: "Arts",
+        image: "https://source.unsplash.com/random/300x200?art"
+      },
+      {
+        id: "sample-e3",
+        title: "Sports Tournament",
+        description: "Inter-college sports competition",
+        date: new Date(Date.now() + 172800000).toLocaleDateString(),
+        time: "3:30 PM",
+        location: "Athletic Center",
+        category: "Sports",
+        image: "https://source.unsplash.com/random/300x200?sports"
+      }
+    ];
+  };
   
   return {
     searchEvents,
