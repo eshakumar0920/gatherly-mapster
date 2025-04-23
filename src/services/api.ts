@@ -73,6 +73,13 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  // Check if token is expired based on stored expiry time
+  const expiresAt = localStorage.getItem('impulse_session_expires_at');
+  if (expiresAt && parseInt(expiresAt) < Date.now()) {
+    console.warn("Token expired, requests may fail until user re-authenticates");
+    // We don't remove the token here as that would be handled by the auth system
+  }
+  
   // Handle authentication routes differently - they should go directly to /auth endpoint
   const fullUrl = endpoint.startsWith('/auth/') 
     ? `${API_BASE_URL}${endpoint}` 
@@ -95,6 +102,11 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
 
     if (!response.ok) {
+      // Handle auth errors specially
+      if (response.status === 401) {
+        console.error("Authentication error detected in API request");
+        throw new Error("Session expired - please log in again");
+      }
       throw new Error(responseData.message || responseData.error || 'An error occurred');
     }
 
@@ -128,6 +140,12 @@ async function fetchFromApi<T>(
   headers?: Record<string, string>
 ): Promise<ApiResponse<T>> {
   try {
+    // Check if token is expired based on stored expiry time
+    const expiresAt = localStorage.getItem('impulse_session_expires_at');
+    if (expiresAt && parseInt(expiresAt) < Date.now()) {
+      console.warn("Token expired, API request may fail");
+    }
+
     // Skip adding /api/ for authentication routes
     const fullEndpoint = endpoint.startsWith('/auth/') 
       ? endpoint 
@@ -140,10 +158,12 @@ async function fetchFromApi<T>(
     // Increase timeout from 10 seconds to 15 seconds
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     
+    const token = localStorage.getItem('impulse_access_token');
     const requestOptions: RequestInit = {
       method,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...headers
       },
       credentials: 'include',
@@ -157,6 +177,15 @@ async function fetchFromApi<T>(
     
     const isJson = response.headers.get('content-type')?.includes('application/json');
     const data = isJson ? await response.json() : await response.text();
+    
+    // Special handling for auth errors
+    if (response.status === 401) {
+      console.warn(`Authentication error from ${fullEndpoint} - session may be expired`);
+      return {
+        error: "Authentication expired - please log in again",
+        status: 401
+      };
+    }
     
     if (!response.ok) {
       console.warn(`API request to ${fullEndpoint} failed with status ${response.status}`);

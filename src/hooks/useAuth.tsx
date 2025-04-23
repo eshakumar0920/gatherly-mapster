@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 // Adjust the auth base URL
-const AUTH_BASE_URL = 'http://localhost:5000'; 
+const AUTH_BASE_URL = 'http://127.0.0.1:5000'; 
 
 export const useAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -14,8 +13,16 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
 
   const { toast } = useToast();
+
+  // Function to check if token needs refresh (less than 5 minutes until expiry)
+  const needsRefresh = () => {
+    if (!sessionExpiresAt) return false;
+    const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
+    return sessionExpiresAt < fiveMinutesFromNow;
+  };
 
   // Restore session from localStorage on mount and set up listener
   useEffect(() => {
@@ -29,18 +36,25 @@ export const useAuth = () => {
         setUser(session.user);
         setVerifiedEmail(session.user.email || "");
         setIsEmailVerified(true);
+        setSessionExpiresAt(session.expires_at ? session.expires_at * 1000 : null);
         
         // Store in localStorage as backup
         window.localStorage.setItem("impulse_access_token", session.access_token);
         window.localStorage.setItem("impulse_user_email", session.user.email || "");
+        // Store the expiration time
+        if (session.expires_at) {
+          window.localStorage.setItem("impulse_session_expires_at", (session.expires_at * 1000).toString());
+        }
       } else if (event === 'SIGNED_OUT') {
         setIsLoggedIn(false);
         setIsEmailVerified(false);
         setVerifiedEmail("");
         setUser(null);
         setAccessToken(null);
+        setSessionExpiresAt(null);
         window.localStorage.removeItem("impulse_access_token");
         window.localStorage.removeItem("impulse_user_email");
+        window.localStorage.removeItem("impulse_session_expires_at");
       }
     });
 
@@ -57,27 +71,50 @@ export const useAuth = () => {
           setUser(session.user);
           setVerifiedEmail(session.user.email || "");
           setIsEmailVerified(true);
+          setSessionExpiresAt(session.expires_at ? session.expires_at * 1000 : null);
+          
+          // Also update localStorage with fresh token
+          window.localStorage.setItem("impulse_access_token", session.access_token);
+          window.localStorage.setItem("impulse_user_email", session.user.email || "");
+          if (session.expires_at) {
+            window.localStorage.setItem("impulse_session_expires_at", (session.expires_at * 1000).toString());
+          }
         } else {
           // Fall back to localStorage tokens
           console.log("No Supabase session, checking localStorage");
           const token = window.localStorage.getItem("impulse_access_token");
           const email = window.localStorage.getItem("impulse_user_email");
+          const expiresAt = window.localStorage.getItem("impulse_session_expires_at");
           
           if (token && email) {
             console.log("Found token in localStorage, verifying");
-            const isValid = await verify(token);
             
-            if (isValid) {
-              setIsLoggedIn(true);
-              setAccessToken(token);
-              setVerifiedEmail(email);
-              setUser({ email });
-              setIsEmailVerified(true);
-              console.log("Local token verified successfully");
-            } else {
-              console.log("Local token invalid, clearing");
+            // Check if token is expired based on stored expiry time
+            if (expiresAt && parseInt(expiresAt) < Date.now()) {
+              console.log("Token expired based on stored expiration time, clearing");
               window.localStorage.removeItem("impulse_access_token");
               window.localStorage.removeItem("impulse_user_email");
+              window.localStorage.removeItem("impulse_session_expires_at");
+            } else {
+              // Verify with backend if not obviously expired
+              const isValid = await verify(token);
+              
+              if (isValid) {
+                setIsLoggedIn(true);
+                setAccessToken(token);
+                setVerifiedEmail(email);
+                setUser({ email });
+                setIsEmailVerified(true);
+                if (expiresAt) {
+                  setSessionExpiresAt(parseInt(expiresAt));
+                }
+                console.log("Local token verified successfully");
+              } else {
+                console.log("Local token invalid, clearing");
+                window.localStorage.removeItem("impulse_access_token");
+                window.localStorage.removeItem("impulse_user_email");
+                window.localStorage.removeItem("impulse_session_expires_at");
+              }
             }
           } else {
             console.log("No auth tokens found");
@@ -92,8 +129,25 @@ export const useAuth = () => {
 
     initializeAuthState();
 
+    // Set up interval to check token expiration
+    const checkTokenInterval = setInterval(() => {
+      if (isLoggedIn && needsRefresh()) {
+        console.log("Token nearing expiration, attempting refresh");
+        supabase.auth.refreshSession().then(({ data, error }) => {
+          if (error) {
+            console.error("Failed to refresh session:", error);
+            // Let the onAuthStateChange handler handle the logout if needed
+          } else if (data && data.session) {
+            console.log("Session refreshed successfully");
+            // The onAuthStateChange handler will update the state
+          }
+        });
+      }
+    }, 60000); // Check every minute
+
     return () => {
       subscription.unsubscribe();
+      clearInterval(checkTokenInterval);
     };
   }, []);
 
@@ -157,15 +211,22 @@ export const useAuth = () => {
           throw new Error("Unexpected response from server");
         }
 
+        // Calculate expiration time (default to 1 hour from now if not provided)
+        const expiresAt = data.expires_at ? 
+          data.expires_at * 1000 : // Convert seconds to milliseconds
+          Date.now() + (60 * 60 * 1000); // Default: 1 hour from now
+
         // Store access token and email in localStorage
         window.localStorage.setItem("impulse_access_token", data.access_token);
         window.localStorage.setItem("impulse_user_email", data.email);
+        window.localStorage.setItem("impulse_session_expires_at", expiresAt.toString());
 
         setIsLoggedIn(true);
         setVerifiedEmail(data.email);
         setIsEmailVerified(true); // Assume email is verified after login
         setUser({ email: data.email });
         setAccessToken(data.access_token);
+        setSessionExpiresAt(expiresAt);
 
         return { success: true, data };
       } catch (error: any) {
@@ -190,15 +251,22 @@ export const useAuth = () => {
             if (supabaseError) throw supabaseError;
             
             if (data.user && data.session) {
+              // Calculate expiration time
+              const expiresAt = data.session.expires_at ? data.session.expires_at * 1000 : null;
+
               // Store access token and email in localStorage
               window.localStorage.setItem("impulse_access_token", data.session.access_token);
               window.localStorage.setItem("impulse_user_email", data.user.email || "");
+              if (expiresAt) {
+                window.localStorage.setItem("impulse_session_expires_at", expiresAt.toString());
+              }
               
               setIsLoggedIn(true);
               setVerifiedEmail(data.user.email || "");
               setIsEmailVerified(true);
               setUser(data.user);
               setAccessToken(data.session.access_token);
+              setSessionExpiresAt(expiresAt);
               
               return { success: true, data };
             }
@@ -216,8 +284,10 @@ export const useAuth = () => {
       setVerifiedEmail("");
       setUser(null);
       setAccessToken(null);
+      setSessionExpiresAt(null);
       window.localStorage.removeItem("impulse_access_token");
       window.localStorage.removeItem("impulse_user_email");
+      window.localStorage.removeItem("impulse_session_expires_at");
       return { success: false, error };
     } finally {
       setIsLoading(false);
@@ -301,14 +371,37 @@ export const useAuth = () => {
     }
   };
 
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error("Error refreshing session:", error);
+        return false;
+      }
+      
+      if (data.session) {
+        console.log("Session refreshed successfully");
+        // The onAuthStateChange listener will update our state
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error in refreshSession:", error);
+      return false;
+    }
+  };
+
   const logout = async () => {
     setIsLoggedIn(false);
     setIsEmailVerified(false);
     setVerifiedEmail("");
     setUser(null);
     setAccessToken(null);
+    setSessionExpiresAt(null);
     window.localStorage.removeItem("impulse_access_token");
     window.localStorage.removeItem("impulse_user_email");
+    window.localStorage.removeItem("impulse_session_expires_at");
     
     // Try to logout from Supabase if it was used
     try {
@@ -325,22 +418,31 @@ export const useAuth = () => {
     isLoading,
     user,
     accessToken,
+    sessionExpiresAt,
     login,
     signup,
-    logout
+    logout,
+    refreshSession,
+    needsRefresh
   };
 };
 
 export const useRequireAuth = () => {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading, refreshSession, needsRefresh } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    // First check if needs refresh
+    if (isLoggedIn && needsRefresh()) {
+      refreshSession();
+    }
+    
+    // Then handle redirection for unauthenticated users
     if (!isLoading && !isLoggedIn) {
       navigate("/auth", { state: { from: location.pathname } });
     }
-  }, [isLoggedIn, isLoading, navigate, location]);
+  }, [isLoggedIn, isLoading, navigate, location, needsRefresh, refreshSession]);
 
   return { isLoggedIn, isLoading };
 };
