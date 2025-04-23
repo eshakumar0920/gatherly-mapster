@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -187,17 +186,22 @@ function buildQueryString(params: Record<string, any>): string {
 }
 
 export const meetupsApi = {
-  getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
+  getAllMeetups: () => fetchFromApi<any[]>(`/events?category=meetup`),
   
-  getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
+  getMeetupById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
-  createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
+  createMeetup: (data: any) =>
+    fetchFromApi<any>(
+      '/events',
+      'POST',
+      { ...data, category: 'meetup' }
+    ),
   
-  joinMeetupLobby: (meetupId: string, userData: any) => 
-    fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
+  joinMeetupLobby: (id: string, userData: { user_id: number }) =>
+    fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),
   
-  checkInToMeetup: (meetupId: string, userData: any) => 
-    fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
+  checkInToMeetup: (id: string, userData: { user_id: number }) =>
+    fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),
 };
 
 export const eventsApi = {
