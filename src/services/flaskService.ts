@@ -105,7 +105,8 @@ export function useMeetupService() {
   
   const joinMeetupLobby = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
-      const response = await meetupsApi.joinMeetupLobby(meetupId, {});
+      // Fixed: Pass a proper user_id (using a default value of 1 for now)
+      const response = await meetupsApi.joinMeetupLobby(meetupId, { user_id: 1 });
       
       if (response.error) {
         console.log("Flask API error for joining lobby, using local state instead:", response.error);
@@ -126,7 +127,8 @@ export function useMeetupService() {
   
   const checkInToMeetup = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
-      const response = await meetupsApi.checkInToMeetup(meetupId, {});
+      // Fixed: Pass a proper user_id (using a default value of 1 for now)
+      const response = await meetupsApi.checkInToMeetup(meetupId, { user_id: 1 });
       
       if (response.error) {
         console.log("Flask API error for check-in, using local state instead:", response.error);
