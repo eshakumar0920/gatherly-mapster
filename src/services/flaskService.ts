@@ -1,4 +1,3 @@
-
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
@@ -56,7 +55,7 @@ export function useMeetupService() {
         return [];
       }
       
-      return response.data || [];
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching meetups:", error);
       return [];
@@ -168,7 +167,7 @@ export function useEventService() {
           return [];
         }
         
-        if (data && data.length > 0) {
+        if (data && Array.isArray(data) && data.length > 0) {
           return data.map(event => ({
             id: event.id.toString(),
             title: event.title,
@@ -184,7 +183,7 @@ export function useEventService() {
         return [];
       }
       
-      return response.data || [];
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error searching events:", error);
       return [];

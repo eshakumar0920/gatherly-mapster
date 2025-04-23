@@ -41,10 +41,11 @@ const Index = () => {
         
         // Fetch real data using our services
         const meetupsData = await fetchMeetups();
-        setMeetups(meetupsData);
+        setMeetups(meetupsData || []);
         
         const eventsData = await searchEvents({});
-        setFeaturedEvents(eventsData);
+        // Ensure eventsData is always an array
+        setFeaturedEvents(Array.isArray(eventsData) ? eventsData : []);
         
         setIsLoading(false);
       } catch (error) {
@@ -62,11 +63,11 @@ const Index = () => {
   }, [fetchMeetups, searchEvents, toast]);
 
   // Filter events and meetups based on selected category
-  const filteredEvents = selectedCategory
+  const filteredEvents = selectedCategory && Array.isArray(featuredEvents)
     ? featuredEvents.filter(event => event.category?.toLowerCase() === selectedCategory.toLowerCase())
     : featuredEvents;
 
-  const filteredMeetups = selectedCategory
+  const filteredMeetups = selectedCategory && Array.isArray(meetups)
     ? meetups.filter(meetup => meetup.category?.toLowerCase() === selectedCategory.toLowerCase())
     : meetups;
 
@@ -96,7 +97,7 @@ const Index = () => {
               {/* Featured Events */}
               <div className="pb-6">
                 <SectionHeader title="Featured Events" />
-                {filteredEvents.length > 0 ? (
+                {Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
                   <div className="space-y-4">
                     {filteredEvents.map(event => (
                       <EventCard key={event.id} event={event} featured />
@@ -110,7 +111,7 @@ const Index = () => {
               {/* Student Meetups */}
               <div className="pb-6">
                 <SectionHeader title="Student Meetups" />
-                {filteredMeetups.length > 0 ? (
+                {Array.isArray(filteredMeetups) && filteredMeetups.length > 0 ? (
                   <div className="space-y-4">
                     {filteredMeetups.slice(0, 3).map(meetup => (
                       <MeetupCard key={meetup.id} meetup={meetup} />
@@ -134,7 +135,7 @@ const Index = () => {
             <h2 className="text-lg font-semibold">Campus Events</h2>
             {isLoading ? (
               <ContentLoader />
-            ) : filteredEvents.length > 0 ? (
+            ) : Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
               filteredEvents.map(event => (
                 <EventCard key={event.id} event={event} featured />
               ))
@@ -154,7 +155,7 @@ const Index = () => {
             <h2 className="text-lg font-semibold">Student Meetups</h2>
             {isLoading ? (
               <ContentLoader />
-            ) : filteredMeetups.length > 0 ? (
+            ) : Array.isArray(filteredMeetups) && filteredMeetups.length > 0 ? (
               filteredMeetups.map(meetup => (
                 <MeetupCard key={meetup.id} meetup={meetup} />
               ))
