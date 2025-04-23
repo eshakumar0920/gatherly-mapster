@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// Adjust the auth base URL - removing the /api part as auth routes are at /auth
+// Adjust the auth base URL
 const AUTH_BASE_URL = 'http://localhost:5000'; 
 
 export const useAuth = () => {
@@ -54,6 +54,7 @@ export const useAuth = () => {
       
       // First try Flask backend
       try {
+        console.log("Attempting to login with Flask backend");
         const response = await fetch(`${AUTH_BASE_URL}/auth/login`, {
           method: "POST",
           headers: {
@@ -62,6 +63,8 @@ export const useAuth = () => {
           body: JSON.stringify({ email, password })
         });
 
+        console.log("Login response status:", response.status);
+        
         // Check if response is valid
         if (!response.ok) {
           let errorMessage = "Login failed";
@@ -69,6 +72,7 @@ export const useAuth = () => {
           try {
             const errorData = await response.json();
             errorMessage = errorData.error || errorMessage;
+            console.error("Login error:", errorData);
           } catch (jsonError) {
             console.error("Failed to parse error response:", jsonError);
             // If JSON parsing fails, use status text
@@ -81,6 +85,7 @@ export const useAuth = () => {
         let data;
         try {
           data = await response.json();
+          console.log("Login successful:", data);
         } catch (jsonError) {
           console.error("Failed to parse login response:", jsonError);
           throw new Error("Unexpected response from server");
@@ -102,6 +107,7 @@ export const useAuth = () => {
         
         // If server is unreachable (404, network error), fallback to Supabase
         if (error.message.includes("404") || error.message.includes("Failed to fetch")) {
+          console.log("Backend server unreachable, falling back to Supabase");
           toast({
             title: "Backend server unreachable",
             description: "Falling back to Supabase authentication",

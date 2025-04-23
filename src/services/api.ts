@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -72,27 +73,33 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  // Handle authentication routes differently - they should go directly to /auth endpoint
   const fullUrl = endpoint.startsWith('/auth/') 
     ? `${API_BASE_URL}${endpoint}` 
     : `${API_BASE_URL}/api${endpoint}`;
 
-  const response = await fetch(fullUrl, {
-    ...options,
-    headers,
-  });
-
-  let responseData;
   try {
-    responseData = await response.json();
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers,
+    });
+
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (error) {
+      throw new Error('Failed to parse server response');
+    }
+
+    if (!response.ok) {
+      throw new Error(responseData.message || responseData.error || 'An error occurred');
+    }
+
+    return responseData;
   } catch (error) {
-    throw new Error('Failed to parse server response');
+    console.error('API request failed:', error);
+    throw error;
   }
-
-  if (!response.ok) {
-    throw new Error(responseData.message || responseData.error || 'An error occurred');
-  }
-
-  return responseData;
 }
 
 export const authApi = {
@@ -253,12 +260,6 @@ export const rewardsApi = {
   
   getCategories: () =>
     fetchFromApi<any[]>(`/categories`),
-};
-
-export const userApi = {
-  getUserPoints: (userId: string) => fetchFromApi<number>(`/users/${userId}/points`),
-  
-  getUserLevel: (userId: string) => fetchFromApi<number>(`/users/${userId}/level`),
 };
 
 export function useApiErrorHandling() {
