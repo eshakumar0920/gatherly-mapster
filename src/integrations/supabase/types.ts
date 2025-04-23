@@ -369,7 +369,7 @@ export type Database = {
           is_rare: boolean | null
           name: string
           theme: string | null
-          tier: number | null
+          tier: number
         }
         Insert: {
           category?: string | null
@@ -379,7 +379,7 @@ export type Database = {
           is_rare?: boolean | null
           name: string
           theme?: string | null
-          tier?: number | null
+          tier: number
         }
         Update: {
           category?: string | null
@@ -389,7 +389,7 @@ export type Database = {
           is_rare?: boolean | null
           name?: string
           theme?: string | null
-          tier?: number | null
+          tier?: number
         }
         Relationships: []
       }
@@ -517,48 +517,59 @@ export type Database = {
           id: number
           is_equipped: boolean | null
           loot_box_id: number | null
-          reward_type_id: number
-          user_id: number
+          reward_type_id: number | null
+          user_id: string | null
         }
         Insert: {
           acquired_at?: string | null
           id?: number
           is_equipped?: boolean | null
           loot_box_id?: number | null
-          reward_type_id: number
-          user_id: number
+          reward_type_id?: number | null
+          user_id?: string | null
         }
         Update: {
           acquired_at?: string | null
           id?: number
           is_equipped?: boolean | null
           loot_box_id?: number | null
-          reward_type_id?: number
-          user_id?: number
+          reward_type_id?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_reward_lootbox"
+            foreignKeyName: "user_rewards_loot_box_id_fkey"
             columns: ["loot_box_id"]
             isOneToOne: false
             referencedRelation: "loot_boxes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_reward_type"
+            foreignKeyName: "user_rewards_reward_type_id_fkey"
             columns: ["reward_type_id"]
             isOneToOne: false
             referencedRelation: "reward_types"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_reward_user"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      user_roles: {
+        Row: {
+          id: number
+          is_admin: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: number
+          is_admin?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: number
+          is_admin?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -612,6 +623,10 @@ export type Database = {
     Functions: {
       check_table_exists: {
         Args: { table_name: string }
+        Returns: boolean
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
     }
