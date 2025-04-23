@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { getFeaturedEvents } from "@/services/eventService";
+import { getMeetups } from "@/services/meetupService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventCard from "@/components/EventCard";
 import MeetupCard from "@/components/MeetupCard";
 import Navigation from "@/components/Navigation";
-import { FlaskMeetup, useMeetupService, useEventService } from "@/services/flaskService";
+import { Meetup } from "@/types/meetup";
 import AppHeader from "@/components/home/AppHeader";
 import CategoryFilter from "@/components/home/CategoryFilter";
 import SectionHeader from "@/components/home/SectionHeader";
@@ -25,13 +27,9 @@ interface Event {
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [meetups, setMeetups] = useState<FlaskMeetup[]>([]);
+  const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  
-  // Use our Flask services
-  const { fetchMeetups } = useMeetupService();
-  const { searchEvents } = useEventService();
 
   // Fetch data
   useEffect(() => {
@@ -39,31 +37,33 @@ const Index = () => {
       try {
         setIsLoading(true);
         
-        // Fetch real data using our services
-        const meetupsData = await fetchMeetups();
-        setMeetups(meetupsData);
-        
-        const eventsData = await searchEvents({});
-        setFeaturedEvents(eventsData);
+        // For now, use mock data since the events table doesn't exist in Supabase
+        console.log("Supabase doesn't have the events table yet. Using mock data.");
+        setFeaturedEvents(getFeaturedEvents());
+        setMeetups(getMeetups());
         
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
           title: "Error loading data",
-          description: "Could not load data, please try again later",
+          description: "Could not load data, using mock data instead",
           variant: "destructive"
         });
+        
+        // Fall back to mock data on errors
+        setFeaturedEvents(getFeaturedEvents());
+        setMeetups(getMeetups());
         setIsLoading(false);
       }
     };
     
     fetchData();
-  }, [fetchMeetups, searchEvents, toast]);
+  }, []);
 
   // Filter events and meetups based on selected category
   const filteredEvents = selectedCategory
-    ? featuredEvents.filter(event => event.category?.toLowerCase() === selectedCategory.toLowerCase())
+    ? featuredEvents.filter(event => event.category.toLowerCase() === selectedCategory.toLowerCase())
     : featuredEvents;
 
   const filteredMeetups = selectedCategory

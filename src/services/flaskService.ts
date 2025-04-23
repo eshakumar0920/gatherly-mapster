@@ -1,10 +1,10 @@
-
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
 
+// Define types for meetups that match your Flask backend
 export interface FlaskMeetup {
   id: string;
   title: string;
@@ -15,7 +15,7 @@ export interface FlaskMeetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
-  category?: string;
+  category?: string; // Added category property as optional
   attendees?: string[];
 }
 
@@ -23,12 +23,15 @@ export function useMeetupService() {
   const { toast } = useToast();
   const { handleApiError } = useApiErrorHandling();
   
+  // Fetch all meetups with error handling
   const fetchMeetups = useCallback(async (): Promise<FlaskMeetup[]> => {
     try {
+      // Try Flask API first
       const response = await meetupsApi.getAllMeetups();
       
       if (response.error) {
         console.log("Flask API error, falling back to Supabase:", response.error);
+        // Fall back to Supabase
         const { data, error } = await supabase.from('events').select('*');
         
         if (error) {
@@ -36,6 +39,7 @@ export function useMeetupService() {
           throw error;
         }
         
+        // Transform Supabase data to FlaskMeetup format
         if (data && data.length > 0) {
           const eventRows = data as unknown as EventRow[];
           return eventRows.map(event => ({
@@ -63,19 +67,24 @@ export function useMeetupService() {
     }
   }, []);
   
+  // Fetch a single meetup by ID
   const fetchMeetupById = useCallback(async (meetupId: string): Promise<FlaskMeetup | null> => {
     try {
+      // Try Flask API first
       const response = await meetupsApi.getMeetupById(meetupId);
       
       if (response.error) {
         console.log("Flask API error, falling back to Supabase:", response.error);
+        // Fall back to Supabase
         const { data, error } = await supabase.from('events').select('*').eq('id', parseInt(meetupId)).single();
         
         if (error) {
           console.error("Supabase error:", error);
+          // Don't throw error here, let it return null and use mock data instead
           return null;
         }
         
+        // Transform Supabase data to FlaskMeetup format
         const event = data as unknown as EventRow;
         return {
           id: event.id.toString(),
@@ -99,13 +108,16 @@ export function useMeetupService() {
     }
   }, []);
   
+  // Join a meetup lobby
   const joinMeetupLobby = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
+      // Try Flask API first
       const response = await meetupsApi.joinMeetupLobby(meetupId, {});
       
       if (response.error) {
         console.log("Flask API error for joining lobby, using local state instead:", response.error);
-        return true;
+        // Don't show error to user since we'll fall back to local state
+        return true; // Return success to use the local state management instead
       }
       
       toast({
@@ -116,17 +128,21 @@ export function useMeetupService() {
       return true;
     } catch (error) {
       console.error("Error joining meetup lobby:", error);
-      return true;
+      // Don't show error toast here since we'll use local state
+      return true; // Return success for local state management
     }
   }, [toast]);
   
+  // Check in to a meetup
   const checkInToMeetup = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
+      // Try Flask API first
       const response = await meetupsApi.checkInToMeetup(meetupId, {});
       
       if (response.error) {
         console.log("Flask API error for check-in, using local state instead:", response.error);
-        return false;
+        // Don't show error to user since we'll fall back to local state
+        return false; // Return false to use local state management instead
       }
       
       toast({
@@ -137,7 +153,8 @@ export function useMeetupService() {
       return true;
     } catch (error) {
       console.error("Error checking in to meetup:", error);
-      return false;
+      // Don't show error toast here since we'll use local state
+      return false; // Return false to use local state management
     }
   }, [toast]);
   
@@ -149,18 +166,21 @@ export function useMeetupService() {
   };
 }
 
+// Example usage for events and user services
 export function useEventService() {
   const { handleApiError } = useApiErrorHandling();
   const { toast } = useToast();
   
+  // Search events
   const searchEvents = useCallback(async (params: EventSearchParams) => {
     try {
       const response = await eventsApi.searchEvents(params);
       
       if (response.error) {
         handleApiError(response.error);
-        console.log("Flask API error, falling back to Supabase:", response.error);
+        console.log("Flask API error, falling back to local data:", response.error);
         
+        // Fall back to Supabase or mock data
         const { data, error } = await supabase.from('events').select('*');
         
         if (error) {
@@ -169,6 +189,7 @@ export function useEventService() {
         }
         
         if (data && data.length > 0) {
+          // Transform Supabase data
           return data.map(event => ({
             id: event.id.toString(),
             title: event.title,
@@ -191,6 +212,7 @@ export function useEventService() {
     }
   }, [handleApiError]);
   
+  // Join an event
   const joinEvent = useCallback(async (eventId: string, userId: string) => {
     try {
       const response = await eventsApi.joinEvent(eventId, userId);
@@ -212,6 +234,7 @@ export function useEventService() {
     }
   }, [handleApiError, toast]);
   
+  // Leave an event
   const leaveEvent = useCallback(async (eventId: string, userId: string) => {
     try {
       const response = await eventsApi.leaveEvent(eventId, userId);
@@ -233,6 +256,7 @@ export function useEventService() {
     }
   }, [handleApiError, toast]);
   
+  // Get event details
   const getEventById = useCallback(async (eventId: string) => {
     try {
       const response = await eventsApi.getEventById(eventId);
@@ -249,6 +273,7 @@ export function useEventService() {
     }
   }, [handleApiError]);
   
+  // Fetch all events
   const fetchEvents = useCallback(async () => {
     const response = await eventsApi.getAllEvents();
     
@@ -269,29 +294,30 @@ export function useEventService() {
   };
 }
 
+// Create a simple getUserPoints function to replace the userApi reference
 export function useUserService() {
   const { handleApiError } = useApiErrorHandling();
   
+  // Get user points
   const getUserPoints = useCallback(async (userId: string) => {
-    // Convert userId to a number for Supabase query
-    const numericUserId = parseInt(userId, 10);
-    
-    if (isNaN(numericUserId)) {
-      console.error("Invalid user ID:", userId);
+    // Instead of using userApi, we'll implement a direct approach
+    try {
+      // Try fetch from Supabase first
+      const { data, error } = await supabase
+        .from('users')
+        .select('current_xp')
+        .eq('id', userId)
+        .single();
+      
+      if (error || !data) {
+        return 0;
+      }
+      
+      return data.current_xp || 0;
+    } catch (error) {
+      console.error("Error getting user points:", error);
       return 0;
     }
-    
-    const { data, error } = await supabase
-      .from('users')
-      .select('current_xp')
-      .eq('id', numericUserId)
-      .single();
-    
-    if (error || !data) {
-      return 0;
-    }
-    
-    return data.current_xp || 0;
   }, []);
   
   return {
