@@ -1,3 +1,4 @@
+
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
@@ -158,7 +159,7 @@ export function useEventService() {
       
       if (response.error) {
         handleApiError(response.error);
-        console.log("Flask API error, falling back to local data:", response.error);
+        console.log("Flask API error, falling back to Supabase:", response.error);
         
         const { data, error } = await supabase.from('events').select('*');
         
@@ -272,6 +273,7 @@ export function useUserService() {
   const { handleApiError } = useApiErrorHandling();
   
   const getUserPoints = useCallback(async (userId: string) => {
+    // Convert userId to a number for Supabase query
     const numericUserId = parseInt(userId, 10);
     
     if (isNaN(numericUserId)) {
