@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL; 
+// Use a fallback value if the environment variable is not set
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
@@ -78,6 +80,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     : `${API_BASE_URL}/api${endpoint}`;
 
   try {
+    console.log(`Fetching from: ${fullUrl}`); // Add logging to debug URL construction
     const response = await fetch(fullUrl, {
       ...options,
       headers,
@@ -129,8 +132,11 @@ async function fetchFromApi<T>(
       ? endpoint 
       : `/api${endpoint}`;
 
+    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`); // Debug log
+    
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    // Increase timeout from 5000ms to 10000ms (10 seconds)
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     
     const requestOptions: RequestInit = {
       method,

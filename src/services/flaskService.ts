@@ -1,3 +1,4 @@
+
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
@@ -24,6 +25,7 @@ export function useMeetupService() {
   
   const fetchMeetups = useCallback(async (): Promise<FlaskMeetup[]> => {
     try {
+      console.log("Fetching meetups from Flask API");
       const response = await meetupsApi.getAllMeetups();
       
       if (response.error) {
@@ -34,6 +36,8 @@ export function useMeetupService() {
           console.error("Supabase error:", error);
           throw error;
         }
+        
+        console.log("Supabase events data:", data);
         
         if (data && data.length > 0) {
           const eventRows = data as unknown as EventRow[];
@@ -55,6 +59,7 @@ export function useMeetupService() {
         return [];
       }
       
+      console.log("Received meetups data from API:", response.data);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching meetups:", error);
@@ -154,6 +159,7 @@ export function useEventService() {
   
   const searchEvents = useCallback(async (params: EventSearchParams) => {
     try {
+      console.log("Searching events with params:", params);
       const response = await eventsApi.searchEvents(params);
       
       if (response.error) {
@@ -166,6 +172,8 @@ export function useEventService() {
           console.error("Supabase error:", error);
           return [];
         }
+        
+        console.log("Supabase events data:", data);
         
         if (data && Array.isArray(data) && data.length > 0) {
           return data.map(event => ({
@@ -183,6 +191,7 @@ export function useEventService() {
         return [];
       }
       
+      console.log("Received search events data from API:", response.data);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error searching events:", error);
