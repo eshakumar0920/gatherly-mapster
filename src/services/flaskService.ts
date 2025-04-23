@@ -1,4 +1,3 @@
-
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
@@ -19,22 +18,36 @@ export interface FlaskMeetup {
   attendees?: string[];
 }
 
+// Maximum retry count for API calls before falling back to Supabase
+const MAX_RETRIES = 2;
+
 export function useMeetupService() {
   const { toast } = useToast();
   const { handleApiError } = useApiErrorHandling();
   
-  const fetchMeetups = useCallback(async (): Promise<FlaskMeetup[]> => {
+  const fetchMeetups = useCallback(async (retryCount = 0): Promise<FlaskMeetup[]> => {
     try {
-      console.log("Fetching meetups from Flask API");
+      console.log(`Fetching meetups from Flask API (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
       const response = await meetupsApi.getAllMeetups();
       
       if (response.error) {
+        // Retry logic for network issues
+        if (retryCount < MAX_RETRIES && response.status === 0) {
+          console.log(`Retrying meetup fetch (${retryCount + 1}/${MAX_RETRIES})...`);
+          return await fetchMeetups(retryCount + 1);
+        }
+        
         console.log("Flask API error, falling back to Supabase:", response.error);
         const { data, error } = await supabase.from('events').select('*');
         
         if (error) {
           console.error("Supabase error:", error);
-          throw error;
+          toast({
+            title: "Data fetch error",
+            description: "Could not retrieve meetups. Using sample data instead.",
+            variant: "destructive"
+          });
+          return [];
         }
         
         console.log("Supabase events data:", data);
@@ -60,12 +73,13 @@ export function useMeetupService() {
       }
       
       console.log("Received meetups data from API:", response.data);
+      // Ensure we always return an array
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching meetups:", error);
       return [];
     }
-  }, []);
+  }, [toast]);
   
   const fetchMeetupById = useCallback(async (meetupId: string): Promise<FlaskMeetup | null> => {
     try {
@@ -157,12 +171,18 @@ export function useEventService() {
   const { handleApiError } = useApiErrorHandling();
   const { toast } = useToast();
   
-  const searchEvents = useCallback(async (params: EventSearchParams) => {
+  const searchEvents = useCallback(async (params: EventSearchParams, retryCount = 0) => {
     try {
-      console.log("Searching events with params:", params);
+      console.log(`Searching events with params: ${JSON.stringify(params)} (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
       const response = await eventsApi.searchEvents(params);
       
       if (response.error) {
+        // Retry logic for network issues
+        if (retryCount < MAX_RETRIES && response.status === 0) {
+          console.log(`Retrying event search (${retryCount + 1}/${MAX_RETRIES})...`);
+          return await searchEvents(params, retryCount + 1);
+        }
+        
         handleApiError(response.error);
         console.log("Flask API error, falling back to Supabase:", response.error);
         
@@ -188,10 +208,12 @@ export function useEventService() {
           }));
         }
         
+        // Return empty array instead of null to prevent mapping errors
         return [];
       }
       
       console.log("Received search events data from API:", response.data);
+      // Ensure we always return an array
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error searching events:", error);

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -84,6 +83,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const response = await fetch(fullUrl, {
       ...options,
       headers,
+      mode: 'cors', // Explicitly set CORS mode
     });
 
     let responseData;
@@ -135,8 +135,8 @@ async function fetchFromApi<T>(
     console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`); // Debug log
     
     const controller = new AbortController();
-    // Increase timeout from 5000ms to 10000ms (10 seconds)
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    // Increase timeout from 10 seconds to 15 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     
     const requestOptions: RequestInit = {
       method,
@@ -145,6 +145,7 @@ async function fetchFromApi<T>(
         ...headers
       },
       credentials: 'include',
+      mode: 'cors', // Explicitly set CORS mode
       ...(body && { body: JSON.stringify(body) }),
       signal: controller.signal
     };
@@ -156,8 +157,9 @@ async function fetchFromApi<T>(
     const data = isJson ? await response.json() : await response.text();
     
     if (!response.ok) {
+      console.warn(`API request to ${fullEndpoint} failed with status ${response.status}`);
       return {
-        error: data.message || 'An error occurred',
+        error: data.message || `Request failed with status ${response.status}`,
         status: response.status
       };
     }
@@ -168,10 +170,14 @@ async function fetchFromApi<T>(
     };
   } catch (error) {
     console.error('API request failed:', error);
+    const errorMessage = error instanceof Error ? 
+      (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
+      'An unexpected error occurred';
+    
+    console.warn(`API error details: ${errorMessage}`);
+    
     return {
-      error: error instanceof Error ? 
-        (error.name === 'AbortError' ? 'Request timeout' : error.message) : 
-        'An unexpected error occurred',
+      error: errorMessage,
       status: 0
     };
   }
@@ -187,9 +193,23 @@ function buildQueryString(params: Record<string, any>): string {
 }
 
 export const meetupsApi = {
-  getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
+  getAllMeetups: async () => {
+    try {
+      return await fetchFromApi<any[]>('/meetups');
+    } catch (error) {
+      console.error('Error getting meetups:', error);
+      return { error: 'Failed to fetch meetups', status: 0 };
+    }
+  },
   
-  getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
+  getMeetupById: async (id: string) => {
+    try {
+      return await fetchFromApi<any>(`/meetups/${id}`);
+    } catch (error) {
+      console.error('Error getting meetup details:', error);
+      return { error: 'Failed to fetch meetup details', status: 0 };
+    }
+  },
   
   createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
   
