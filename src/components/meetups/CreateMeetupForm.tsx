@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,6 +12,7 @@ import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { Meetup, EventRow } from "@/types/meetup";
+import { meetupsApi } from "@/services/api";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -35,7 +35,7 @@ interface CreateMeetupFormProps {
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,9 +51,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const eventDate = new Date().toISOString();
-      
-      if (!user || !user.id) {
+      if (!user || !user.email) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
@@ -61,7 +59,42 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         });
         return;
       }
+
+      const eventDate = new Date().toISOString();
       
+      // First try the API approach with proper auth token
+      try {
+        console.log("Creating meetup via API with auth token");
+        const createResponse = await meetupsApi.createMeetup({
+          title: values.title,
+          description: values.description,
+          location: values.location,
+          event_date: eventDate,
+          category: values.category,
+          lobby_size: values.lobbySize,
+        });
+        
+        if (createResponse.error) {
+          throw new Error(createResponse.error);
+        }
+        
+        console.log("Meetup created successfully via API");
+        toast({
+          title: "Meetup created!",
+          description: "Your meetup has been successfully created.",
+        });
+        
+        // Fetch updated meetups
+        const { data: updatedMeetups } = await meetupsApi.getAllMeetups();
+        onSuccess(updatedMeetups || []);
+        onClose();
+        return;
+      } catch (apiError) {
+        console.error("API meetup creation failed, falling back to Supabase:", apiError);
+        // Continue to fallback approach below
+      }
+      
+      // Fallback to direct Supabase approach
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id')
@@ -91,9 +124,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
           return;
         }
         
-        await createMeetup(values, eventDate, newUser.id);
+        await createMeetupInSupabase(values, eventDate, newUser.id);
       } else {
-        await createMeetup(values, eventDate, usersData.id);
+        await createMeetupInSupabase(values, eventDate, usersData.id);
       }
       
       const { data: updatedRawData } = await supabase.from('events').select('*');
@@ -131,7 +164,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
     }
   };
 
-  const createMeetup = async (values: FormValues, eventDate: string, userId: number) => {
+  const createMeetupInSupabase = async (values: FormValues, eventDate: string, userId: number) => {
     const { error } = await supabase.from('events').insert({
       title: values.title,
       description: values.description,
