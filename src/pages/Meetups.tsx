@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,29 +12,58 @@ import { categories } from "@/services/eventService";
 import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
-import { useMeetups } from "@/hooks/useMeetups";
+import { meetupsApi } from "@/services/api";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [allMeetups, setAllMeetups] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { allMeetups, isLoading, setAllMeetups } = useMeetups(null); // Changed to null to fetch all meetups initially
 
-  const filteredMeetups = allMeetups.filter(meetup => {
-    // If we have a search query, filter by title
-    if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+  // 1. Load meetups from /api/events?category=meetup
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const data = await meetupsApi.getAllMeetups();
+        setAllMeetups(data || []);
+      } catch {
+        setAllMeetups([]); // you could fall back to mockMeetups here
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // 2. Filter client‐side
+  const filteredMeetups = allMeetups.filter((m) => {
+    if (searchQuery && !m.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    // If we have a selected category (not "all"), filter by category
     if (selectedCategory && selectedCategory !== "all") {
-      return meetup.category?.toLowerCase() === selectedCategory.toLowerCase();
+      return m.category?.toLowerCase() === selectedCategory.toLowerCase();
     }
-    // If no category is selected or "all" is selected, show all meetups
     return true;
   });
+
+  // 3. Re-load after creating a meetup
+  const handleCreateSuccess = async (newMeetup: any) => {
+    setIsDialogOpen(false);
+    try {
+      // POST /api/events  (with category:'meetup')
+      await meetupsApi.createMeetup(newMeetup);
+      const updated = await meetupsApi.getAllMeetups();
+      setAllMeetups(updated || []);
+    } catch {
+      // ignore or show toast
+    }
+  };
 
   const handleMeetupClick = (meetupId: string) => {
     navigate(`/meetups/${meetupId}`);
@@ -67,8 +96,8 @@ const Meetups = () => {
       <div className="px-4 pb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="Search meetups..." 
+          <Input
+            placeholder="Search meetups..."
             className="pl-10 rounded-full bg-muted/50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -80,9 +109,9 @@ const Meetups = () => {
         <Tabs defaultValue="all" onValueChange={setSelectedCategory} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
             <TabsTrigger value="all">All</TabsTrigger>
-            {categories.map(category => (
-              <TabsTrigger key={category.id} value={category.id}>
-                {category.name}
+            {categories.map((cat) => (
+              <TabsTrigger key={cat.id} value={cat.id}>
+                {cat.name}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -96,7 +125,7 @@ const Meetups = () => {
       </div>
 
       <div className="px-4">
-        <MeetupsList 
+        <MeetupsList
           meetups={filteredMeetups}
           isLoading={isLoading}
           onMeetupClick={handleMeetupClick}
@@ -108,8 +137,8 @@ const Meetups = () => {
           <DialogHeader>
             <DialogTitle>Create New Meetup</DialogTitle>
           </DialogHeader>
-          <CreateMeetupForm 
-            onSuccess={setAllMeetups}
+          <CreateMeetupForm
+            onSuccess={handleCreateSuccess}
             onClose={() => setIsDialogOpen(false)}
           />
         </DialogContent>
