@@ -30,8 +30,8 @@ const Meetups = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const data = await meetupsApi.getAllMeetups();
-        setAllMeetups(data || []);
+        const response = await meetupsApi.getAllMeetups();
+        setAllMeetups(response.data || []);
       } catch {
         setAllMeetups([]); // you could fall back to mockMeetups here
       } finally {
@@ -58,8 +58,8 @@ const Meetups = () => {
     try {
       // POST /api/events  (with category:'meetup')
       await meetupsApi.createMeetup(newMeetup);
-      const updated = await meetupsApi.getAllMeetups();
-      setAllMeetups(updated || []);
+      const response = await meetupsApi.getAllMeetups();
+      setAllMeetups(response.data || []);
     } catch {
       // ignore or show toast
     }
