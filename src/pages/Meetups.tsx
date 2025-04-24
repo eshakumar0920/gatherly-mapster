@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
 import { meetupsApi } from "@/services/api";
+import { meetups as mockMeetups } from "@/services/meetupService";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,15 +26,18 @@ const Meetups = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // 1. Load meetups from /api/events?category=meetup
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
         const response = await meetupsApi.getAllMeetups();
-        setAllMeetups(response.data || []);
+        const real = response.data || [];
+        // always append first 3 mocks
+        const combined = [...real, ...mockMeetups.slice(0, 3)];
+        setAllMeetups(combined);
       } catch {
-        setAllMeetups([]); // you could fall back to mockMeetups here
+        // if API fails, show just the 3 mocks
+        setAllMeetups(mockMeetups.slice(0, 3));
       } finally {
         setIsLoading(false);
       }
@@ -41,7 +45,6 @@ const Meetups = () => {
     load();
   }, []);
 
-  // 2. Filter client‐side
   const filteredMeetups = allMeetups.filter((m) => {
     if (searchQuery && !m.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
@@ -52,16 +55,15 @@ const Meetups = () => {
     return true;
   });
 
-  // 3. Re-load after creating a meetup
   const handleCreateSuccess = async (newMeetup: any) => {
     setIsDialogOpen(false);
     try {
-      // POST /api/events  (with category:'meetup')
       await meetupsApi.createMeetup(newMeetup);
       const response = await meetupsApi.getAllMeetups();
-      setAllMeetups(response.data || []);
+      const real = response.data || [];
+      setAllMeetups([...real, ...mockMeetups.slice(0, 3)]);
     } catch {
-      // ignore or show toast
+      // optionally toast error
     }
   };
 
