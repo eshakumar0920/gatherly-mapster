@@ -142,7 +142,6 @@ async function fetchFromApi<T>(
       : `/api${endpoint}`;
 
     console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`);
-    console.log(`Method: ${method}, Body:`, body);
     if (token) {
       console.log("With auth token:", token.substring(0, 10) + '...');
     } else {
@@ -170,8 +169,6 @@ async function fetchFromApi<T>(
     
     const isJson = response.headers.get('content-type')?.includes('application/json');
     const data = isJson ? await response.json() : await response.text();
-    
-    console.log(`Response status: ${response.status}, Data:`, data);
     
     if (!response.ok) {
       return {
@@ -205,26 +202,16 @@ function buildQueryString(params: Record<string, any>): string {
 }
 
 export const meetupsApi = {
-  getAllMeetups: () => {
-    console.log("Fetching all meetups with category=meetup");
-    return fetchFromApi<any[]>(`/events?category=meetup`);
-  },
+  getAllMeetups: () => fetchFromApi<any[]>(`/events?category=meetup`),
   
   getMeetupById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
-  createMeetup: (data: any) => {
-    // Ensure the category is always set to 'meetup'
-    const meetupData = {
-      ...data,
-      category: 'meetup'
-    };
-    console.log("Creating meetup with data:", meetupData);
-    return fetchFromApi<any>(
+  createMeetup: (data: any) =>
+    fetchFromApi<any>(
       '/events',
       'POST',
-      meetupData
-    );
-  },
+      { ...data, category: 'meetup' }
+    ),
   
   joinMeetupLobby: (id: string, userData: { user_id: number }) =>
     fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),

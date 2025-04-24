@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { Meetup } from "@/types/meetup";
+import { Meetup, EventRow } from "@/types/meetup";
 import { meetupsApi } from "@/services/api";
 
 const formSchema = z.object({
@@ -30,7 +29,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
-  onSuccess: (meetup: any) => void;
+  onSuccess: (meetups: Meetup[]) => void;
   onClose: () => void;
 }
 
@@ -63,25 +62,19 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
       const eventDate = new Date().toISOString();
       
-      // Create meetup object
-      const meetupData = {
-        title: values.title,
-        description: values.description,
-        location: values.location,
-        event_date: eventDate,
-        category: "meetup", // Always set to meetup regardless of selected category
-        lobby_size: values.lobbySize,
-      };
-      
-      console.log("Submitting meetup with data:", meetupData);
-      
-      // Try API approach first
+      // First try the API approach with proper auth token
       try {
         console.log("Creating meetup via API with auth token");
-        const createResponse = await meetupsApi.createMeetup(meetupData);
+        const createResponse = await meetupsApi.createMeetup({
+          title: values.title,
+          description: values.description,
+          location: values.location,
+          event_date: eventDate,
+          category: values.category,
+          lobby_size: values.lobbySize,
+        });
         
         if (createResponse.error) {
-          console.error("API error:", createResponse.error);
           throw new Error(createResponse.error);
         }
         
@@ -91,7 +84,10 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
           description: "Your meetup has been successfully created.",
         });
         
-        onSuccess(meetupData);
+        // Fetch updated meetups
+        const { data: updatedMeetups } = await meetupsApi.getAllMeetups();
+        onSuccess(updatedMeetups || []);
+        onClose();
         return;
       } catch (apiError) {
         console.error("API meetup creation failed, falling back to Supabase:", apiError);
@@ -133,7 +129,30 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         await createMeetupInSupabase(values, eventDate, usersData.id);
       }
       
-      onSuccess(meetupData);
+      const { data: updatedRawData } = await supabase.from('events').select('*');
+      if (updatedRawData) {
+        const supabaseMeetups = updatedRawData.map((event) => {
+          const typedEvent = event as EventRow;
+          const meetup: Meetup = {
+            id: typedEvent.id.toString(),
+            title: typedEvent.title,
+            description: typedEvent.description || "No description available",
+            dateTime: new Date(typedEvent.event_date).toLocaleString(),
+            location: typedEvent.location,
+            points: typedEvent.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: typedEvent.category || "Other",
+            attendees: []
+          };
+          return meetup;
+        });
+        
+        onSuccess(supabaseMeetups);
+      }
+      
+      onClose();
       form.reset();
     } catch (error) {
       console.error("Error in meetup creation:", error);
@@ -146,7 +165,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   };
 
   const createMeetupInSupabase = async (values: FormValues, eventDate: string, userId: number) => {
-    console.log("Creating meetup in Supabase with category: meetup");
     const { error } = await supabase.from('events').insert({
       title: values.title,
       description: values.description,
@@ -157,11 +175,11 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       semester: "Spring 2025",
       xp_reward: 3,
       organizer_xp_reward: 5,
-      category: "meetup" // Always set to meetup
+      category: values.category
     });
     
     if (error) {
-      console.error("Error creating meetup in Supabase:", error);
+      console.error("Error creating meetup:", error);
       toast({
         title: "Error creating meetup",
         description: error.message,
