@@ -12,38 +12,31 @@ import {
   Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage
+} from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import Navigation from "@/components/Navigation";
+import QRScanner from "@/components/QRScanner";
+import { useToast } from "@/hooks/use-toast";
+import { meetupsApi } from "@/services/api";
 import { useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import QRScanner from "@/components/QRScanner";
-import { useAuth } from "@/hooks/useAuth";
-import { meetupsApi } from "@/services/api";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface Meetup {
   id: string;
   title: string;
   description: string;
-  dateTime: string;
+  event_date: string;   // match your Flask field names
   location: string;
-  points: number;
-  createdBy: string;
+  xp_reward: number;
   category?: string;
-  attendees?: string[];
-  event_date?: string;
-}
-
-interface Attendee {
-  id: string;
-  name: string;
-  avatar: string;
-  status: "going" | "interested";
 }
 
 const MeetupLobby = () => {
@@ -51,100 +44,71 @@ const MeetupLobby = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const { attendMeetup, joinMeetupLobby: joinLocalLobby, joinedLobbies, attendedMeetups } = useUserStore();
-  const { user } = useAuth();
+  const { attendMeetup, joinMeetupLobby: joinLocal, joinedLobbies, attendedMeetups } = useUserStore();
 
   const [meetup, setMeetup] = useState<Meetup | null>(null);
   const [loading, setLoading] = useState(true);
-  const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [isJoinedLobby, setIsJoinedLobby] = useState(false);
+  const [isJoined, setIsJoined] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [view, setView] = useState<"all" | "going" | "interested">("all");
 
-  const mockAttendees: Attendee[] = [
-    { id: "1", name: "Jane Cooper", avatar: "https://randomuser.me/api/portraits/women/1.jpg", status: "going" },
-    { id: "2", name: "Wade Warren", avatar: "https://randomuser.me/api/portraits/men/2.jpg", status: "going" },
-    { id: "3", name: "Esther Howard", avatar: "https://randomuser.me/api/portraits/women/3.jpg", status: "going" },
-  ];
-
-  // 1. Fetch meetup details from /api/events/:id
   useEffect(() => {
-    const fetchMeetupData = async () => {
+    (async () => {
       setLoading(true);
+      if (!meetupId) return;
       try {
-        const response = await meetupsApi.getMeetupById(meetupId!);
-        const m = response.data;
-        if (m) {
-          setMeetup({
-            ...m,
-            dateTime: format(new Date(m.event_date || m.dateTime), "MM/dd/yyyy h:mm a"),
-          });
-          setIsJoinedLobby(joinedLobbies?.includes(m.id));
-          setIsCheckedIn(attendedMeetups?.includes(m.id));
+        const resp = await meetupsApi.getMeetupById(meetupId);
+        if (resp.data) {
+          const m = resp.data as Meetup;
+          setMeetup(m);
+          setIsJoined(joinedLobbies.includes(m.id.toString()));
+          setIsCheckedIn(attendedMeetups.includes(m.id.toString()));
+        } else {
+          throw new Error("No data");
         }
-      } catch {
-        // fallback mock
-        const mockM: Meetup = {
-          id: meetupId!,
-          title: `Meetup ${meetupId}`,
-          description: "Could not load details",
-          dateTime: format(new Date(), "MM/dd/yyyy h:mm a"),
-          location: "UTD Campus",
-          points: 3,
-          createdBy: "N/A",
-        };
-        setMeetup(mockM);
-        setIsJoinedLobby(joinedLobbies?.includes(mockM.id));
-        setIsCheckedIn(attendedMeetups?.includes(mockM.id));
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "Meetup not found",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
-    };
-    fetchMeetupData();
-  }, [meetupId, joinedLobbies, attendedMeetups]);
+    })();
+  }, [meetupId, joinedLobbies, attendedMeetups, toast]);
 
-  const filteredAttendees = mockAttendees.filter((a) =>
-    attendeeView === "all" ? true : a.status === attendeeView
-  );
-
-  // 2. Join lobby → POST /api/events/:id/join
-  const handleJoinLobby = async () => {
-    if (!meetup || !user) return;
+  const handleJoin = async () => {
+    if (!meetup) return;
     try {
-      await meetupsApi.joinMeetupLobby(meetup.id, { user_id: parseInt(user.id) });
+      await meetupsApi.joinMeetupLobby(meetup.id, { user_id: 1 });
+      joinLocal(meetup.id);
+      setIsJoined(true);
+      toast({ title: "Joined Meetup Lobby" });
     } catch {
-      /* ignore */
+      toast({ title: "Could not join", variant: "destructive" });
     }
-    joinLocalLobby(meetup.id);
-    setIsJoinedLobby(true);
-    toast({
-      title: "Joined lobby",
-      description: "You've joined the meetup lobby!",
-    });
   };
 
-  // 3. Check-in → same POST /join endpoint
-  const handleQrScanSuccess = async (data: string) => {
-    if (!meetup || !user) return;
-    if (data.includes(meetupId!)) {
+  const handleCheckIn = () => setQrOpen(true);
+
+  const onScan = async (data: string) => {
+    if (data.includes(meetupId) && meetup) {
       try {
-        await meetupsApi.checkInToMeetup(meetup.id, { user_id: parseInt(user.id) });
+        await meetupsApi.checkInToMeetup(meetup.id, { user_id: 1 });
+        attendMeetup(meetup.id, meetup.xp_reward);
+        setIsCheckedIn(true);
+        toast({ title: "Checked In!", description: `+${meetup.xp_reward} XP` });
       } catch {
-        attendMeetup(meetup.id, meetup.points);
+        // fallback local
+        attendMeetup(meetup.id, meetup.xp_reward);
+        setIsCheckedIn(true);
       }
-      setIsCheckedIn(true);
-      toast({
-        title: "Checked In",
-        description: `You earned ${meetup.points} pts!`,
-      });
     } else {
-      toast({
-        title: "Invalid QR Code",
-        description: "This QR doesn't match the meetup.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid QR", variant: "destructive" });
     }
-    setIsQrScannerOpen(false);
+    setQrOpen(false);
   };
 
   if (loading) {
@@ -164,10 +128,9 @@ const MeetupLobby = () => {
 
   if (!meetup) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <h2 className="text-xl mb-4">Meetup not found</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <h2>Meetup not found</h2>
         <Button onClick={() => navigate("/meetups")}>Back to Meetups</Button>
-        <Navigation />
       </div>
     );
   }
@@ -187,12 +150,12 @@ const MeetupLobby = () => {
 
       <div className="p-4">
         <h2 className="text-2xl font-bold">{meetup.title}</h2>
-        <Badge className="bg-yellow-500 text-black">+{meetup.points} pts</Badge>
+        <Badge className="bg-yellow-500 text-black">+{meetup.xp_reward} pts</Badge>
         <p className="text-muted-foreground mt-1">{meetup.description}</p>
         <div className="mt-4 space-y-2">
           <div className="flex items-center text-sm">
             <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{meetup.dateTime}</span>
+            <span>{format(new Date(meetup.event_date), "MM/dd/yyyy h:mm a")}</span>
           </div>
           <div className="flex items-center text-sm">
             <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -204,13 +167,13 @@ const MeetupLobby = () => {
       <Separator />
 
       <div className="p-4 space-y-4">
-        {!isJoinedLobby ? (
-          <Button className="w-full" onClick={handleJoinLobby}>
+        {!isJoined ? (
+          <Button className="w-full" onClick={handleJoin}>
             Join Meetup Lobby
           </Button>
         ) : !isCheckedIn ? (
-          <Button className="w-full" onClick={() => setIsQrScannerOpen(true)}>
-            <QrCode className="mr-2 h-4 w-4" /> Scan QR Code
+          <Button className="w-full" onClick={handleCheckIn}>
+            <QrCode className="mr-2 h-4 w-4" /> Scan QR to Check In
           </Button>
         ) : (
           <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
@@ -219,13 +182,12 @@ const MeetupLobby = () => {
         )}
       </div>
 
-      <Dialog open={isQrScannerOpen} onOpenChange={setIsQrScannerOpen}>
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent>
-          <QRScanner 
-            onSuccess={handleQrScanSuccess} 
-            onCancel={() => setIsQrScannerOpen(false)} 
-            meetupId={meetupId!} 
-          />
+          <DialogTitle>Scan QR Code</DialogTitle>
+          <DialogDescription>
+            <QRScanner onSuccess={onScan} onCancel={() => setQrOpen(false)} meetupId={meetupId!} />
+          </DialogDescription>
         </DialogContent>
       </Dialog>
 
