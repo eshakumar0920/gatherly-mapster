@@ -70,7 +70,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
           description: values.description,
           location: values.location,
           event_date: eventDate,
-          category: values.category,
+          category: "meetup",
           lobby_size: values.lobbySize,
         });
         
@@ -175,7 +175,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       semester: "Spring 2025",
       xp_reward: 3,
       organizer_xp_reward: 5,
-      category: values.category
+      category: "meetup"
     });
     
     if (error) {
