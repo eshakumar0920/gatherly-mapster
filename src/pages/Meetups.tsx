@@ -31,6 +31,7 @@ const Meetups = () => {
   const loadMeetups = async () => {
     setIsLoading(true);
     try {
+      console.log("Loading meetups...");
       const response = await meetupsApi.getAllMeetups();
       console.log("API response for meetups:", response);
       const real = response.data || [];
@@ -58,24 +59,28 @@ const Meetups = () => {
   }, []);
 
   const filteredMeetups = allMeetups.filter((m) => {
-    if (searchQuery && !m.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    if (selectedCategory && selectedCategory !== "all") {
-      return m.category?.toLowerCase() === selectedCategory.toLowerCase();
-    }
-    return true;
+    const titleMatch = !searchQuery || 
+      (m.title && m.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const categoryMatch = !selectedCategory || selectedCategory === "all" ||
+      (m.category && m.category.toLowerCase() === selectedCategory.toLowerCase());
+    
+    return titleMatch && categoryMatch;
   });
 
   const handleCreateSuccess = async (newMeetup: any) => {
     setIsDialogOpen(false);
     try {
-      await meetupsApi.createMeetup(newMeetup);
+      console.log("Creating meetup:", newMeetup);
+      const response = await meetupsApi.createMeetup(newMeetup);
+      console.log("Meetup creation response:", response);
+      
       toast({
         title: "Meetup created",
         description: "Your meetup has been created successfully",
       });
       // Reload meetups after creating a new one
+      console.log("Reloading meetups after creation");
       await loadMeetups();
     } catch (err) {
       console.error("Error creating meetup:", err);

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -212,11 +213,16 @@ export const meetupsApi = {
   getMeetupById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
   createMeetup: (data: any) => {
-    console.log("Creating meetup with data:", { ...data, category: 'meetup' });
+    // Ensure the category is always set to 'meetup'
+    const meetupData = {
+      ...data,
+      category: 'meetup'
+    };
+    console.log("Creating meetup with data:", meetupData);
     return fetchFromApi<any>(
       '/events',
       'POST',
-      { ...data, category: 'meetup' }
+      meetupData
     );
   },
   
