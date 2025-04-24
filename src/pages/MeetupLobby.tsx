@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  User,
   Users,
   Calendar,
   MapPin,
@@ -33,11 +32,25 @@ interface Meetup {
   id: string;
   title: string;
   description: string;
-  event_date: string;   // match your Flask field names
+  event_date: string;
   location: string;
   xp_reward: number;
   category?: string;
 }
+
+interface Attendee {
+  id: string;
+  name: string;
+  avatar: string;
+  status: "going" | "interested";
+}
+
+// Static fallback attendees
+const mockAttendees: Attendee[] = [
+  { id: "1", name: "Jane Cooper", avatar: "https://i.pravatar.cc/100?img=1", status: "going" },
+  { id: "2", name: "Wade Warren", avatar: "https://i.pravatar.cc/100?img=2", status: "going" },
+  { id: "3", name: "Esther Howard", avatar: "https://i.pravatar.cc/100?img=3", status: "going" },
+];
 
 const MeetupLobby = () => {
   const { meetupId } = useParams<{ meetupId: string }>();
@@ -57,27 +70,36 @@ const MeetupLobby = () => {
     (async () => {
       setLoading(true);
       if (!meetupId) return;
+
       try {
+        // Try real backend fetch
         const resp = await meetupsApi.getMeetupById(meetupId);
-        if (resp.data) {
-          const m = resp.data as Meetup;
-          setMeetup(m);
-          setIsJoined(joinedLobbies.includes(m.id.toString()));
-          setIsCheckedIn(attendedMeetups.includes(m.id.toString()));
-        } else {
-          throw new Error("No data");
-        }
-      } catch (err) {
-        toast({
-          title: "Error",
-          description: "Meetup not found",
-          variant: "destructive"
-        });
+        if (!resp.data) throw new Error("No data");
+        setMeetup(resp.data as Meetup);
+      } catch {
+        // Fallback to a dummy meetup
+        const dummy: Meetup = {
+          id: meetupId,
+          title: `Mock Meetup #${meetupId}`,
+          description: "This is a mock meetup because the server call failed.",
+          event_date: new Date().toISOString(),
+          location: "UTD Campus",
+          xp_reward: 5,
+          category: "General",
+        };
+        setMeetup(dummy);
       } finally {
         setLoading(false);
       }
     })();
-  }, [meetupId, joinedLobbies, attendedMeetups, toast]);
+  }, [meetupId]);
+
+  useEffect(() => {
+    if (meetup) {
+      setIsJoined(joinedLobbies.includes(meetup.id));
+      setIsCheckedIn(attendedMeetups.includes(meetup.id));
+    }
+  }, [meetup, joinedLobbies, attendedMeetups]);
 
   const handleJoin = async () => {
     if (!meetup) return;
@@ -94,14 +116,14 @@ const MeetupLobby = () => {
   const handleCheckIn = () => setQrOpen(true);
 
   const onScan = async (data: string) => {
-    if (data.includes(meetupId) && meetup) {
+    if (meetup && data.includes(meetupId)) {
       try {
         await meetupsApi.checkInToMeetup(meetup.id, { user_id: 1 });
         attendMeetup(meetup.id, meetup.xp_reward);
         setIsCheckedIn(true);
         toast({ title: "Checked In!", description: `+${meetup.xp_reward} XP` });
       } catch {
-        // fallback local
+        // Local fallback
         attendMeetup(meetup.id, meetup.xp_reward);
         setIsCheckedIn(true);
       }
@@ -111,83 +133,143 @@ const MeetupLobby = () => {
     setQrOpen(false);
   };
 
+  const filteredAttendees = mockAttendees.filter(a => view === "all" || a.status === view);
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium"><span className="font-bold">i</span>mpulse</h1>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-          <p className="mt-4">Loading meetup details...</p>
-        </div>
-        <Navigation />
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+        <p className="mt-4">Loading meetup details...</p>
       </div>
     );
   }
 
   if (!meetup) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h2>Meetup not found</h2>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h2 className="text-xl mb-4">Meetup not found</h2>
         <Button onClick={() => navigate("/meetups")}>Back to Meetups</Button>
       </div>
     );
   }
 
   return (
-    <div className="pb-20 min-h-screen bg-background">
-      <div className="p-4 pt-6 flex items-center justify-center">
-        <h1 className="text-2xl font-medium"><span className="font-bold">i</span>mpulse</h1>
+    <div className="pb-20">
+      {/* Header */}
+      <div className="p-4 flex items-center">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </Button>
+        <h1 className="ml-2 text-2xl font-bold">Meetup Details</h1>
       </div>
 
-      <header className="p-4 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold">Meetup Details</h1>
-      </header>
-
-      <div className="p-4">
+      {/* Details */}
+      <div className="p-4 space-y-2">
         <h2 className="text-2xl font-bold">{meetup.title}</h2>
-        <Badge className="bg-yellow-500 text-black">+{meetup.xp_reward} pts</Badge>
-        <p className="text-muted-foreground mt-1">{meetup.description}</p>
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center text-sm">
-            <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{format(new Date(meetup.event_date), "MM/dd/yyyy h:mm a")}</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{meetup.location}</span>
-          </div>
+        <p className="text-muted-foreground">{meetup.description}</p>
+        <div className="flex items-center gap-4 text-sm">
+          <Calendar size={16} />
+          <span>{format(new Date(meetup.event_date), "PPpp")}</span>
+          <MapPin size={16} />
+          <span>{meetup.location}</span>
         </div>
       </div>
 
       <Separator />
 
-      <div className="p-4 space-y-4">
+      {/* Attendees */}
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold flex items-center">
+            <Users size={18} className="mr-2" /> Attendees
+          </h3>
+
+          {isMobile ? (
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button size="sm">View All</Button>
+              </DrawerTrigger>
+              <DrawerContent className="p-4">
+                <h4 className="text-lg mb-4">Attendees</h4>
+                {filteredAttendees.map(a => (
+                  <div key={a.id} className="flex items-center gap-3 mb-2">
+                    <Avatar>
+                      <AvatarImage src={a.avatar} />
+                      <AvatarFallback>{a.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <span>{a.name}</span>
+                    <Badge>{a.status}</Badge>
+                  </div>
+                ))}
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="sm">View All</Button>
+              </SheetTrigger>
+              <SheetContent className="w-80 p-4">
+                <SheetHeader>
+                  <SheetTitle>Attendees</SheetTitle>
+                </SheetHeader>
+                {filteredAttendees.map(a => (
+                  <div key={a.id} className="flex items-center gap-3 mb-2">
+                    <Avatar>
+                      <AvatarImage src={a.avatar} />
+                      <AvatarFallback>{a.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <span>{a.name}</span>
+                    <Badge>{a.status}</Badge>
+                  </div>
+                ))}
+              </SheetContent>
+            </Sheet>
+          )}
+        </div>
+
+        {/* Inline avatars */}
+        <div className="flex -space-x-2 overflow-hidden">
+          {mockAttendees.slice(0, 5).map(a => (
+            <Avatar key={a.id} className="border-2 border-white">
+              <AvatarImage src={a.avatar} />
+              <AvatarFallback>{a.name[0]}</AvatarFallback>
+            </Avatar>
+          ))}
+          {mockAttendees.length > 5 && (
+            <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full text-xs">
+              +{mockAttendees.length - 5}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Actions */}
+      <div className="p-4 space-y-3">
         {!isJoined ? (
           <Button className="w-full" onClick={handleJoin}>
             Join Meetup Lobby
           </Button>
         ) : !isCheckedIn ? (
           <Button className="w-full" onClick={handleCheckIn}>
-            <QrCode className="mr-2 h-4 w-4" /> Scan QR to Check In
+            <QrCode size={16} className="mr-2" /> Scan QR to Check In
           </Button>
         ) : (
-          <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-            <Check className="mr-2 h-4 w-4" /> Checked In
+          <Button className="w-full bg-green-500 text-white" disabled>
+            <Check size={16} className="mr-2" /> Checked In
           </Button>
         )}
       </div>
 
+      {/* QR Scanner */}
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent>
           <DialogTitle>Scan QR Code</DialogTitle>
           <DialogDescription>
-            <QRScanner onSuccess={onScan} onCancel={() => setQrOpen(false)} meetupId={meetupId!} />
+            Scan the meetup's QR code to confirm your attendance.
           </DialogDescription>
+          <QRScanner onSuccess={onScan} onCancel={() => setQrOpen(false)} meetupId={meetupId!} />
         </DialogContent>
       </Dialog>
 
