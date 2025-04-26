@@ -11,6 +11,7 @@ export interface Meetup {
   lobbySize: number;
   category?: string;
   attendees: Participant[];
+  xp_reward?: number; // Added this field to fix the type errors
 }
 
 export interface EventRow {
@@ -35,4 +36,5 @@ export interface Participant {
   joined_at: string;
   user_id: number;
   xp_earned: number | null;
+  name?: string; // Added this field to fix the type errors
 }

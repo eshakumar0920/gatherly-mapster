@@ -43,11 +43,15 @@ export const useMeetups = (selectedCategory: string | null) => {
             dateTime: new Date(event.event_date).toISOString(),
             location: event.location,
             points: event.xp_reward || 3,
+            xp_reward: event.xp_reward || 3, // Added this line to include xp_reward
             createdBy: "UTD Student", // Default creator name
             creatorAvatar: undefined,
             lobbySize: 5, // Default lobby size
             category: event.category || "Other",
-            attendees: event.participants || []
+            attendees: (event.participants || []).map(p => ({
+              ...p,
+              name: `User ${p.user_id}` // Add a default name for each participant
+            }))
           }));
           
           setAllMeetups(databaseMeetups);

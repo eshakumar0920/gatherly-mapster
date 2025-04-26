@@ -61,7 +61,6 @@ const MeetupLobby = () => {
 
         console.log("Fetched meetup data:", meetupData);
         
-        // Transform the data to match our Meetup type
         const transformedMeetup: Meetup = {
           id: meetupData.id.toString(),
           title: meetupData.title,
@@ -69,15 +68,19 @@ const MeetupLobby = () => {
           dateTime: new Date(meetupData.event_date).toISOString(),
           location: meetupData.location,
           points: meetupData.xp_reward || 3,
-          createdBy: "UTD Student", // Default creator name
+          xp_reward: meetupData.xp_reward || 3,
+          createdBy: "UTD Student",
           creatorAvatar: undefined,
-          lobbySize: 5, // Default lobby size
+          lobbySize: 5,
           category: meetupData.category || "Other",
-          attendees: meetupData.participants || []
+          attendees: (meetupData.participants || []).map(p => ({
+            ...p,
+            name: `User ${p.user_id}`
+          }))
         };
 
         setMeetup(transformedMeetup);
-        setAttendees(meetupData.participants || []);
+        setAttendees(transformedMeetup.attendees || []);
         
       } catch (error) {
         console.error("Error in fetching meetup details:", error);
@@ -114,7 +117,7 @@ const MeetupLobby = () => {
         .from('participants')
         .insert({
           event_id: numericId,
-          user_id: 1, // Default user ID
+          user_id: 1,
           joined_at: new Date().toISOString(),
           attendance_status: 'going'
         });
@@ -132,14 +135,17 @@ const MeetupLobby = () => {
       joinLocal(meetup.id);
       setIsJoined(true);
       
-      // Refresh attendees list
       const { data: updatedParticipants } = await supabase
         .from('participants')
         .select('*')
         .eq('event_id', numericId);
         
       if (updatedParticipants) {
-        setAttendees(updatedParticipants);
+        const participantsWithNames = updatedParticipants.map(p => ({
+          ...p,
+          name: `User ${p.user_id}`
+        }));
+        setAttendees(participantsWithNames);
       }
       
       toast({ title: "Joined Meetup Lobby" });
@@ -153,14 +159,15 @@ const MeetupLobby = () => {
   const onScan = async (data: string) => {
     if (meetup && data.includes(meetupId)) {
       try {
+        const xpReward = meetup.xp_reward || meetup.points || 3;
         const { error } = await supabase
           .from('participants')
           .update({ 
             attendance_status: 'attended',
-            xp_earned: meetup.xp_reward 
+            xp_earned: xpReward
           })
-          .eq('event_id', meetup.id)
-          .eq('user_id', 1); // Default user ID
+          .eq('event_id', parseInt(meetup.id))
+          .eq('user_id', 1);
           
         if (error) {
           console.error("Error checking in:", error);
@@ -172,11 +179,12 @@ const MeetupLobby = () => {
           return;
         }
         
-        attendMeetup(meetup.id, meetup.xp_reward);
+        attendMeetup(meetup.id, xpReward);
         setIsCheckedIn(true);
-        toast({ title: "Checked In!", description: `+${meetup.xp_reward} XP` });
+        toast({ title: "Checked In!", description: `+${xpReward} XP` });
       } catch (error) {
-        attendMeetup(meetup.id, meetup.xp_reward);
+        const xpReward = meetup.xp_reward || meetup.points || 3;
+        attendMeetup(meetup.id, xpReward);
         setIsCheckedIn(true);
       }
     } else {
@@ -248,7 +256,7 @@ const MeetupLobby = () => {
                     <Avatar>
                       <AvatarFallback>U{a.id}</AvatarFallback>
                     </Avatar>
-                    <span>{a.name}</span>
+                    <span>{a.name || `User ${a.user_id}`}</span>
                     <Badge>{a.attendance_status || "going"}</Badge>
                   </div>
                 ))}
@@ -268,7 +276,7 @@ const MeetupLobby = () => {
                     <Avatar>
                       <AvatarFallback>U{a.id}</AvatarFallback>
                     </Avatar>
-                    <span>{a.name}</span>
+                    <span>{a.name || `User ${a.user_id}`}</span>
                     <Badge>{a.attendance_status || "going"}</Badge>
                   </div>
                 ))}
