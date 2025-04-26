@@ -206,12 +206,14 @@ export const meetupsApi = {
   
   getMeetupById: (id: string) => fetchFromApi<any>(`/events/${id}`),
   
-  createMeetup: (data: any) =>
-    fetchFromApi<any>(
+  createMeetup: (data: any) => {
+    console.log("Creating meetup with data:", { ...data, category: 'meetup' });
+    return fetchFromApi<any>(
       '/events',
       'POST',
       { ...data, category: 'meetup' }
-    ),
+    );
+  },
   
   joinMeetupLobby: (id: string, userData: { user_id: number }) =>
     fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),

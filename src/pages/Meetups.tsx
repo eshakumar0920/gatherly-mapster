@@ -14,6 +14,7 @@ import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
 import { meetupsApi } from "@/services/api";
 import { meetups as mockMeetups } from "@/services/meetupService";
+import { useToast } from "@/hooks/use-toast";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,28 +22,38 @@ const Meetups = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [allMeetups, setAllMeetups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const loadMeetups = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Fetching meetups...");
+      const response = await meetupsApi.getAllMeetups();
+      console.log("Meetups API response:", response);
+      const real = response.data || [];
+      // always append first 3 mocks
+      const combined = [...real, ...mockMeetups.slice(0, 3)];
+      setAllMeetups(combined);
+    } catch (error) {
+      console.error("Error fetching meetups:", error);
+      // if API fails, show just the 3 mocks
+      setAllMeetups(mockMeetups.slice(0, 3));
+      toast({
+        title: "Error loading meetups",
+        description: "Could not load meetups from server. Showing sample meetups instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const response = await meetupsApi.getAllMeetups();
-        const real = response.data || [];
-        // always append first 3 mocks
-        const combined = [...real, ...mockMeetups.slice(0, 3)];
-        setAllMeetups(combined);
-      } catch {
-        // if API fails, show just the 3 mocks
-        setAllMeetups(mockMeetups.slice(0, 3));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
+    loadMeetups();
   }, []);
 
   const filteredMeetups = allMeetups.filter((m) => {
@@ -59,11 +70,19 @@ const Meetups = () => {
     setIsDialogOpen(false);
     try {
       await meetupsApi.createMeetup(newMeetup);
-      const response = await meetupsApi.getAllMeetups();
-      const real = response.data || [];
-      setAllMeetups([...real, ...mockMeetups.slice(0, 3)]);
-    } catch {
-      // optionally toast error
+      toast({
+        title: "Meetup created",
+        description: "Your meetup has been created successfully!",
+      });
+      // Reload meetups to show the new one
+      await loadMeetups();
+    } catch (error) {
+      console.error("Error creating meetup:", error);
+      toast({
+        title: "Error creating meetup",
+        description: "Could not create the meetup. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
