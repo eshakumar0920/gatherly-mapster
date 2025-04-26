@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -46,11 +45,11 @@ export const useMeetups = (selectedCategory: string | null) => {
             xp_reward: event.xp_reward || 3,
             createdBy: "UTD Student",
             creatorAvatar: undefined,
-            lobbySize: (event.participants || []).length || 0, // Set lobby size to actual number of participants
+            lobbySize: 5,
             category: event.category || "Other",
             attendees: (event.participants || []).map(p => ({
               ...p,
-              name: `User ${p.user_id}`
+              name: `Student ${p.user_id}`
             }))
           }));
           

@@ -113,28 +113,41 @@ const Meetups = () => {
     try {
       console.log("Creating new meetup in Supabase:", newMeetup);
       
-      const { data, error } = await supabase.from('events').insert({
+      // First create the meetup
+      const { data: eventData, error: eventError } = await supabase.from('events').insert({
         title: newMeetup.title,
         description: newMeetup.description,
         location: newMeetup.location,
         event_date: newMeetup.event_date,
         category: newMeetup.category,
-        creator_id: newMeetup.creator_id || 1, // Default creator ID if not provided
+        creator_id: newMeetup.creator_id || 1,
         created_at: new Date().toISOString(),
         semester: "Spring 2025",
         xp_reward: newMeetup.xp_reward || 3,
         organizer_xp_reward: newMeetup.organizer_xp_reward || 5,
-      }).select();
+      }).select().single();
       
-      if (error) {
-        throw error;
+      if (eventError) {
+        throw eventError;
+      }
+
+      // Then automatically add the creator as a participant
+      const { error: participantError } = await supabase.from('participants').insert({
+        event_id: eventData.id,
+        user_id: newMeetup.creator_id || 1,
+        joined_at: new Date().toISOString(),
+        attendance_status: 'going'
+      });
+
+      if (participantError) {
+        console.error("Error adding creator as participant:", participantError);
       }
       
-      console.log("Meetup created successfully in Supabase:", data);
+      console.log("Meetup created successfully in Supabase:", eventData);
       
       toast({
         title: "Meetup created",
-        description: "Your meetup has been created successfully!",
+        description: "Your meetup has been created and you've been added to the lobby!",
       });
       
       // Immediately reload meetups to show the new one
