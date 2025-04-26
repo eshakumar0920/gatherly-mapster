@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,8 +14,7 @@ import { events as mockEvents } from "@/services/eventService";
 import { meetups as mockMeetups } from "@/services/meetupService";
 
 // Centralized API
-import { eventsApi } from "@/services/api";
-import { useMeetupService, FlaskMeetup } from "@/services/flaskService";
+import { eventsApi, meetupsApi } from "@/services/api";
 
 interface Event {
   id: string;
@@ -32,36 +30,35 @@ interface Event {
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [meetups, setMeetups] = useState<FlaskMeetup[]>([]);
+  const [meetups, setMeetups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  // old hook to fetch meetups (you could eventually replace with meetupsApi)
-  const { fetchMeetups } = useMeetupService();
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
 
-      // 1️⃣ Fetch Meetups
+      // 1️⃣ Fetch Meetups using the same logic as Meetups page
       try {
-        const meetupsData = await fetchMeetups();
-        if (Array.isArray(meetupsData) && meetupsData.length > 0) {
-          setMeetups(meetupsData);
-        } else {
-          console.log("Using mock meetups (empty array from API)");
-          setMeetups(mockMeetups);
-        }
+        console.log("Fetching meetups...");
+        const response = await meetupsApi.getAllMeetups();
+        console.log("Meetups API response:", response);
+        const real = response.data || [];
+        const combined = [...real, ...mockMeetups.slice(0, 3)];
+        setMeetups(combined);
       } catch (err) {
         console.log("Failed to fetch meetups from API, falling back to mock", err);
-        setMeetups(mockMeetups);
+        setMeetups(mockMeetups.slice(0, 3));
+        toast({
+          title: "Error loading meetups",
+          description: "Could not load meetups from server. Showing sample meetups instead.",
+          variant: "destructive",
+        });
       }
 
       // 2️⃣ Fetch Events
       try {
-        // searchEvents endpoint returns { data: Event[] } or throws
         const response = await eventsApi.searchEvents({ query: "" });
-        // if your API returns { data: [...] }
         const eventArray = Array.isArray(response.data) ? response.data : [];
         if (eventArray.length > 0) {
           setFeaturedEvents(eventArray);
@@ -78,7 +75,7 @@ const Index = () => {
     };
 
     fetchData();
-  }, [fetchMeetups]);
+  }, [toast]);
 
   // apply category filter
   const filteredEvents = selectedCategory
