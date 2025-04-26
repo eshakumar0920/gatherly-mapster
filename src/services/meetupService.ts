@@ -1,4 +1,3 @@
-
 import { Meetup } from "@/types/meetup";
 import { format } from "date-fns";
 import { create } from 'zustand';
@@ -9,7 +8,6 @@ import { Friend, Tag, sampleFriends } from "./types";
 const createValidDate = (year: number, month: number, day: number, hour: number, minute: number) => {
   try {
     const date = new Date(year, month - 1, day, hour, minute);
-    // Check if date is valid before formatting
     if (isNaN(date.getTime())) {
       return "Invalid date";
     }
@@ -20,7 +18,31 @@ const createValidDate = (year: number, month: number, day: number, hour: number,
   }
 };
 
-// Mock data for meetups updated to 2025 with safer date creation
+// Student information with realistic avatars and names
+const students = [
+  {
+    name: "Olivia Martinez",
+    avatar: "https://randomuser.me/api/portraits/women/1.jpg"
+  },
+  {
+    name: "Ethan Chen",
+    avatar: "https://randomuser.me/api/portraits/men/2.jpg"
+  },
+  {
+    name: "Sophia Patel",
+    avatar: "https://randomuser.me/api/portraits/women/3.jpg"
+  },
+  {
+    name: "Lucas Williams",
+    avatar: "https://randomuser.me/api/portraits/men/4.jpg"
+  },
+  {
+    name: "Ava Rodriguez",
+    avatar: "https://randomuser.me/api/portraits/women/5.jpg"
+  }
+];
+
+// Mock data for meetups updated with student creators
 export const meetups: Meetup[] = [
   {
     id: "1",
@@ -29,8 +51,8 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 2, 15, 18, 0),
     location: "ECSW Building, Room 2.412",
     points: 5,
-    createdBy: "Alex Johnson",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    createdBy: students[0].name,
+    creatorAvatar: students[0].avatar,
     lobbySize: 20,
     category: "Technology",
     attendees: []
@@ -42,8 +64,8 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 3, 22, 19, 30),
     location: "SP/N Gallery Lounge",
     points: 3,
-    createdBy: "Emma Rodriguez",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/2.jpg",
+    createdBy: students[1].name,
+    creatorAvatar: students[1].avatar,
     lobbySize: 15,
     category: "Art",
     attendees: []
@@ -55,8 +77,8 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 4, 10, 16, 0),
     location: "Blackstone LaunchPad",
     points: 7,
-    createdBy: "Michael Chen",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/3.jpg",
+    createdBy: students[2].name,
+    creatorAvatar: students[2].avatar,
     lobbySize: 25,
     category: "Business",
     attendees: []
@@ -68,8 +90,8 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 5, 5, 20, 0),
     location: "Student Union Music Room",
     points: 4,
-    createdBy: "Sophia Williams",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/4.jpg",
+    createdBy: students[3].name,
+    creatorAvatar: students[3].avatar,
     lobbySize: 12,
     category: "Music",
     attendees: []
@@ -81,8 +103,8 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 6, 18, 17, 30),
     location: "Recreation Center Yoga Studio",
     points: 3,
-    createdBy: "Daniel Kim",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/5.jpg",
+    createdBy: students[4].name,
+    creatorAvatar: students[4].avatar,
     lobbySize: 15,
     category: "Wellness",
     attendees: []
