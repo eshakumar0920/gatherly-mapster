@@ -1,21 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Users,
-  Calendar,
-  MapPin,
-  QrCode,
-  Check
-} from "lucide-react";
+import { ArrowLeft, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -27,30 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Meetup {
-  id: string;
-  title: string;
-  description: string;
-  event_date: string;
-  location: string;
-  xp_reward: number;
-  category?: string;
-}
-
-interface Attendee {
-  id: string;
-  name: string;
-  avatar: string;
-  status: "going" | "interested";
-}
-
-// Static fallback attendees
-const mockAttendees: Attendee[] = [
-  { id: "1", name: "Jane Cooper", avatar: "https://i.pravatar.cc/100?img=1", status: "going" },
-  { id: "2", name: "Wade Warren", avatar: "https://i.pravatar.cc/100?img=2", status: "going" },
-  { id: "3", name: "Esther Howard", avatar: "https://i.pravatar.cc/100?img=3", status: "going" },
-];
+import type { Meetup, Participant } from "@/types/meetup";
 
 const MeetupLobby = () => {
   const { meetupId } = useParams<{ meetupId: string }>();
@@ -64,7 +29,7 @@ const MeetupLobby = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
-  const [attendees, setAttendees] = useState<any[]>([]);
+  const [attendees, setAttendees] = useState<Participant[]>([]);
   const [view, setView] = useState<"all" | "going" | "interested">("all");
 
   useEffect(() => {
@@ -73,12 +38,15 @@ const MeetupLobby = () => {
       if (!meetupId) return;
 
       try {
-        // Fetch meetup details directly from Supabase
-        console.log("Fetching meetup details from Supabase for ID:", meetupId);
+        const numericId = parseInt(meetupId);
+        if (isNaN(numericId)) {
+          throw new Error("Invalid meetup ID");
+        }
+
         const { data: meetupData, error: meetupError } = await supabase
           .from('events')
-          .select('*')
-          .eq('id', meetupId)
+          .select('*, participants(*)')
+          .eq('id', numericId)
           .single();
 
         if (meetupError) {
@@ -92,20 +60,25 @@ const MeetupLobby = () => {
         }
 
         console.log("Fetched meetup data:", meetupData);
-        setMeetup(meetupData as unknown as Meetup);
         
-        // Fetch attendees for this meetup
-        const { data: participantsData, error: participantsError } = await supabase
-          .from('participants')
-          .select('*')
-          .eq('event_id', meetupId);
+        // Transform the data to match our Meetup type
+        const transformedMeetup: Meetup = {
+          id: meetupData.id.toString(),
+          title: meetupData.title,
+          description: meetupData.description || "No description available",
+          dateTime: new Date(meetupData.event_date).toISOString(),
+          location: meetupData.location,
+          points: meetupData.xp_reward || 3,
+          createdBy: "UTD Student", // Default creator name
+          creatorAvatar: undefined,
+          lobbySize: 5, // Default lobby size
+          category: meetupData.category || "Other",
+          attendees: meetupData.participants || []
+        };
 
-        if (participantsError) {
-          console.error("Error fetching participants:", participantsError);
-        } else if (participantsData) {
-          console.log("Fetched participants:", participantsData);
-          setAttendees(participantsData);
-        }
+        setMeetup(transformedMeetup);
+        setAttendees(meetupData.participants || []);
+        
       } catch (error) {
         console.error("Error in fetching meetup details:", error);
         toast({
@@ -132,12 +105,16 @@ const MeetupLobby = () => {
     if (!meetup) return;
     
     try {
-      // Add user to participants table
+      const numericId = parseInt(meetup.id);
+      if (isNaN(numericId)) {
+        throw new Error("Invalid meetup ID");
+      }
+
       const { error } = await supabase
         .from('participants')
         .insert({
+          event_id: numericId,
           user_id: 1, // Default user ID
-          event_id: meetup.id,
           joined_at: new Date().toISOString(),
           attendance_status: 'going'
         });
@@ -159,7 +136,7 @@ const MeetupLobby = () => {
       const { data: updatedParticipants } = await supabase
         .from('participants')
         .select('*')
-        .eq('event_id', meetup.id);
+        .eq('event_id', numericId);
         
       if (updatedParticipants) {
         setAttendees(updatedParticipants);
@@ -176,7 +153,6 @@ const MeetupLobby = () => {
   const onScan = async (data: string) => {
     if (meetup && data.includes(meetupId)) {
       try {
-        // Update attendance status in the database
         const { error } = await supabase
           .from('participants')
           .update({ 
@@ -200,7 +176,6 @@ const MeetupLobby = () => {
         setIsCheckedIn(true);
         toast({ title: "Checked In!", description: `+${meetup.xp_reward} XP` });
       } catch (error) {
-        // Local fallback
         attendMeetup(meetup.id, meetup.xp_reward);
         setIsCheckedIn(true);
       }
@@ -210,17 +185,9 @@ const MeetupLobby = () => {
     setQrOpen(false);
   };
 
-  // Use actual attendees if available, otherwise fall back to mock data
-  const displayAttendees = attendees.length > 0 
-    ? attendees.map((a, index) => ({
-        id: a.user_id.toString(),
-        name: `Attendee ${index + 1}`, // We don't have actual names from the participants table
-        avatar: `https://i.pravatar.cc/100?img=${index + 10}`,
-        status: a.attendance_status || "going"
-      }))
-    : mockAttendees;
-    
-  const filteredAttendees = displayAttendees.filter(a => view === "all" || a.status === view);
+  const filteredAttendees = attendees.filter(a => 
+    view === "all" || a.attendance_status === view
+  );
 
   if (loading) {
     return (
@@ -242,7 +209,6 @@ const MeetupLobby = () => {
 
   return (
     <div className="pb-20">
-      {/* Header */}
       <div className="p-4 flex items-center">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
@@ -250,25 +216,24 @@ const MeetupLobby = () => {
         <h1 className="ml-2 text-2xl font-bold">Meetup Details</h1>
       </div>
 
-      {/* Details */}
       <div className="p-4 space-y-2">
-        <h2 className="text-2xl font-bold">{meetup.title}</h2>
-        <p className="text-muted-foreground">{meetup.description}</p>
+        <h2 className="text-2xl font-bold">{meetup?.title}</h2>
+        <p className="text-muted-foreground">{meetup?.description}</p>
         <div className="flex items-center gap-4 text-sm">
           <Calendar size={16} />
-          <span>{format(new Date(meetup.event_date), "PPpp")}</span>
+          <span>{meetup?.dateTime ? format(new Date(meetup.dateTime), "PPpp") : "Date not available"}</span>
           <MapPin size={16} />
-          <span>{meetup.location}</span>
+          <span>{meetup?.location}</span>
         </div>
       </div>
 
       <Separator />
 
-      {/* Attendees */}
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold flex items-center">
-            <Users size={18} className="mr-2" /> Attendees ({displayAttendees.length})
+            <Users size={18} className="mr-2" /> 
+            Attendees ({attendees.length})
           </h3>
 
           {isMobile ? (
@@ -281,11 +246,10 @@ const MeetupLobby = () => {
                 {filteredAttendees.map(a => (
                   <div key={a.id} className="flex items-center gap-3 mb-2">
                     <Avatar>
-                      <AvatarImage src={a.avatar} />
-                      <AvatarFallback>{a.name[0]}</AvatarFallback>
+                      <AvatarFallback>U{a.id}</AvatarFallback>
                     </Avatar>
                     <span>{a.name}</span>
-                    <Badge>{a.status}</Badge>
+                    <Badge>{a.attendance_status || "going"}</Badge>
                   </div>
                 ))}
               </DrawerContent>
@@ -302,11 +266,10 @@ const MeetupLobby = () => {
                 {filteredAttendees.map(a => (
                   <div key={a.id} className="flex items-center gap-3 mb-2">
                     <Avatar>
-                      <AvatarImage src={a.avatar} />
-                      <AvatarFallback>{a.name[0]}</AvatarFallback>
+                      <AvatarFallback>U{a.id}</AvatarFallback>
                     </Avatar>
                     <span>{a.name}</span>
-                    <Badge>{a.status}</Badge>
+                    <Badge>{a.attendance_status || "going"}</Badge>
                   </div>
                 ))}
               </SheetContent>
@@ -314,17 +277,15 @@ const MeetupLobby = () => {
           )}
         </div>
 
-        {/* Inline avatars */}
         <div className="flex -space-x-2 overflow-hidden">
-          {displayAttendees.slice(0, 5).map(a => (
+          {attendees.slice(0, 5).map((a, index) => (
             <Avatar key={a.id} className="border-2 border-white">
-              <AvatarImage src={a.avatar} />
-              <AvatarFallback>{a.name[0]}</AvatarFallback>
+              <AvatarFallback>U{index + 1}</AvatarFallback>
             </Avatar>
           ))}
-          {displayAttendees.length > 5 && (
+          {attendees.length > 5 && (
             <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full text-xs">
-              +{displayAttendees.length - 5}
+              +{attendees.length - 5}
             </div>
           )}
         </div>
@@ -332,7 +293,6 @@ const MeetupLobby = () => {
 
       <Separator />
 
-      {/* Actions */}
       <div className="p-4 space-y-3">
         {!isJoined ? (
           <Button className="w-full" onClick={handleJoin}>
@@ -349,7 +309,6 @@ const MeetupLobby = () => {
         )}
       </div>
 
-      {/* QR Scanner */}
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent>
           <DialogTitle>Scan QR Code</DialogTitle>

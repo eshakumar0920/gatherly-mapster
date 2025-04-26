@@ -36,7 +36,7 @@ export const useMeetups = (selectedCategory: string | null) => {
         
         if (data && data.length > 0) {
           console.log("Fetched meetups from Supabase:", data);
-          const databaseMeetups: Meetup[] = data.map(event => ({
+          const databaseMeetups: Meetup[] = data.map((event: EventRow) => ({
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
@@ -45,16 +45,14 @@ export const useMeetups = (selectedCategory: string | null) => {
             points: event.xp_reward || 3,
             createdBy: "UTD Student", // Default creator name
             creatorAvatar: undefined,
-            lobbySize: event.lobby_size || 5,
+            lobbySize: 5, // Default lobby size
             category: event.category || "Other",
             attendees: event.participants || []
           }));
           
-          // Just use database meetups, no need to mix with sample data
           setAllMeetups(databaseMeetups);
         } else {
           console.log("No meetups found in database, using sample data");
-          // If no database meetups, just show sample meetups
           const filteredSampleMeetups = selectedCategory && selectedCategory !== 'all'
             ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
             : sampleMeetups;
@@ -63,7 +61,6 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
-        // Fallback to sample meetups on error
         const filteredSampleMeetups = selectedCategory && selectedCategory !== 'all'
           ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
           : sampleMeetups;
