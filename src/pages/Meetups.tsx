@@ -34,10 +34,19 @@ const Meetups = () => {
       console.log("Fetching meetups...");
       const response = await meetupsApi.getAllMeetups();
       console.log("Meetups API response:", response);
-      const real = response.data || [];
-      // Use all mock meetups as fallback, but prioritize real data
-      const combined = [...real, ...mockMeetups];
-      console.log("Combined meetups:", combined);
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Use real data when available, fallback to mock data
+      const realMeetups = response.data || [];
+      console.log("Real meetups from API:", realMeetups);
+      
+      // Combine real meetups with mock meetups
+      const combined = [...realMeetups, ...mockMeetups];
+      console.log("Combined meetups (total count):", combined.length);
+      
       setAllMeetups(combined);
     } catch (error) {
       console.error("Error fetching meetups:", error);
@@ -70,13 +79,23 @@ const Meetups = () => {
   const handleCreateSuccess = async (newMeetup: any) => {
     setIsDialogOpen(false);
     try {
-      await meetupsApi.createMeetup(newMeetup);
+      console.log("Creating new meetup:", newMeetup);
+      const createResponse = await meetupsApi.createMeetup(newMeetup);
+      console.log("Create meetup response:", createResponse);
+      
+      if (createResponse.error) {
+        throw new Error(createResponse.error);
+      }
+      
       toast({
         title: "Meetup created",
         description: "Your meetup has been created successfully!",
       });
-      // Reload meetups immediately to show the new one
+      
+      // Immediately reload meetups to show the new one
+      console.log("Reloading meetups after creation...");
       await loadMeetups();
+      console.log("Meetups reloaded successfully");
     } catch (error) {
       console.error("Error creating meetup:", error);
       toast({

@@ -62,17 +62,26 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
       const eventDate = new Date().toISOString();
       
+      // Prepare meetup data
+      const meetupData = {
+        title: values.title,
+        description: values.description,
+        location: values.location,
+        event_date: eventDate,
+        category: values.category,
+        lobby_size: values.lobbySize,
+        created_at: new Date().toISOString(),
+        semester: "Spring 2025", 
+        xp_reward: 3,
+        organizer_xp_reward: 5
+      };
+      
+      console.log("Submitting meetup data:", meetupData);
+      
       // First try the API approach with proper auth token
       try {
         console.log("Creating meetup via API with auth token");
-        const createResponse = await meetupsApi.createMeetup({
-          title: values.title,
-          description: values.description,
-          location: values.location,
-          event_date: eventDate,
-          category: values.category,
-          lobby_size: values.lobbySize,
-        });
+        const createResponse = await meetupsApi.createMeetup(meetupData);
         
         if (createResponse.error) {
           throw new Error(createResponse.error);

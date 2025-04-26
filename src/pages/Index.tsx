@@ -41,13 +41,21 @@ const Index = () => {
 
       // 1️⃣ Fetch Meetups using the same logic as Meetups page
       try {
-        console.log("Fetching meetups...");
+        console.log("Fetching meetups for home page...");
         const response = await meetupsApi.getAllMeetups();
-        console.log("Meetups API response:", response);
-        const real = response.data || [];
+        console.log("Home page - Meetups API response:", response);
+        
+        if (response.error) {
+          throw new Error(response.error);
+        }
+        
+        // Use real data when available, fallback to mock data
+        const realMeetups = response.data || [];
+        console.log("Home page - Real meetups from API:", realMeetups);
+        
         // Use all mock meetups, but prioritize real data
-        const combined = [...real, ...mockMeetups];
-        console.log("Combined meetups on home page:", combined);
+        const combined = [...realMeetups, ...mockMeetups];
+        console.log("Combined meetups on home page (total count):", combined.length);
         setMeetups(combined);
       } catch (err) {
         console.log("Failed to fetch meetups from API, falling back to mock", err);

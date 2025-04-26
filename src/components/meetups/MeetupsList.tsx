@@ -22,6 +22,8 @@ const MeetupsList = ({ meetups, isLoading, onMeetupClick }: MeetupsListProps) =>
     );
   }
 
+  console.log("MeetupsList - rendering", meetups.length, "meetups");
+  
   return (
     <div className="space-y-4">
       {meetups.map(meetup => (
