@@ -93,4 +93,5 @@ export const categories = [
   { id: "business", name: "Business" },
   { id: "art", name: "Art" },
   { id: "wellness", name: "Wellness" },
+  { id: "test1", name: "Category-created-in-eventService.ts" },
 ];

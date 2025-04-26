@@ -4,8 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
 // Use a fallback value if the environment variable is not set
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
+// w/o ngrok implemented
+//const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
 
+// w/ ngrok
+// url needs updating every time ngrok runs new on a machine
+const NGROK_URL = 'https://8fb4-70-119-113-79.ngrok-free.app'
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || NGROK_URL; 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
   data?: T;
