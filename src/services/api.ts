@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // w/ ngrok
 // url needs updating every time ngrok runs new on a machine
-const NGROK_URL = 'https://8fb4-70-119-113-79.ngrok-free.app'
+const NGROK_URL = 'https://ae0e-70-119-113-79.ngrok-free.app'
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || NGROK_URL; 
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
