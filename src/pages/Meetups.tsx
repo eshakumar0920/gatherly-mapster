@@ -35,13 +35,14 @@ const Meetups = () => {
       const response = await meetupsApi.getAllMeetups();
       console.log("Meetups API response:", response);
       const real = response.data || [];
-      // always append first 3 mocks
-      const combined = [...real, ...mockMeetups.slice(0, 3)];
+      // Use all mock meetups as fallback, but prioritize real data
+      const combined = [...real, ...mockMeetups];
+      console.log("Combined meetups:", combined);
       setAllMeetups(combined);
     } catch (error) {
       console.error("Error fetching meetups:", error);
-      // if API fails, show just the 3 mocks
-      setAllMeetups(mockMeetups.slice(0, 3));
+      // if API fails, show all mock meetups
+      setAllMeetups(mockMeetups);
       toast({
         title: "Error loading meetups",
         description: "Could not load meetups from server. Showing sample meetups instead.",
@@ -74,7 +75,7 @@ const Meetups = () => {
         title: "Meetup created",
         description: "Your meetup has been created successfully!",
       });
-      // Reload meetups to show the new one
+      // Reload meetups immediately to show the new one
       await loadMeetups();
     } catch (error) {
       console.error("Error creating meetup:", error);

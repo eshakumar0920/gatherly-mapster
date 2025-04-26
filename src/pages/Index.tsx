@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,11 +45,13 @@ const Index = () => {
         const response = await meetupsApi.getAllMeetups();
         console.log("Meetups API response:", response);
         const real = response.data || [];
-        const combined = [...real, ...mockMeetups.slice(0, 3)];
+        // Use all mock meetups, but prioritize real data
+        const combined = [...real, ...mockMeetups];
+        console.log("Combined meetups on home page:", combined);
         setMeetups(combined);
       } catch (err) {
         console.log("Failed to fetch meetups from API, falling back to mock", err);
-        setMeetups(mockMeetups.slice(0, 3));
+        setMeetups(mockMeetups);
         toast({
           title: "Error loading meetups",
           description: "Could not load meetups from server. Showing sample meetups instead.",
