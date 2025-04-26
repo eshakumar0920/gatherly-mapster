@@ -24,9 +24,9 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import Navigation from "@/components/Navigation";
 import QRScanner from "@/components/QRScanner";
 import { useToast } from "@/hooks/use-toast";
-import { meetupsApi } from "@/services/api";
 import { useUserStore } from "@/services/meetupService";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Meetup {
   id: string;
@@ -64,35 +64,62 @@ const MeetupLobby = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [attendees, setAttendees] = useState<any[]>([]);
   const [view, setView] = useState<"all" | "going" | "interested">("all");
 
   useEffect(() => {
-    (async () => {
+    const fetchMeetupData = async () => {
       setLoading(true);
       if (!meetupId) return;
 
       try {
-        // Try real backend fetch
-        const resp = await meetupsApi.getMeetupById(meetupId);
-        if (!resp.data) throw new Error("No data");
-        setMeetup(resp.data as Meetup);
-      } catch {
-        // Fallback to a dummy meetup
-        const dummy: Meetup = {
-          id: meetupId,
-          title: `Mock Meetup #${meetupId}`,
-          description: "This is a mock meetup because the server call failed.",
-          event_date: new Date().toISOString(),
-          location: "UTD Campus",
-          xp_reward: 5,
-          category: "General",
-        };
-        setMeetup(dummy);
+        // Fetch meetup details directly from Supabase
+        console.log("Fetching meetup details from Supabase for ID:", meetupId);
+        const { data: meetupData, error: meetupError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', meetupId)
+          .single();
+
+        if (meetupError) {
+          console.error("Error fetching meetup from Supabase:", meetupError);
+          throw meetupError;
+        }
+
+        if (!meetupData) {
+          console.error("No meetup found with ID:", meetupId);
+          throw new Error("Meetup not found");
+        }
+
+        console.log("Fetched meetup data:", meetupData);
+        setMeetup(meetupData as unknown as Meetup);
+        
+        // Fetch attendees for this meetup
+        const { data: participantsData, error: participantsError } = await supabase
+          .from('participants')
+          .select('*')
+          .eq('event_id', meetupId);
+
+        if (participantsError) {
+          console.error("Error fetching participants:", participantsError);
+        } else if (participantsData) {
+          console.log("Fetched participants:", participantsData);
+          setAttendees(participantsData);
+        }
+      } catch (error) {
+        console.error("Error in fetching meetup details:", error);
+        toast({
+          title: "Error loading meetup",
+          description: "Failed to load meetup details. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
-    })();
-  }, [meetupId]);
+    };
+
+    fetchMeetupData();
+  }, [meetupId, toast]);
 
   useEffect(() => {
     if (meetup) {
@@ -103,12 +130,43 @@ const MeetupLobby = () => {
 
   const handleJoin = async () => {
     if (!meetup) return;
+    
     try {
-      await meetupsApi.joinMeetupLobby(meetup.id, { user_id: 1 });
+      // Add user to participants table
+      const { error } = await supabase
+        .from('participants')
+        .insert({
+          user_id: 1, // Default user ID
+          event_id: meetup.id,
+          joined_at: new Date().toISOString(),
+          attendance_status: 'going'
+        });
+        
+      if (error) {
+        console.error("Error joining meetup:", error);
+        toast({ 
+          title: "Could not join", 
+          description: "Failed to join the meetup. Please try again.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
       joinLocal(meetup.id);
       setIsJoined(true);
+      
+      // Refresh attendees list
+      const { data: updatedParticipants } = await supabase
+        .from('participants')
+        .select('*')
+        .eq('event_id', meetup.id);
+        
+      if (updatedParticipants) {
+        setAttendees(updatedParticipants);
+      }
+      
       toast({ title: "Joined Meetup Lobby" });
-    } catch {
+    } catch (error) {
       toast({ title: "Could not join", variant: "destructive" });
     }
   };
@@ -118,11 +176,30 @@ const MeetupLobby = () => {
   const onScan = async (data: string) => {
     if (meetup && data.includes(meetupId)) {
       try {
-        await meetupsApi.checkInToMeetup(meetup.id, { user_id: 1 });
+        // Update attendance status in the database
+        const { error } = await supabase
+          .from('participants')
+          .update({ 
+            attendance_status: 'attended',
+            xp_earned: meetup.xp_reward 
+          })
+          .eq('event_id', meetup.id)
+          .eq('user_id', 1); // Default user ID
+          
+        if (error) {
+          console.error("Error checking in:", error);
+          toast({
+            title: "Check-in failed",
+            description: "Could not update attendance status",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         attendMeetup(meetup.id, meetup.xp_reward);
         setIsCheckedIn(true);
         toast({ title: "Checked In!", description: `+${meetup.xp_reward} XP` });
-      } catch {
+      } catch (error) {
         // Local fallback
         attendMeetup(meetup.id, meetup.xp_reward);
         setIsCheckedIn(true);
@@ -133,7 +210,17 @@ const MeetupLobby = () => {
     setQrOpen(false);
   };
 
-  const filteredAttendees = mockAttendees.filter(a => view === "all" || a.status === view);
+  // Use actual attendees if available, otherwise fall back to mock data
+  const displayAttendees = attendees.length > 0 
+    ? attendees.map((a, index) => ({
+        id: a.user_id.toString(),
+        name: `Attendee ${index + 1}`, // We don't have actual names from the participants table
+        avatar: `https://i.pravatar.cc/100?img=${index + 10}`,
+        status: a.attendance_status || "going"
+      }))
+    : mockAttendees;
+    
+  const filteredAttendees = displayAttendees.filter(a => view === "all" || a.status === view);
 
   if (loading) {
     return (
@@ -181,7 +268,7 @@ const MeetupLobby = () => {
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold flex items-center">
-            <Users size={18} className="mr-2" /> Attendees
+            <Users size={18} className="mr-2" /> Attendees ({displayAttendees.length})
           </h3>
 
           {isMobile ? (
@@ -229,15 +316,15 @@ const MeetupLobby = () => {
 
         {/* Inline avatars */}
         <div className="flex -space-x-2 overflow-hidden">
-          {mockAttendees.slice(0, 5).map(a => (
+          {displayAttendees.slice(0, 5).map(a => (
             <Avatar key={a.id} className="border-2 border-white">
               <AvatarImage src={a.avatar} />
               <AvatarFallback>{a.name[0]}</AvatarFallback>
             </Avatar>
           ))}
-          {mockAttendees.length > 5 && (
+          {displayAttendees.length > 5 && (
             <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full text-xs">
-              +{mockAttendees.length - 5}
+              +{displayAttendees.length - 5}
             </div>
           )}
         </div>
