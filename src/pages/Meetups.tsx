@@ -12,58 +12,77 @@ import { categories } from "@/services/eventService";
 import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
-import { meetupsApi } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { meetups as mockMeetups } from "@/services/meetupService";
+import { useToast } from "@/hooks/use-toast";
+import { Meetup, EventRow } from "@/types/meetup";
+import { useMeetups } from "@/hooks/useMeetups";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [allMeetups, setAllMeetups] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const response = await meetupsApi.getAllMeetups();
-        const real = response.data || [];
-        // always append first 3 mocks
-        const combined = [...real, ...mockMeetups.slice(0, 3)];
-        setAllMeetups(combined);
-      } catch {
-        // if API fails, show just the 3 mocks
-        setAllMeetups(mockMeetups.slice(0, 3));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
-  }, []);
+  
+  // Use the custom hook to fetch meetups
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
 
   const filteredMeetups = allMeetups.filter((m) => {
     if (searchQuery && !m.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
-    }
-    if (selectedCategory && selectedCategory !== "all") {
-      return m.category?.toLowerCase() === selectedCategory.toLowerCase();
     }
     return true;
   });
 
   const handleCreateSuccess = async (newMeetup: any) => {
     setIsDialogOpen(false);
+    
     try {
-      await meetupsApi.createMeetup(newMeetup);
-      const response = await meetupsApi.getAllMeetups();
-      const real = response.data || [];
-      setAllMeetups([...real, ...mockMeetups.slice(0, 3)]);
-    } catch {
-      // optionally toast error
+      // Create a fully formed Meetup object from the new meetup data
+      const createdMeetup: Meetup = {
+        id: newMeetup.id.toString(),
+        title: newMeetup.title,
+        description: newMeetup.description || "No description available",
+        dateTime: new Date(newMeetup.event_date).toISOString(),
+        location: newMeetup.location,
+        points: newMeetup.xp_reward || 3,
+        xp_reward: newMeetup.xp_reward || 3,
+        createdBy: user?.email?.split('@')[0] || "UTD Student",
+        creatorAvatar: undefined,
+        // Use the lobbySize from the form input
+        lobbySize: newMeetup.lobbySize || 5,
+        category: newMeetup.category || "Other",
+        // Add the creator as first attendee
+        attendees: [{
+          id: 1,
+          user_id: user?.id || 1,
+          event_id: newMeetup.id,
+          joined_at: new Date().toISOString(),
+          attendance_status: "going",
+          xp_earned: null,
+          name: user?.email?.split('@')[0] || "UTD Student"
+        }]
+      };
+      
+      // Add the new meetup to the list
+      setAllMeetups(prevMeetups => [createdMeetup, ...prevMeetups]);
+      
+      toast({
+        title: "Meetup created",
+        description: "Your meetup has been created and you've been added to the lobby!",
+      });
+      
+    } catch (error) {
+      console.error("Error creating meetup:", error);
+      toast({
+        title: "Error creating meetup",
+        description: "Could not create the meetup. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
