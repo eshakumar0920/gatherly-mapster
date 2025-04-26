@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,8 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { Meetup, EventRow } from "@/types/meetup";
-import { meetupsApi } from "@/services/api";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -29,13 +28,13 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
-  onSuccess: (meetups: Meetup[]) => void;
+  onSuccess: (meetup: any) => void;
   onClose: () => void;
 }
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user, accessToken } = useAuth();
+  const { user } = useAuth();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -60,108 +59,25 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
 
-      const eventDate = new Date().toISOString();
-      
-      // Prepare meetup data
+      // Format data for the database
       const meetupData = {
         title: values.title,
         description: values.description,
         location: values.location,
-        event_date: eventDate,
+        event_date: new Date().toISOString(), // Using current date as default
         category: values.category,
         lobby_size: values.lobbySize,
         created_at: new Date().toISOString(),
         semester: "Spring 2025", 
         xp_reward: 3,
-        organizer_xp_reward: 5
+        organizer_xp_reward: 5,
+        creator_id: 1 // Default if user ID not available
       };
       
       console.log("Submitting meetup data:", meetupData);
       
-      // First try the API approach with proper auth token
-      try {
-        console.log("Creating meetup via API with auth token");
-        const createResponse = await meetupsApi.createMeetup(meetupData);
-        
-        if (createResponse.error) {
-          throw new Error(createResponse.error);
-        }
-        
-        console.log("Meetup created successfully via API");
-        toast({
-          title: "Meetup created!",
-          description: "Your meetup has been successfully created.",
-        });
-        
-        // Fetch updated meetups
-        const { data: updatedMeetups } = await meetupsApi.getAllMeetups();
-        onSuccess(updatedMeetups || []);
-        onClose();
-        return;
-      } catch (apiError) {
-        console.error("API meetup creation failed, falling back to Supabase:", apiError);
-        // Continue to fallback approach below
-      }
-      
-      // Fallback to direct Supabase approach
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-      
-      if (usersError || !usersData) {
-        console.log("User not found in users table, creating a new record");
-        
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert({
-            email: user.email,
-            username: user.email.split('@')[0],
-            join_date: new Date().toISOString()
-          })
-          .select('id')
-          .single();
-        
-        if (createError) {
-          console.error("Error creating user record:", createError);
-          toast({
-            title: "Error creating meetup",
-            description: "Could not create user record in database",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        await createMeetupInSupabase(values, eventDate, newUser.id);
-      } else {
-        await createMeetupInSupabase(values, eventDate, usersData.id);
-      }
-      
-      const { data: updatedRawData } = await supabase.from('events').select('*');
-      if (updatedRawData) {
-        const supabaseMeetups = updatedRawData.map((event) => {
-          const typedEvent = event as EventRow;
-          const meetup: Meetup = {
-            id: typedEvent.id.toString(),
-            title: typedEvent.title,
-            description: typedEvent.description || "No description available",
-            dateTime: new Date(typedEvent.event_date).toLocaleString(),
-            location: typedEvent.location,
-            points: typedEvent.xp_reward || 3,
-            createdBy: "Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            category: typedEvent.category || "Other",
-            attendees: []
-          };
-          return meetup;
-        });
-        
-        onSuccess(supabaseMeetups);
-      }
-      
-      onClose();
+      // Pass the data to the parent component to handle creation
+      onSuccess(meetupData);
       form.reset();
     } catch (error) {
       console.error("Error in meetup creation:", error);
@@ -171,36 +87,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         variant: "destructive"
       });
     }
-  };
-
-  const createMeetupInSupabase = async (values: FormValues, eventDate: string, userId: number) => {
-    const { error } = await supabase.from('events').insert({
-      title: values.title,
-      description: values.description,
-      location: values.location,
-      event_date: eventDate,
-      creator_id: userId,
-      created_at: new Date().toISOString(),
-      semester: "Spring 2025",
-      xp_reward: 3,
-      organizer_xp_reward: 5,
-      category: values.category
-    });
-    
-    if (error) {
-      console.error("Error creating meetup:", error);
-      toast({
-        title: "Error creating meetup",
-        description: error.message,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    toast({
-      title: "Meetup created!",
-      description: "Your meetup has been successfully created.",
-    });
   };
 
   return (

@@ -12,15 +12,16 @@ import { categories } from "@/services/eventService";
 import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
-import { meetupsApi } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { meetups as mockMeetups } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
+import { Meetup, EventRow } from "@/types/meetup";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [allMeetups, setAllMeetups] = useState<any[]>([]);
+  const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -31,27 +32,61 @@ const Meetups = () => {
   const loadMeetups = async () => {
     setIsLoading(true);
     try {
-      console.log("Fetching meetups...");
-      const response = await meetupsApi.getAllMeetups();
-      console.log("Meetups API response:", response);
+      console.log("Fetching meetups directly from Supabase...");
       
-      if (response.error) {
-        throw new Error(response.error);
+      // First try to get meetups from Supabase
+      let query = supabase.from('events').select('*');
+      
+      if (selectedCategory) {
+        query = query.eq('category', selectedCategory);
       }
       
-      // Use real data when available, fallback to mock data
-      const realMeetups = response.data || [];
-      console.log("Real meetups from API:", realMeetups);
+      const { data, error } = await query;
       
-      // Combine real meetups with mock meetups
-      const combined = [...realMeetups, ...mockMeetups];
+      if (error) {
+        console.error("Error fetching meetups from Supabase:", error);
+        throw error;
+      }
+      
+      // Convert Supabase data to our Meetup type
+      let realMeetups: Meetup[] = [];
+      if (data && data.length > 0) {
+        const eventRows = data as unknown as EventRow[];
+        realMeetups = eventRows.map(event => ({
+          id: event.id.toString(),
+          title: event.title,
+          description: event.description || "No description available",
+          dateTime: new Date(event.event_date).toISOString(),
+          location: event.location,
+          points: event.xp_reward || 3,
+          createdBy: "Student",
+          creatorAvatar: undefined,
+          lobbySize: 5,
+          category: event.category || "Other",
+          attendees: []
+        }));
+        console.log("Fetched", realMeetups.length, "meetups from Supabase");
+      } else {
+        console.log("No meetups found in Supabase");
+      }
+      
+      // Combine real meetups with mock meetups for development
+      const filteredMockMeetups = selectedCategory 
+        ? mockMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+        : mockMeetups;
+      
+      const combined = [...realMeetups, ...filteredMockMeetups];
       console.log("Combined meetups (total count):", combined.length);
       
       setAllMeetups(combined);
     } catch (error) {
       console.error("Error fetching meetups:", error);
-      // if API fails, show all mock meetups
-      setAllMeetups(mockMeetups);
+      // if Supabase query fails, show all mock meetups
+      const filteredMockMeetups = selectedCategory 
+        ? mockMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+        : mockMeetups;
+      
+      setAllMeetups(filteredMockMeetups);
       toast({
         title: "Error loading meetups",
         description: "Could not load meetups from server. Showing sample meetups instead.",
@@ -64,14 +99,11 @@ const Meetups = () => {
 
   useEffect(() => {
     loadMeetups();
-  }, []);
+  }, [selectedCategory]);
 
   const filteredMeetups = allMeetups.filter((m) => {
     if (searchQuery && !m.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
-    }
-    if (selectedCategory && selectedCategory !== "all") {
-      return m.category?.toLowerCase() === selectedCategory.toLowerCase();
     }
     return true;
   });
@@ -79,13 +111,26 @@ const Meetups = () => {
   const handleCreateSuccess = async (newMeetup: any) => {
     setIsDialogOpen(false);
     try {
-      console.log("Creating new meetup:", newMeetup);
-      const createResponse = await meetupsApi.createMeetup(newMeetup);
-      console.log("Create meetup response:", createResponse);
+      console.log("Creating new meetup in Supabase:", newMeetup);
       
-      if (createResponse.error) {
-        throw new Error(createResponse.error);
+      const { data, error } = await supabase.from('events').insert({
+        title: newMeetup.title,
+        description: newMeetup.description,
+        location: newMeetup.location,
+        event_date: newMeetup.event_date,
+        category: newMeetup.category,
+        creator_id: newMeetup.creator_id || 1, // Default creator ID if not provided
+        created_at: new Date().toISOString(),
+        semester: "Spring 2025",
+        xp_reward: newMeetup.xp_reward || 3,
+        organizer_xp_reward: newMeetup.organizer_xp_reward || 5,
+      }).select();
+      
+      if (error) {
+        throw error;
       }
+      
+      console.log("Meetup created successfully in Supabase:", data);
       
       toast({
         title: "Meetup created",

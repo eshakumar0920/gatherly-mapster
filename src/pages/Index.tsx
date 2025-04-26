@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,13 +8,12 @@ import AppHeader from "@/components/home/AppHeader";
 import CategoryFilter from "@/components/home/CategoryFilter";
 import SectionHeader from "@/components/home/SectionHeader";
 import ContentLoader from "@/components/home/ContentLoader";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock data
 import { events as mockEvents } from "@/services/eventService";
 import { meetups as mockMeetups } from "@/services/meetupService";
-
-// Centralized API
-import { eventsApi, meetupsApi } from "@/services/api";
+import { Meetup, EventRow } from "@/types/meetup";
 
 interface Event {
   id: string;
@@ -31,7 +29,7 @@ interface Event {
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [meetups, setMeetups] = useState<any[]>([]);
+  const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -39,26 +37,46 @@ const Index = () => {
     const fetchData = async () => {
       setIsLoading(true);
 
-      // 1️⃣ Fetch Meetups using the same logic as Meetups page
+      // 1️⃣ Fetch Meetups directly from Supabase
       try {
-        console.log("Fetching meetups for home page...");
-        const response = await meetupsApi.getAllMeetups();
-        console.log("Home page - Meetups API response:", response);
+        console.log("Fetching meetups for home page from Supabase...");
         
-        if (response.error) {
-          throw new Error(response.error);
+        // Query the events table
+        const { data, error } = await supabase.from('events').select('*');
+        
+        if (error) {
+          console.error("Supabase error:", error);
+          throw new Error(error.message);
         }
         
-        // Use real data when available, fallback to mock data
-        const realMeetups = response.data || [];
-        console.log("Home page - Real meetups from API:", realMeetups);
+        // Convert Supabase data to our Meetup type
+        let realMeetups: Meetup[] = [];
+        if (data && data.length > 0) {
+          const eventRows = data as unknown as EventRow[];
+          realMeetups = eventRows.map(event => ({
+            id: event.id.toString(),
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_date).toISOString(),
+            location: event.location,
+            points: event.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: event.category || "Other",
+            attendees: []
+          }));
+          console.log("Home page - Real meetups from Supabase:", realMeetups.length);
+        } else {
+          console.log("No meetups found in Supabase");
+        }
         
         // Use all mock meetups, but prioritize real data
         const combined = [...realMeetups, ...mockMeetups];
         console.log("Combined meetups on home page (total count):", combined.length);
         setMeetups(combined);
       } catch (err) {
-        console.log("Failed to fetch meetups from API, falling back to mock", err);
+        console.error("Failed to fetch meetups from Supabase, falling back to mock", err);
         setMeetups(mockMeetups);
         toast({
           title: "Error loading meetups",
@@ -67,18 +85,13 @@ const Index = () => {
         });
       }
 
-      // 2️⃣ Fetch Events
+      // 2️⃣ For Events, we'll keep the existing logic for now
       try {
-        const response = await eventsApi.searchEvents({ query: "" });
-        const eventArray = Array.isArray(response.data) ? response.data : [];
-        if (eventArray.length > 0) {
-          setFeaturedEvents(eventArray);
-        } else {
-          console.log("Using mock events (empty array from API)");
-          setFeaturedEvents(mockEvents);
-        }
+        // In a real app, you would fetch events from Supabase too
+        // For now, we'll use the mock events
+        setFeaturedEvents(mockEvents);
       } catch (err) {
-        console.log("Failed to fetch events from API, falling back to mock", err);
+        console.error("Failed to fetch events, falling back to mock", err);
         setFeaturedEvents(mockEvents);
       }
 
@@ -86,7 +99,7 @@ const Index = () => {
     };
 
     fetchData();
-  }, [toast]);
+  }, [toast, selectedCategory]);
 
   // apply category filter
   const filteredEvents = selectedCategory
