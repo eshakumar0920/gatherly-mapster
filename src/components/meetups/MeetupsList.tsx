@@ -40,15 +40,25 @@ const MeetupsList = ({ meetups, isLoading, onMeetupClick }: MeetupsListProps) =>
   
   return (
     <div className="space-y-4">
-      {meetups.map(meetup => (
-        <div 
-          key={meetup.id} 
-          onClick={() => onMeetupClick(meetup.id)}
-          className="cursor-pointer"
-        >
-          <MeetupCard meetup={meetup} />
-        </div>
-      ))}
+      {meetups.map(meetup => {
+        const currentAttendees = meetup.attendees?.length || 1; // Default to 1 for creator
+        const isLobbyFull = currentAttendees >= meetup.lobbySize;
+        
+        return (
+          <div 
+            key={meetup.id} 
+            onClick={() => onMeetupClick(meetup.id)}
+            className="cursor-pointer"
+          >
+            <MeetupCard 
+              meetup={{
+                ...meetup,
+                attendees: meetup.attendees || []
+              }} 
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };

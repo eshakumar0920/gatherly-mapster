@@ -59,25 +59,52 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
 
-      // Format data for the database
       const meetupData = {
         title: values.title,
         description: values.description,
         location: values.location,
-        event_date: new Date().toISOString(), // Using current date as default
+        event_date: new Date().toISOString(),
         category: values.category,
         lobby_size: values.lobbySize,
         created_at: new Date().toISOString(),
-        semester: "Spring 2025", 
+        semester: "Spring 2025",
         xp_reward: 3,
         organizer_xp_reward: 5,
-        creator_id: 1 // Default if user ID not available
+        creator_id: user.id
       };
       
-      console.log("Submitting meetup data:", meetupData);
+      console.log("Creating new meetup:", meetupData);
       
-      // Pass the data to the parent component to handle creation
-      onSuccess(meetupData);
+      // Create the meetup
+      const { data: meetupResult, error: meetupError } = await supabase
+        .from('events')
+        .insert(meetupData)
+        .select()
+        .single();
+
+      if (meetupError) throw meetupError;
+
+      // Automatically add creator to participants
+      const { error: participantError } = await supabase
+        .from('participants')
+        .insert({
+          user_id: user.id,
+          event_id: meetupResult.id,
+          joined_at: new Date().toISOString(),
+          attendance_status: 'going'
+        });
+
+      if (participantError) {
+        console.error("Error adding creator as participant:", participantError);
+        toast({
+          title: "Partial success",
+          description: "Meetup created but couldn't add you to participants",
+          variant: "destructive"
+        });
+      }
+
+      console.log("Meetup created successfully:", meetupResult);
+      onSuccess(meetupResult);
       form.reset();
     } catch (error) {
       console.error("Error in meetup creation:", error);
