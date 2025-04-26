@@ -16,90 +16,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { meetups as mockMeetups } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
 import { Meetup, EventRow } from "@/types/meetup";
+import { useMeetups } from "@/hooks/useMeetups";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const loadMeetups = async () => {
-    setIsLoading(true);
-    try {
-      console.log("Fetching meetups directly from Supabase...");
-      
-      // First try to get meetups from Supabase
-      let query = supabase.from('events').select('*');
-      
-      if (selectedCategory) {
-        query = query.eq('category', selectedCategory);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error("Error fetching meetups from Supabase:", error);
-        throw error;
-      }
-      
-      // Convert Supabase data to our Meetup type
-      let realMeetups: Meetup[] = [];
-      if (data && data.length > 0) {
-        const eventRows = data as unknown as EventRow[];
-        realMeetups = eventRows.map(event => ({
-          id: event.id.toString(),
-          title: event.title,
-          description: event.description || "No description available",
-          dateTime: new Date(event.event_date).toISOString(),
-          location: event.location,
-          points: event.xp_reward || 3,
-          createdBy: "Student",
-          creatorAvatar: undefined,
-          lobbySize: 5,
-          category: event.category || "Other",
-          attendees: []
-        }));
-        console.log("Fetched", realMeetups.length, "meetups from Supabase");
-      } else {
-        console.log("No meetups found in Supabase");
-      }
-      
-      // Combine real meetups with mock meetups for development
-      const filteredMockMeetups = selectedCategory 
-        ? mockMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
-        : mockMeetups;
-      
-      const combined = [...realMeetups, ...filteredMockMeetups];
-      console.log("Combined meetups (total count):", combined.length);
-      
-      setAllMeetups(combined);
-    } catch (error) {
-      console.error("Error fetching meetups:", error);
-      // if Supabase query fails, show all mock meetups
-      const filteredMockMeetups = selectedCategory 
-        ? mockMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
-        : mockMeetups;
-      
-      setAllMeetups(filteredMockMeetups);
-      toast({
-        title: "Error loading meetups",
-        description: "Could not load meetups from server. Showing sample meetups instead.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMeetups();
-  }, [selectedCategory]);
+  
+  // Use the custom hook to fetch meetups
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
 
   const filteredMeetups = allMeetups.filter((m) => {
     if (searchQuery && !m.title.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -110,50 +40,42 @@ const Meetups = () => {
 
   const handleCreateSuccess = async (newMeetup: any) => {
     setIsDialogOpen(false);
+    
     try {
-      console.log("Creating new meetup in Supabase:", newMeetup);
-      
-      // First create the meetup
-      const { data: eventData, error: eventError } = await supabase.from('events').insert({
+      // Create a fully formed Meetup object from the new meetup data
+      const createdMeetup: Meetup = {
+        id: newMeetup.id.toString(),
         title: newMeetup.title,
-        description: newMeetup.description,
+        description: newMeetup.description || "No description available",
+        dateTime: new Date(newMeetup.event_date).toISOString(),
         location: newMeetup.location,
-        event_date: newMeetup.event_date,
-        category: newMeetup.category,
-        creator_id: newMeetup.creator_id || 1,
-        created_at: new Date().toISOString(),
-        semester: "Spring 2025",
+        points: newMeetup.xp_reward || 3,
         xp_reward: newMeetup.xp_reward || 3,
-        organizer_xp_reward: newMeetup.organizer_xp_reward || 5,
-      }).select().single();
+        createdBy: user?.email?.split('@')[0] || "UTD Student",
+        creatorAvatar: undefined,
+        // Use the lobbySize from the form input
+        lobbySize: newMeetup.lobbySize || 5,
+        category: newMeetup.category || "Other",
+        // Add the creator as first attendee
+        attendees: [{
+          id: 1,
+          user_id: user?.id || 1,
+          event_id: newMeetup.id,
+          joined_at: new Date().toISOString(),
+          attendance_status: "going",
+          xp_earned: null,
+          name: user?.email?.split('@')[0] || "UTD Student"
+        }]
+      };
       
-      if (eventError) {
-        throw eventError;
-      }
-
-      // Then automatically add the creator as a participant
-      const { error: participantError } = await supabase.from('participants').insert({
-        event_id: eventData.id,
-        user_id: newMeetup.creator_id || 1,
-        joined_at: new Date().toISOString(),
-        attendance_status: 'going'
-      });
-
-      if (participantError) {
-        console.error("Error adding creator as participant:", participantError);
-      }
-      
-      console.log("Meetup created successfully in Supabase:", eventData);
+      // Add the new meetup to the list
+      setAllMeetups(prevMeetups => [createdMeetup, ...prevMeetups]);
       
       toast({
         title: "Meetup created",
         description: "Your meetup has been created and you've been added to the lobby!",
       });
       
-      // Immediately reload meetups to show the new one
-      console.log("Reloading meetups after creation...");
-      await loadMeetups();
-      console.log("Meetups reloaded successfully");
     } catch (error) {
       console.error("Error creating meetup:", error);
       toast({

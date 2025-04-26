@@ -59,13 +59,14 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
 
+      // NOTE: We're removing lobbySize from the data sent to Supabase
+      // since the column doesn't exist in the database
       const meetupData = {
         title: values.title,
         description: values.description,
         location: values.location,
         event_date: new Date().toISOString(),
         category: values.category,
-        lobby_size: values.lobbySize,
         created_at: new Date().toISOString(),
         semester: "Spring 2025",
         xp_reward: 3,
@@ -103,8 +104,14 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         });
       }
 
-      console.log("Meetup created successfully:", meetupResult);
-      onSuccess(meetupResult);
+      // Add the lobby size to the meetup result for frontend use
+      const resultWithLobbySize = {
+        ...meetupResult,
+        lobbySize: values.lobbySize
+      };
+
+      console.log("Meetup created successfully:", resultWithLobbySize);
+      onSuccess(resultWithLobbySize);
       form.reset();
     } catch (error) {
       console.error("Error in meetup creation:", error);

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -34,24 +35,31 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
         
         if (data && data.length > 0) {
-          console.log("Fetched meetups from Supabase:", data);
-          const databaseMeetups: Meetup[] = data.map((event: EventRow) => ({
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toISOString(),
-            location: event.location,
-            points: event.xp_reward || 3,
-            xp_reward: event.xp_reward || 3,
-            createdBy: "UTD Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            category: event.category || "Other",
-            attendees: (event.participants || []).map(p => ({
-              ...p,
-              name: `Student ${p.user_id}`
-            }))
-          }));
+          console.log("Fetched", data.length, "meetups from Supabase");
+          
+          const databaseMeetups: Meetup[] = data.map((event: EventRow) => {
+            // Count the number of participants for this event
+            const participantsCount = event.participants ? event.participants.length : 0;
+            
+            return {
+              id: event.id.toString(),
+              title: event.title,
+              description: event.description || "No description available",
+              dateTime: new Date(event.event_date).toISOString(),
+              location: event.location,
+              points: event.xp_reward || 3,
+              xp_reward: event.xp_reward || 3,
+              createdBy: "UTD Student",
+              creatorAvatar: undefined,
+              // Set the lobby size to at least 5 or the number of participants + some space
+              lobbySize: Math.max(5, participantsCount + 2),
+              category: event.category || "Other",
+              attendees: (event.participants || []).map(p => ({
+                ...p,
+                name: `Student ${p.user_id}`
+              }))
+            };
+          });
           
           setAllMeetups(databaseMeetups);
         } else {
