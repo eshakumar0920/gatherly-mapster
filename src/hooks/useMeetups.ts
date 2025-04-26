@@ -14,11 +14,9 @@ export const useMeetups = (selectedCategory: string | null) => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        console.log("Fetching meetups with category filter:", selectedCategory || "all");
+        let query = supabase.from('events').select('*');
         
-        let query = supabase.from('events').select('*, participants(*)');
-        
-        if (selectedCategory && selectedCategory !== 'all') {
+        if (selectedCategory) {
           query = query.eq('category', selectedCategory);
         }
         
@@ -35,36 +33,30 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
         
         if (data && data.length > 0) {
-          console.log("Fetched", data.length, "meetups from Supabase");
+          const eventRows = data as unknown as EventRow[];
+          const databaseMeetups: Meetup[] = eventRows.map(event => ({
+            id: event.id.toString(),
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_date).toLocaleString(),
+            location: event.location,
+            points: event.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: event.category || "Other",
+            attendees: []
+          }));
           
-          const databaseMeetups: Meetup[] = data.map((event: EventRow) => {
-            // Count the number of participants for this event
-            const participantsCount = event.participants ? event.participants.length : 0;
-            
-            return {
-              id: event.id.toString(),
-              title: event.title,
-              description: event.description || "No description available",
-              dateTime: new Date(event.event_date).toISOString(),
-              location: event.location,
-              points: event.xp_reward || 3,
-              xp_reward: event.xp_reward || 3,
-              createdBy: "UTD Student",
-              creatorAvatar: undefined,
-              // Set the lobby size to at least 5 or the number of participants + some space
-              lobbySize: Math.max(5, participantsCount + 2),
-              category: event.category || "Other",
-              attendees: (event.participants || []).map(p => ({
-                ...p,
-                name: `Student ${p.user_id}`
-              }))
-            };
-          });
+          // Combine sample meetups with database meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
           
-          setAllMeetups(databaseMeetups);
+          setAllMeetups([...databaseMeetups, ...filteredSampleMeetups]);
         } else {
-          console.log("No meetups found in database, using sample data");
-          const filteredSampleMeetups = selectedCategory && selectedCategory !== 'all'
+          // If no database meetups, just show sample meetups
+          const filteredSampleMeetups = selectedCategory 
             ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
             : sampleMeetups;
           
@@ -72,10 +64,7 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
-        const filteredSampleMeetups = selectedCategory && selectedCategory !== 'all'
-          ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
-          : sampleMeetups;
-        setAllMeetups(filteredSampleMeetups);
+        setAllMeetups(sampleMeetups); // Fallback to sample meetups on error
       } finally {
         setIsLoading(false);
       }

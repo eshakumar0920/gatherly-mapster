@@ -1,4 +1,5 @@
 
+// Define meetup interface in a separate file to avoid deep type instantiation
 export interface Meetup {
   id: string;
   title: string;
@@ -9,11 +10,11 @@ export interface Meetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
-  category?: string;
-  attendees: Participant[];
-  xp_reward?: number; // Added this field to fix the type errors
+  category?: string; // Added category property as optional
+  attendees?: string[];
 }
 
+// Event data as it comes from Supabase
 export interface EventRow {
   id: number;
   title: string;
@@ -26,15 +27,4 @@ export interface EventRow {
   organizer_xp_reward: number | null;
   xp_reward: number | null;
   category?: string;
-  participants?: Participant[];
-}
-
-export interface Participant {
-  attendance_status: string | null;
-  event_id: number;
-  id: number;
-  joined_at: string;
-  user_id: number;
-  xp_earned: number | null;
-  name?: string; // Added this field to fix the type errors
 }

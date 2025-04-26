@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { Meetup, EventRow } from "@/types/meetup";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -28,7 +29,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
-  onSuccess: (meetup: any) => void;
+  onSuccess: (meetups: Meetup[]) => void;
   onClose: () => void;
 }
 
@@ -50,7 +51,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      if (!user || !user.email) {
+      const eventDate = new Date().toISOString();
+      
+      if (!user || !user.id) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
@@ -58,60 +61,65 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         });
         return;
       }
-
-      // NOTE: We're removing lobbySize from the data sent to Supabase
-      // since the column doesn't exist in the database
-      const meetupData = {
-        title: values.title,
-        description: values.description,
-        location: values.location,
-        event_date: new Date().toISOString(),
-        category: values.category,
-        created_at: new Date().toISOString(),
-        semester: "Spring 2025",
-        xp_reward: 3,
-        organizer_xp_reward: 5,
-        creator_id: user.id
-      };
       
-      console.log("Creating new meetup:", meetupData);
-      
-      // Create the meetup
-      const { data: meetupResult, error: meetupError } = await supabase
-        .from('events')
-        .insert(meetupData)
-        .select()
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
         .single();
-
-      if (meetupError) throw meetupError;
-
-      // Automatically add creator to participants
-      const { error: participantError } = await supabase
-        .from('participants')
-        .insert({
-          user_id: user.id,
-          event_id: meetupResult.id,
-          joined_at: new Date().toISOString(),
-          attendance_status: 'going'
-        });
-
-      if (participantError) {
-        console.error("Error adding creator as participant:", participantError);
-        toast({
-          title: "Partial success",
-          description: "Meetup created but couldn't add you to participants",
-          variant: "destructive"
-        });
+      
+      if (usersError || !usersData) {
+        console.log("User not found in users table, creating a new record");
+        
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            email: user.email,
+            username: user.email.split('@')[0],
+            join_date: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+        
+        if (createError) {
+          console.error("Error creating user record:", createError);
+          toast({
+            title: "Error creating meetup",
+            description: "Could not create user record in database",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        await createMeetup(values, eventDate, newUser.id);
+      } else {
+        await createMeetup(values, eventDate, usersData.id);
       }
-
-      // Add the lobby size to the meetup result for frontend use
-      const resultWithLobbySize = {
-        ...meetupResult,
-        lobbySize: values.lobbySize
-      };
-
-      console.log("Meetup created successfully:", resultWithLobbySize);
-      onSuccess(resultWithLobbySize);
+      
+      const { data: updatedRawData } = await supabase.from('events').select('*');
+      if (updatedRawData) {
+        const supabaseMeetups = updatedRawData.map((event) => {
+          const typedEvent = event as EventRow;
+          const meetup: Meetup = {
+            id: typedEvent.id.toString(),
+            title: typedEvent.title,
+            description: typedEvent.description || "No description available",
+            dateTime: new Date(typedEvent.event_date).toLocaleString(),
+            location: typedEvent.location,
+            points: typedEvent.xp_reward || 3,
+            createdBy: "Student",
+            creatorAvatar: undefined,
+            lobbySize: 5,
+            category: typedEvent.category || "Other",
+            attendees: []
+          };
+          return meetup;
+        });
+        
+        onSuccess(supabaseMeetups);
+      }
+      
+      onClose();
       form.reset();
     } catch (error) {
       console.error("Error in meetup creation:", error);
@@ -121,6 +129,36 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         variant: "destructive"
       });
     }
+  };
+
+  const createMeetup = async (values: FormValues, eventDate: string, userId: number) => {
+    const { error } = await supabase.from('events').insert({
+      title: values.title,
+      description: values.description,
+      location: values.location,
+      event_date: eventDate,
+      creator_id: userId,
+      created_at: new Date().toISOString(),
+      semester: "Spring 2025",
+      xp_reward: 3,
+      organizer_xp_reward: 5,
+      category: values.category
+    });
+    
+    if (error) {
+      console.error("Error creating meetup:", error);
+      toast({
+        title: "Error creating meetup",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Meetup created!",
+      description: "Your meetup has been successfully created.",
+    });
   };
 
   return (

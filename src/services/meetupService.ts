@@ -29,19 +29,11 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 2, 15, 18, 0),
     location: "ECSW Building, Room 2.412",
     points: 5,
-    createdBy: "Emily Parker",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/1.jpg",
+    createdBy: "Alex Johnson",
+    creatorAvatar: "https://randomuser.me/api/portraits/men/1.jpg",
     lobbySize: 20,
     category: "Technology",
-    attendees: [{
-      id: 1,
-      user_id: 1,
-      event_id: 1,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Emily Parker"
-    }]
+    attendees: []
   },
   {
     id: "2",
@@ -50,19 +42,11 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 3, 22, 19, 30),
     location: "SP/N Gallery Lounge",
     points: 3,
-    createdBy: "Marcus Chen",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/2.jpg",
+    createdBy: "Emma Rodriguez",
+    creatorAvatar: "https://randomuser.me/api/portraits/women/2.jpg",
     lobbySize: 15,
     category: "Art",
-    attendees: [{
-      id: 2,
-      user_id: 2,
-      event_id: 2,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Marcus Chen"
-    }]
+    attendees: []
   },
   {
     id: "3",
@@ -71,19 +55,11 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 4, 10, 16, 0),
     location: "Blackstone LaunchPad",
     points: 7,
-    createdBy: "Sarah Rodriguez",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/3.jpg",
+    createdBy: "Michael Chen",
+    creatorAvatar: "https://randomuser.me/api/portraits/men/3.jpg",
     lobbySize: 25,
     category: "Business",
-    attendees: [{
-      id: 3,
-      user_id: 3,
-      event_id: 3,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Sarah Rodriguez"
-    }]
+    attendees: []
   },
   {
     id: "4",
@@ -92,19 +68,11 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 5, 5, 20, 0),
     location: "Student Union Music Room",
     points: 4,
-    createdBy: "David Kim",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/4.jpg",
+    createdBy: "Sophia Williams",
+    creatorAvatar: "https://randomuser.me/api/portraits/women/4.jpg",
     lobbySize: 12,
     category: "Music",
-    attendees: [{
-      id: 4,
-      user_id: 4,
-      event_id: 4,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "David Kim"
-    }]
+    attendees: []
   },
   {
     id: "5",
@@ -113,19 +81,11 @@ export const meetups: Meetup[] = [
     dateTime: createValidDate(2025, 6, 18, 17, 30),
     location: "Recreation Center Yoga Studio",
     points: 3,
-    createdBy: "Sofia Patel",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/5.jpg",
+    createdBy: "Daniel Kim",
+    creatorAvatar: "https://randomuser.me/api/portraits/men/5.jpg",
     lobbySize: 15,
     category: "Wellness",
-    attendees: [{
-      id: 5,
-      user_id: 5,
-      event_id: 5,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Sofia Patel"
-    }]
+    attendees: []
   }
 ];
 

@@ -1,19 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventCard from "@/components/EventCard";
 import MeetupCard from "@/components/MeetupCard";
 import Navigation from "@/components/Navigation";
+import { FlaskMeetup, useMeetupService, useEventService } from "@/services/flaskService";
 import AppHeader from "@/components/home/AppHeader";
 import CategoryFilter from "@/components/home/CategoryFilter";
 import SectionHeader from "@/components/home/SectionHeader";
 import ContentLoader from "@/components/home/ContentLoader";
-import { supabase } from "@/integrations/supabase/client";
-
-// Mock data
 import { events as mockEvents } from "@/services/eventService";
 import { meetups as mockMeetups } from "@/services/meetupService";
-import { Meetup, EventRow } from "@/types/meetup";
 
 interface Event {
   id: string;
@@ -29,102 +27,86 @@ interface Event {
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [meetups, setMeetups] = useState<FlaskMeetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Use our Flask services
+  const { fetchMeetups } = useMeetupService();
+  const { searchEvents } = useEventService();
 
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-
-      // 1️⃣ Fetch Meetups directly from Supabase
+      
+      // Try to fetch real data, fall back to mock data if it fails
       try {
-        console.log("Fetching meetups for home page from Supabase...");
-        
-        // Query the events table
-        const { data, error } = await supabase.from('events').select('*');
-        
-        if (error) {
-          console.error("Supabase error:", error);
-          throw new Error(error.message);
+        let meetupsData;
+        try {
+          meetupsData = await fetchMeetups();
+          if (meetupsData && Array.isArray(meetupsData) && meetupsData.length > 0) {
+            setMeetups(meetupsData);
+          } else {
+            console.log("Using mock meetups data due to empty response");
+            setMeetups(mockMeetups);
+          }
+        } catch (error) {
+          console.log("Failed to fetch meetups from API, using mock data");
+          setMeetups(mockMeetups);
         }
         
-        // Convert Supabase data to our Meetup type
-        let realMeetups: Meetup[] = [];
-        if (data && data.length > 0) {
-          const eventRows = data as unknown as EventRow[];
-          realMeetups = eventRows.map(event => ({
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toISOString(),
-            location: event.location,
-            points: event.xp_reward || 3,
-            createdBy: "Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            category: event.category || "Other",
-            attendees: []
-          }));
-          console.log("Home page - Real meetups from Supabase:", realMeetups.length);
-        } else {
-          console.log("No meetups found in Supabase");
+        let eventsData;
+        try {
+          eventsData = await searchEvents({});
+          if (eventsData && Array.isArray(eventsData) && eventsData.length > 0) {
+            setFeaturedEvents(eventsData);
+          } else {
+            console.log("Using mock events data due to empty response");
+            setFeaturedEvents(mockEvents);
+          }
+        } catch (error) {
+          console.log("Failed to fetch events from API, using mock data");
+          setFeaturedEvents(mockEvents);
         }
-        
-        // Use all mock meetups, but prioritize real data
-        const combined = [...realMeetups, ...mockMeetups];
-        console.log("Combined meetups on home page (total count):", combined.length);
-        setMeetups(combined);
-      } catch (err) {
-        console.error("Failed to fetch meetups from Supabase, falling back to mock", err);
+      } catch (error) {
+        console.error("General error in data fetching:", error);
+        // Set mock data as fallback
+        setFeaturedEvents(mockEvents);
         setMeetups(mockMeetups);
-        toast({
-          title: "Error loading meetups",
-          description: "Could not load meetups from server. Showing sample meetups instead.",
-          variant: "destructive",
-        });
+      } finally {
+        setIsLoading(false);
       }
-
-      // 2️⃣ For Events, we'll keep the existing logic for now
-      try {
-        // In a real app, you would fetch events from Supabase too
-        // For now, we'll use the mock events
-        setFeaturedEvents(mockEvents);
-      } catch (err) {
-        console.error("Failed to fetch events, falling back to mock", err);
-        setFeaturedEvents(mockEvents);
-      }
-
-      setIsLoading(false);
     };
-
+    
     fetchData();
-  }, [toast, selectedCategory]);
+  }, [fetchMeetups, searchEvents, toast]);
 
-  // apply category filter
-  const filteredEvents = selectedCategory
-    ? featuredEvents.filter(e => e.category?.toLowerCase() === selectedCategory.toLowerCase())
+  // Filter events and meetups based on selected category
+  const filteredEvents = selectedCategory && Array.isArray(featuredEvents)
+    ? featuredEvents.filter(event => event.category?.toLowerCase() === selectedCategory.toLowerCase())
     : featuredEvents;
 
-  const filteredMeetups = selectedCategory
-    ? meetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+  const filteredMeetups = selectedCategory && Array.isArray(meetups)
+    ? meetups.filter(meetup => meetup.category?.toLowerCase() === selectedCategory.toLowerCase())
     : meetups;
 
   return (
     <div className="pb-20">
       <AppHeader />
 
+      {/* Tabs for Events and Meetups */}
       <Tabs defaultValue="all" className="w-full px-4">
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="meetups">Meetups</TabsTrigger>
         </TabsList>
-
-        {/* All */}
+        
+        {/* All Content Tab */}
         <TabsContent value="all">
-          <CategoryFilter
-            selectedCategory={selectedCategory}
+          <CategoryFilter 
+            selectedCategory={selectedCategory} 
             onCategorySelect={setSelectedCategory}
           />
 
@@ -132,65 +114,75 @@ const Index = () => {
             <ContentLoader />
           ) : (
             <>
+              {/* Featured Events */}
               <div className="pb-6">
                 <SectionHeader title="Featured Events" />
-                {filteredEvents.length > 0 ? (
-                  filteredEvents.map(e => <EventCard key={e.id} event={e} featured />)
+                {Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredEvents.map(event => (
+                      <EventCard key={event.id} event={event} featured />
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    No events found in this category
-                  </p>
+                  <p className="text-center text-muted-foreground py-4">No events found in this category</p>
                 )}
               </div>
 
+              {/* Student Meetups */}
               <div className="pb-6">
                 <SectionHeader title="Student Meetups" />
-                {filteredMeetups.length > 0 ? (
-                  filteredMeetups.slice(0, 3).map(m => (
-                    <MeetupCard key={m.id} meetup={m} />
-                  ))
+                {Array.isArray(filteredMeetups) && filteredMeetups.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredMeetups.slice(0, 3).map(meetup => (
+                      <MeetupCard key={meetup.id} meetup={meetup} />
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    No meetups found in this category
-                  </p>
+                  <p className="text-center text-muted-foreground py-4">No meetups found in this category</p>
                 )}
               </div>
             </>
           )}
         </TabsContent>
-
-        {/* Events */}
+        
+        {/* Events Tab */}
         <TabsContent value="events">
-          <CategoryFilter
-            selectedCategory={selectedCategory}
+          <CategoryFilter 
+            selectedCategory={selectedCategory} 
             onCategorySelect={setSelectedCategory}
           />
-          {isLoading ? (
-            <ContentLoader />
-          ) : filteredEvents.length > 0 ? (
-            filteredEvents.map(e => <EventCard key={e.id} event={e} featured />)
-          ) : (
-            <p className="text-center text-muted-foreground py-4">
-              No events found in this category
-            </p>
-          )}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Campus Events</h2>
+            {isLoading ? (
+              <ContentLoader />
+            ) : Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
+              filteredEvents.map(event => (
+                <EventCard key={event.id} event={event} featured />
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">No events found in this category</p>
+            )}
+          </div>
         </TabsContent>
-
-        {/* Meetups */}
+        
+        {/* Meetups Tab */}
         <TabsContent value="meetups">
-          <CategoryFilter
-            selectedCategory={selectedCategory}
+          <CategoryFilter 
+            selectedCategory={selectedCategory} 
             onCategorySelect={setSelectedCategory}
           />
-          {isLoading ? (
-            <ContentLoader />
-          ) : filteredMeetups.length > 0 ? (
-            filteredMeetups.map(m => <MeetupCard key={m.id} meetup={m} />)
-          ) : (
-            <p className="text-center text-muted-foreground py-4">
-              No meetups found in this category
-            </p>
-          )}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Student Meetups</h2>
+            {isLoading ? (
+              <ContentLoader />
+            ) : Array.isArray(filteredMeetups) && filteredMeetups.length > 0 ? (
+              filteredMeetups.map(meetup => (
+                <MeetupCard key={meetup.id} meetup={meetup} />
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">No meetups found in this category</p>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 

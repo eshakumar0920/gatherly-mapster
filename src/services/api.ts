@@ -72,10 +72,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    // Add console log to debug authorization header
-    console.log("Adding authorization header with token:", token.substring(0, 10) + '...');
-  } else {
-    console.log("No authentication token found in localStorage");
   }
   
   // Handle authentication routes differently - they should go directly to /auth endpoint
@@ -98,7 +94,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
 
     if (!response.ok) {
-      console.error('API request failed:', response.status, responseData);
       throw new Error(responseData.message || responseData.error || 'An error occurred');
     }
 
@@ -132,21 +127,12 @@ async function fetchFromApi<T>(
   headers?: Record<string, string>
 ): Promise<ApiResponse<T>> {
   try {
-    // Add token to headers if available
-    const token = localStorage.getItem('impulse_access_token');
-    const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
-    
     // Skip adding /api/ for authentication routes
     const fullEndpoint = endpoint.startsWith('/auth/') 
       ? endpoint 
       : `/api${endpoint}`;
 
-    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`);
-    if (token) {
-      console.log("With auth token:", token.substring(0, 10) + '...');
-    } else {
-      console.log("No auth token available");
-    }
+    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`); // Debug log
     
     const controller = new AbortController();
     // Increase timeout from 5000ms to 10000ms (10 seconds)
@@ -156,7 +142,6 @@ async function fetchFromApi<T>(
       method,
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,
         ...headers
       },
       credentials: 'include',
@@ -202,24 +187,17 @@ function buildQueryString(params: Record<string, any>): string {
 }
 
 export const meetupsApi = {
-  getAllMeetups: () => fetchFromApi<any[]>(`/events?category=meetup`),
+  getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
   
-  getMeetupById: (id: string) => fetchFromApi<any>(`/events/${id}`),
+  getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
   
-  createMeetup: (data: any) => {
-    console.log("Creating meetup with data:", { ...data, category: 'meetup' });
-    return fetchFromApi<any>(
-      '/events',
-      'POST',
-      { ...data, category: 'meetup' }
-    );
-  },
+  createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
   
-  joinMeetupLobby: (id: string, userData: { user_id: number }) =>
-    fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),
+  joinMeetupLobby: (meetupId: string, userData: any) => 
+    fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
   
-  checkInToMeetup: (id: string, userData: { user_id: number }) =>
-    fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),
+  checkInToMeetup: (meetupId: string, userData: any) => 
+    fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
 };
 
 export const eventsApi = {
