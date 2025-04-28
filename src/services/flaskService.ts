@@ -2,6 +2,7 @@ import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from '.
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
 import { EventRow, Meetup } from "@/types/meetup";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface FlaskMeetup {
   id: string;
