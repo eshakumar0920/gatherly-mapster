@@ -33,7 +33,6 @@ const EventLobby = () => {
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [organizer, setOrganizer] = useState<{name: string, role: string}>({name: "Anonymous", role: "Organizer"});
   
   useEffect(() => {
     const events = getEvents();
@@ -67,35 +66,7 @@ const EventLobby = () => {
         ...foundEvent,
         time: formattedTime
       };
-      
       setEvent(updatedEvent);
-      
-      if (updatedEvent.creator) {
-        const creatorParts = updatedEvent.creator.split(' ');
-        let creatorName = updatedEvent.creator;
-        let creatorRole = "Organizer";
-        
-        if (creatorParts.length > 1) {
-          const roleKeywords = ["Department", "Club", "Society", "Association", "Initiative", "Union"];
-          
-          for (const keyword of roleKeywords) {
-            if (updatedEvent.creator.includes(keyword)) {
-              creatorRole = keyword;
-              break;
-            }
-          }
-        }
-        
-        setOrganizer({
-          name: creatorName,
-          role: creatorRole
-        });
-      } else {
-        setOrganizer({
-          name: "UTD",
-          role: updatedEvent.category || "Organizer"
-        });
-      }
     } else {
       console.log("Event not found for ID:", eventId);
     }
@@ -230,14 +201,6 @@ const EventLobby = () => {
           <div className="flex items-center text-sm">
             <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
             <span>{event.location}</span>
-          </div>
-          
-          <div className="flex items-center text-sm">
-            <User className="h-4 w-4 mr-2 text-muted-foreground" />
-            <div className="flex flex-col">
-              <span className="font-medium">{organizer.name}</span>
-              <span className="text-xs text-muted-foreground">{organizer.role}</span>
-            </div>
           </div>
         </div>
       </div>
