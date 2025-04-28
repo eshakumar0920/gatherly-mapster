@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -186,7 +185,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
                   placeholder="5" 
                   {...field}
                   onChange={(e) => field.onChange(Number(e.target.value))}
-                  value={field.value}
                 />
               </FormControl>
               <FormMessage />

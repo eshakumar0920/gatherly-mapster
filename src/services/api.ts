@@ -15,6 +15,9 @@ export interface ApiResponse<T> {
 export interface EventSearchParams {
   category?: string;
   query?: string;
+  location?: string;
+  date_from?: string;
+  date_to?: string;
 }
 
 export interface UserProgress {

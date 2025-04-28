@@ -25,15 +25,17 @@ export function useMeetupService() {
   const fetchMeetups = useCallback(async (): Promise<FlaskMeetup[]> => {
     try {
       console.log("Fetching meetups from Flask API");
-      const response = await meetupsApi.getAllMeetups();
+      const response = await fetch('/events');
       
-      if (response.error) {
-        console.log("Flask API error:", response.error);
+      if (!response.ok) {
+        console.log("Flask API error:", response.statusText);
         return [];
       }
       
-      console.log("Received meetups data from API:", response.data);
-      return Array.isArray(response.data) ? response.data.map(event => ({
+      const data = await response.json();
+      console.log("Received meetups data from API:", data);
+      
+      return Array.isArray(data) ? data.map(event => ({
         id: event.id.toString(),
         title: event.title,
         description: event.description || "No description available",
@@ -54,27 +56,28 @@ export function useMeetupService() {
   
   const fetchMeetupById = useCallback(async (meetupId: string): Promise<FlaskMeetup | null> => {
     try {
-      const response = await meetupsApi.getMeetupById(meetupId);
+      const response = await fetch(`/events/${meetupId}`);
       
-      if (response.error) {
-        console.log("Flask API error:", response.error);
+      if (!response.ok) {
+        console.log("Flask API error:", response.statusText);
         return null;
       }
       
-      if (!response.data) return null;
+      const data = await response.json();
+      if (!data) return null;
       
       return {
-        id: response.data.id.toString(),
-        title: response.data.title,
-        description: response.data.description || "No description available",
-        dateTime: response.data.event_date || response.data.dateTime,
-        location: response.data.location,
-        points: response.data.xp_reward || response.data.points || 3,
-        createdBy: response.data.creator_name || response.data.createdBy || "Anonymous",
-        creatorAvatar: response.data.creator_avatar || response.data.creatorAvatar,
-        lobbySize: response.data.lobby_size || response.data.lobbySize || 5,
-        category: response.data.category || "Other",
-        attendees: response.data.attendees || []
+        id: data.id.toString(),
+        title: data.title,
+        description: data.description || "No description available",
+        dateTime: data.event_date || data.dateTime,
+        location: data.location,
+        points: data.xp_reward || data.points || 3,
+        createdBy: data.creator_name || data.createdBy || "Anonymous",
+        creatorAvatar: data.creator_avatar || data.creatorAvatar,
+        lobbySize: data.lobby_size || data.lobbySize || 5,
+        category: data.category || "Other",
+        attendees: data.attendees || []
       };
     } catch (error) {
       console.error("Error fetching meetup by ID:", error);
@@ -84,10 +87,18 @@ export function useMeetupService() {
   
   const joinMeetupLobby = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
-      const response = await meetupsApi.joinMeetupLobby(meetupId, {});
+      const userId = "1";
       
-      if (response.error) {
-        console.log("Flask API error for joining lobby:", response.error);
+      const response = await fetch(`/events/${meetupId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: userId })
+      });
+      
+      if (!response.ok) {
+        console.log("Flask API error for joining lobby:", response.statusText);
         return false;
       }
       
@@ -105,13 +116,6 @@ export function useMeetupService() {
   
   const checkInToMeetup = useCallback(async (meetupId: string): Promise<boolean> => {
     try {
-      const response = await meetupsApi.checkInToMeetup(meetupId, {});
-      
-      if (response.error) {
-        console.log("Flask API error for check-in:", response.error);
-        return false;
-      }
-      
       toast({
         title: "Check-in successful!",
         description: `You've checked in to this meetup and earned points!`,
@@ -131,27 +135,38 @@ export function useMeetupService() {
         description: meetupData.description,
         event_date: meetupData.dateTime,
         location: meetupData.location,
+        creator_id: 1,
         category: meetupData.category,
         lobby_size: meetupData.lobbySize
       };
       
-      const response = await meetupsApi.createMeetup(backendEventData);
+      const response = await fetch('/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(backendEventData),
+      });
       
-      if (response.error) {
+      if (!response.ok) {
+        const errorData = await response.json();
         toast({
           title: "Error creating meetup",
-          description: response.error,
+          description: errorData.error || response.statusText,
           variant: "destructive"
         });
         return null;
       }
+      
+      const data = await response.json();
       
       toast({
         title: "Meetup created!",
         description: "Your meetup has been successfully created.",
       });
       
-      return response.data;
+      const newMeetup = await fetchMeetupById(data.id.toString());
+      return newMeetup;
     } catch (error) {
       console.error("Error creating meetup:", error);
       toast({
@@ -161,14 +176,59 @@ export function useMeetupService() {
       });
       return null;
     }
-  }, [toast]);
+  }, [toast, fetchMeetupById]);
+  
+  const searchMeetups = useCallback(async (searchParams: EventSearchParams): Promise<FlaskMeetup[]> => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (searchParams.query) {
+        queryParams.append('q', searchParams.query);
+      }
+      
+      if (searchParams.category) {
+        queryParams.append('category', searchParams.category);
+      }
+      
+      if (searchParams.location) {
+        queryParams.append('location', searchParams.location);
+      }
+      
+      const response = await fetch(`/search?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        console.log("Flask API error:", response.statusText);
+        return [];
+      }
+      
+      const data = await response.json();
+      
+      return Array.isArray(data) ? data.map(event => ({
+        id: event.id.toString(),
+        title: event.title,
+        description: event.description || "No description available",
+        dateTime: event.event_date || event.dateTime,
+        location: event.location,
+        points: event.xp_reward || event.points || 3,
+        createdBy: event.creator_name || event.createdBy || "Anonymous",
+        creatorAvatar: event.creator_avatar || event.creatorAvatar,
+        lobbySize: event.lobby_size || event.lobbySize || 5,
+        category: event.category || "Other",
+        attendees: event.attendees || []
+      })) : [];
+    } catch (error) {
+      console.error("Error searching meetups:", error);
+      return [];
+    }
+  }, []);
   
   return {
     fetchMeetups,
     fetchMeetupById,
     joinMeetupLobby,
     checkInToMeetup,
-    createMeetup
+    createMeetup,
+    searchMeetups
   };
 }
 
