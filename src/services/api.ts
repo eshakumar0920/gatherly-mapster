@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,10 +13,8 @@ export interface ApiResponse<T> {
 }
 
 export interface EventSearchParams {
+  category?: string;
   query?: string;
-  location?: string;
-  date_from?: string;
-  date_to?: string;
 }
 
 export interface UserProgress {
@@ -187,17 +184,128 @@ function buildQueryString(params: Record<string, any>): string {
 }
 
 export const meetupsApi = {
-  getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
+  getAllMeetups: async () => {
+    try {
+      const response = await fetch('/events');
+      if (!response.ok) {
+        return { error: `Failed to fetch meetups: ${response.statusText}` };
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      console.error('Error fetching meetups:', error);
+      return { error: 'Failed to fetch meetups' };
+    }
+  },
   
-  getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
+  getMeetupById: async (id: string) => {
+    try {
+      const response = await fetch(`/events/${id}`);
+      if (!response.ok) {
+        return { error: `Failed to fetch meetup: ${response.statusText}` };
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      console.error('Error fetching meetup by ID:', error);
+      return { error: 'Failed to fetch meetup details' };
+    }
+  },
   
-  createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
+  createMeetup: async (meetupData: any) => {
+    try {
+      const response = await fetch('/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(meetupData),
+      });
+      if (!response.ok) {
+        return { error: `Failed to create meetup: ${response.statusText}` };
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      console.error('Error creating meetup:', error);
+      return { error: 'Failed to create meetup' };
+    }
+  },
   
-  joinMeetupLobby: (meetupId: string, userData: any) => 
-    fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
+  updateMeetup: async (id: string, meetupData: any) => {
+    try {
+      const response = await fetch(`/events/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(meetupData),
+      });
+      if (!response.ok) {
+        return { error: `Failed to update meetup: ${response.statusText}` };
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      console.error('Error updating meetup:', error);
+      return { error: 'Failed to update meetup' };
+    }
+  },
   
-  checkInToMeetup: (meetupId: string, userData: any) => 
-    fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
+  deleteMeetup: async (id: string) => {
+    try {
+      const response = await fetch(`/events/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        return { error: `Failed to delete meetup: ${response.statusText}` };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting meetup:', error);
+      return { error: 'Failed to delete meetup' };
+    }
+  },
+  
+  joinMeetupLobby: async (meetupId: string, userData: any) => {
+    try {
+      const response = await fetch(`/events/${meetupId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      if (!response.ok) {
+        return { error: `Failed to join meetup lobby: ${response.statusText}` };
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      console.error('Error joining meetup lobby:', error);
+      return { error: 'Failed to join meetup lobby' };
+    }
+  },
+  
+  checkInToMeetup: async (meetupId: string, userData: any) => {
+    try {
+      const response = await fetch(`/events/${meetupId}/check-in`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      if (!response.ok) {
+        return { error: `Failed to check in to meetup: ${response.statusText}` };
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      console.error('Error checking in to meetup:', error);
+      return { error: 'Failed to check in to meetup' };
+    }
+  },
 };
 
 export const eventsApi = {

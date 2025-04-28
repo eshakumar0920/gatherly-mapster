@@ -1,8 +1,6 @@
-
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
-import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
 
 export interface FlaskMeetup {
@@ -29,38 +27,24 @@ export function useMeetupService() {
       const response = await meetupsApi.getAllMeetups();
       
       if (response.error) {
-        console.log("Flask API error, falling back to Supabase:", response.error);
-        const { data, error } = await supabase.from('events').select('*');
-        
-        if (error) {
-          console.error("Supabase error:", error);
-          throw error;
-        }
-        
-        console.log("Supabase events data:", data);
-        
-        if (data && data.length > 0) {
-          const eventRows = data as unknown as EventRow[];
-          return eventRows.map(event => ({
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toLocaleString(),
-            location: event.location,
-            points: event.xp_reward || 3,
-            createdBy: "Student",
-            creatorAvatar: undefined,
-            lobbySize: 5,
-            category: event.category || "Other",
-            attendees: []
-          }));
-        }
-        
+        console.log("Flask API error:", response.error);
         return [];
       }
       
       console.log("Received meetups data from API:", response.data);
-      return Array.isArray(response.data) ? response.data : [];
+      return Array.isArray(response.data) ? response.data.map(event => ({
+        id: event.id.toString(),
+        title: event.title,
+        description: event.description || "No description available",
+        dateTime: event.event_date || event.dateTime,
+        location: event.location,
+        points: event.xp_reward || event.points || 3,
+        createdBy: event.creator_name || event.createdBy || "Anonymous",
+        creatorAvatar: event.creator_avatar || event.creatorAvatar,
+        lobbySize: event.lobby_size || event.lobbySize || 5,
+        category: event.category || "Other",
+        attendees: event.attendees || []
+      })) : [];
     } catch (error) {
       console.error("Error fetching meetups:", error);
       return [];
@@ -72,31 +56,25 @@ export function useMeetupService() {
       const response = await meetupsApi.getMeetupById(meetupId);
       
       if (response.error) {
-        console.log("Flask API error, falling back to Supabase:", response.error);
-        const { data, error } = await supabase.from('events').select('*').eq('id', parseInt(meetupId)).single();
-        
-        if (error) {
-          console.error("Supabase error:", error);
-          return null;
-        }
-        
-        const event = data as unknown as EventRow;
-        return {
-          id: event.id.toString(),
-          title: event.title,
-          description: event.description || "No description available",
-          dateTime: new Date(event.event_date).toLocaleString(),
-          location: event.location,
-          points: event.xp_reward || 3,
-          createdBy: "Student",
-          creatorAvatar: undefined,
-          lobbySize: 5,
-          category: event.category || "Other",
-          attendees: []
-        };
+        console.log("Flask API error:", response.error);
+        return null;
       }
       
-      return response.data || null;
+      if (!response.data) return null;
+      
+      return {
+        id: response.data.id.toString(),
+        title: response.data.title,
+        description: response.data.description || "No description available",
+        dateTime: response.data.event_date || response.data.dateTime,
+        location: response.data.location,
+        points: response.data.xp_reward || response.data.points || 3,
+        createdBy: response.data.creator_name || response.data.createdBy || "Anonymous",
+        creatorAvatar: response.data.creator_avatar || response.data.creatorAvatar,
+        lobbySize: response.data.lobby_size || response.data.lobbySize || 5,
+        category: response.data.category || "Other",
+        attendees: response.data.attendees || []
+      };
     } catch (error) {
       console.error("Error fetching meetup by ID:", error);
       return null;
@@ -108,8 +86,8 @@ export function useMeetupService() {
       const response = await meetupsApi.joinMeetupLobby(meetupId, {});
       
       if (response.error) {
-        console.log("Flask API error for joining lobby, using local state instead:", response.error);
-        return true;
+        console.log("Flask API error for joining lobby:", response.error);
+        return false;
       }
       
       toast({
@@ -120,7 +98,7 @@ export function useMeetupService() {
       return true;
     } catch (error) {
       console.error("Error joining meetup lobby:", error);
-      return true;
+      return false;
     }
   }, [toast]);
   
@@ -129,7 +107,7 @@ export function useMeetupService() {
       const response = await meetupsApi.checkInToMeetup(meetupId, {});
       
       if (response.error) {
-        console.log("Flask API error for check-in, using local state instead:", response.error);
+        console.log("Flask API error for check-in:", response.error);
         return false;
       }
       
@@ -144,12 +122,52 @@ export function useMeetupService() {
       return false;
     }
   }, [toast]);
+
+  const createMeetup = useCallback(async (meetupData: any): Promise<FlaskMeetup | null> => {
+    try {
+      const backendEventData = {
+        title: meetupData.title,
+        description: meetupData.description,
+        event_date: meetupData.dateTime,
+        location: meetupData.location,
+        category: meetupData.category,
+        lobby_size: meetupData.lobbySize
+      };
+      
+      const response = await meetupsApi.createMeetup(backendEventData);
+      
+      if (response.error) {
+        toast({
+          title: "Error creating meetup",
+          description: response.error,
+          variant: "destructive"
+        });
+        return null;
+      }
+      
+      toast({
+        title: "Meetup created!",
+        description: "Your meetup has been successfully created.",
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error("Error creating meetup:", error);
+      toast({
+        title: "Error creating meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return null;
+    }
+  }, [toast]);
   
   return {
     fetchMeetups,
     fetchMeetupById,
     joinMeetupLobby,
-    checkInToMeetup
+    checkInToMeetup,
+    createMeetup
   };
 }
 
@@ -281,7 +299,6 @@ export function useUserService() {
   const { handleApiError } = useApiErrorHandling();
   
   const getUserPoints = useCallback(async (userId: string) => {
-    // Convert userId to a number for Supabase query
     const numericUserId = parseInt(userId, 10);
     
     if (isNaN(numericUserId)) {

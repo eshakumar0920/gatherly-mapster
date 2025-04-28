@@ -1,9 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { EventRow, Meetup } from "@/types/meetup";
+import { Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
-import { meetups as sampleMeetups } from "@/services/meetupService";
+import { meetupsApi } from "@/services/api";
 
 export const useMeetups = (selectedCategory: string | null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
@@ -14,57 +13,47 @@ export const useMeetups = (selectedCategory: string | null) => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        let query = supabase.from('events').select('*');
+        const response = await meetupsApi.getAllMeetups();
         
-        if (selectedCategory) {
-          query = query.eq('category', selectedCategory);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error("Error fetching meetups:", error);
+        if (response.error) {
+          console.error("Error fetching meetups:", response.error);
           toast({
             title: "Error fetching meetups",
-            description: "Could not load meetups from the database",
+            description: "Could not load meetups from the server",
             variant: "destructive"
           });
+          setAllMeetups([]);
           return;
         }
         
-        if (data && data.length > 0) {
-          const eventRows = data as unknown as EventRow[];
-          const databaseMeetups: Meetup[] = eventRows.map(event => ({
+        if (response.data && Array.isArray(response.data)) {
+          // Map backend "event" model to our frontend "meetup" model
+          const mappedMeetups: Meetup[] = response.data.map(event => ({
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toLocaleString(),
+            dateTime: event.event_date || event.dateTime,
             location: event.location,
-            points: event.xp_reward || 3,
-            createdBy: event.creator_name || "Anonymous",
-            creatorAvatar: undefined,
-            lobbySize: event.lobby_size || 5,
+            points: event.xp_reward || event.points || 3,
+            createdBy: event.creator_name || event.createdBy || "Anonymous",
+            creatorAvatar: event.creator_avatar || event.creatorAvatar,
+            lobbySize: event.lobby_size || event.lobbySize || 5,
             category: event.category || "Other",
-            attendees: []
+            attendees: event.attendees || []
           }));
           
-          // Combine sample meetups with database meetups
-          const filteredSampleMeetups = selectedCategory 
-            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
-            : sampleMeetups;
+          // Filter by category if one is selected
+          const filteredMeetups = selectedCategory 
+            ? mappedMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : mappedMeetups;
           
-          setAllMeetups([...databaseMeetups, ...filteredSampleMeetups]);
+          setAllMeetups(filteredMeetups);
         } else {
-          // If no database meetups, just show sample meetups
-          const filteredSampleMeetups = selectedCategory 
-            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
-            : sampleMeetups;
-          
-          setAllMeetups(filteredSampleMeetups);
+          setAllMeetups([]);
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
-        setAllMeetups(sampleMeetups); // Fallback to sample meetups on error
+        setAllMeetups([]);
       } finally {
         setIsLoading(false);
       }
