@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -50,6 +51,8 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      const eventDate = new Date().toISOString();
+      
       if (!isLoggedIn || !user || !user.email) {
         toast({
           title: "Authentication required",
@@ -59,26 +62,26 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
+      // Log authentication state for debugging
       console.log("Auth state:", { isLoggedIn, user });
       
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, username')
+        .select('id')
         .eq('email', user.email)
         .single();
       
       if (usersError || !usersData) {
         console.log("User not found in users table, creating a new record");
         
-        const username = user.email.split('@')[0];
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert({
             email: user.email,
-            username: username,
+            username: user.email.split('@')[0],
             join_date: new Date().toISOString()
           })
-          .select('id, username')
+          .select('id')
           .single();
         
         if (createError) {
@@ -91,9 +94,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
           return;
         }
         
-        await createMeetup(values, values.dateTime, newUser.id, username);
+        await createMeetup(values, eventDate, newUser.id);
       } else {
-        await createMeetup(values, values.dateTime, usersData.id, usersData.username);
+        await createMeetup(values, eventDate, usersData.id);
       }
       
       const { data: updatedRawData } = await supabase.from('events').select('*');
@@ -107,9 +110,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
             dateTime: new Date(typedEvent.event_date).toLocaleString(),
             location: typedEvent.location,
             points: typedEvent.xp_reward || 3,
-            createdBy: typedEvent.creator_name || "Student",
+            createdBy: "Student",
             creatorAvatar: undefined,
-            lobbySize: typedEvent.lobby_size || 5,
+            lobbySize: 5,
             category: typedEvent.category || "Other",
             attendees: []
           };
@@ -131,20 +134,18 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
     }
   };
 
-  const createMeetup = async (values: FormValues, eventDate: string, userId: number, creatorName: string) => {
+  const createMeetup = async (values: FormValues, eventDate: string, userId: number) => {
     const { error } = await supabase.from('events').insert({
       title: values.title,
       description: values.description,
       location: values.location,
       event_date: eventDate,
       creator_id: userId,
-      creator_name: creatorName,
       created_at: new Date().toISOString(),
       semester: "Spring 2025",
       xp_reward: 3,
       organizer_xp_reward: 5,
-      category: values.category,
-      lobby_size: values.lobbySize
+      category: values.category
     });
     
     if (error) {
