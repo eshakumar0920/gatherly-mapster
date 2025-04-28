@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ const EventLobby = () => {
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [organizer, setOrganizer] = useState<{name: string, role: string}>({name: "Anonymous", role: "Organizer"});
   
   useEffect(() => {
     const events = getEvents();
@@ -66,7 +68,24 @@ const EventLobby = () => {
         ...foundEvent,
         time: formattedTime
       };
+      
       setEvent(updatedEvent);
+      
+      // Parse creator name to separate name and role
+      if (updatedEvent.creator) {
+        const creatorParts = updatedEvent.creator.split(' ');
+        const creatorRole = creatorParts.length > 1 ? 
+          creatorParts[creatorParts.length - 1] : 'Organizer';
+        const creatorName = creatorParts.length > 1 ? 
+          creatorParts.slice(0, -1).join(' ') : updatedEvent.creator;
+          
+        setOrganizer({
+          name: creatorName,
+          role: creatorRole
+        });
+      } else {
+        setOrganizer({name: "Event", role: "Organizer"});
+      }
     } else {
       console.log("Event not found for ID:", eventId);
     }
@@ -201,6 +220,14 @@ const EventLobby = () => {
           <div className="flex items-center text-sm">
             <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
             <span>{event.location}</span>
+          </div>
+          
+          <div className="flex items-center text-sm">
+            <User className="h-4 w-4 mr-2 text-muted-foreground" />
+            <div className="flex flex-col">
+              <span className="font-medium">{organizer.name}</span>
+              <span className="text-xs text-muted-foreground">{organizer.role}</span>
+            </div>
           </div>
         </div>
       </div>
