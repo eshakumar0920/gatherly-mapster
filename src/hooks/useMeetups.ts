@@ -1,66 +1,77 @@
+
 import { useState, useEffect } from "react";
-import { Meetup } from "@/types/meetup";
+import { supabase } from "@/integrations/supabase/client";
+import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
-import { useMeetupService } from "@/services/flaskService";
+import { meetups as sampleMeetups } from "@/services/meetupService";
 
 export const useMeetups = (selectedCategory: string | null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { fetchMeetups, searchMeetups } = useMeetupService();
 
   useEffect(() => {
-    const loadMeetups = async () => {
+    const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        setError(null);
+        let query = supabase.from('events').select('*');
         
-        let meetupsData;
         if (selectedCategory) {
-          console.log(`Searching meetups with category: ${selectedCategory}`);
-          // If a category is selected, use the search endpoint
-          meetupsData = await searchMeetups({ category: selectedCategory });
+          query = query.eq('category', selectedCategory);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching meetups:", error);
+          toast({
+            title: "Error fetching meetups",
+            description: "Could not load meetups from the database",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const eventRows = data as unknown as EventRow[];
+          const databaseMeetups: Meetup[] = eventRows.map(event => ({
+            id: event.id.toString(),
+            title: event.title,
+            description: event.description || "No description available",
+            dateTime: new Date(event.event_date).toLocaleString(),
+            location: event.location,
+            points: event.xp_reward || 3,
+            createdBy: event.creator_name || "Anonymous",
+            creatorAvatar: undefined,
+            lobbySize: event.lobby_size || 5,
+            category: event.category || "Other",
+            attendees: []
+          }));
+          
+          // Combine sample meetups with database meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups([...databaseMeetups, ...filteredSampleMeetups]);
         } else {
-          console.log('Fetching all meetups');
-          // Otherwise fetch all meetups
-          meetupsData = await fetchMeetups();
+          // If no database meetups, just show sample meetups
+          const filteredSampleMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups(filteredSampleMeetups);
         }
-        
-        console.log('Received meetups data:', meetupsData);
-        
-        if (!meetupsData) {
-          console.warn('No meetups data received');
-          setAllMeetups([]);
-          setError('No meetups data was returned from the server');
-          return;
-        }
-        
-        if (!Array.isArray(meetupsData)) {
-          console.warn('Received invalid meetups data type:', typeof meetupsData);
-          setAllMeetups([]);
-          setError('Received invalid data format from server');
-          return;
-        }
-        
-        // Successfully received array of meetups
-        setAllMeetups(meetupsData);
       } catch (error) {
         console.error("Error in fetching meetups:", error);
-        setError(error instanceof Error ? error.message : 'Could not load meetups from the server');
-        toast({
-          title: "Error fetching meetups",
-          description: "Could not load meetups from the server",
-          variant: "destructive"
-        });
-        setAllMeetups([]);
+        setAllMeetups(sampleMeetups); // Fallback to sample meetups on error
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadMeetups();
-  }, [selectedCategory, toast, fetchMeetups, searchMeetups]);
+    fetchMeetups();
+  }, [selectedCategory, toast]);
 
-  return { allMeetups, isLoading, error, setAllMeetups };
+  return { allMeetups, isLoading, setAllMeetups };
 };

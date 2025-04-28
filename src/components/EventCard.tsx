@@ -1,3 +1,4 @@
+
 import { CalendarDays, Clock, MapPin, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +14,6 @@ export interface Event {
   time: string;
   location: string;
   category: string;
-  creator?: string; // Added creator property as optional to fix TypeScript errors
 }
 
 interface EventCardProps {

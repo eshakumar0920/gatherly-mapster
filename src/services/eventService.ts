@@ -11,8 +11,7 @@ export const events: Event[] = [
     date: "Aug 15, 2025",
     time: "9:00 AM - 5:00 PM",
     location: "ECSW Building, UTD",
-    category: "Technology",
-    creator: "Professor Smith (Faculty)"
+    category: "Technology"
   },
   {
     id: "2",
@@ -22,8 +21,7 @@ export const events: Event[] = [
     date: "Jul 22-24, 2025",
     time: "7:00 PM - 10:00 PM",
     location: "Plinth, UTD Campus",
-    category: "Music",
-    creator: "Jane Cooper (Student)"
+    category: "Music"
   },
   {
     id: "3",
@@ -33,8 +31,7 @@ export const events: Event[] = [
     date: "Sep 10, 2025",
     time: "3:00 PM - 9:00 PM",
     location: "Student Union, UTD",
-    category: "Food",
-    creator: "Cultural Student Association (Club)"
+    category: "Food"
   },
   {
     id: "4",
@@ -44,8 +41,7 @@ export const events: Event[] = [
     date: "Oct 5, 2025",
     time: "10:00 AM - 4:00 PM",
     location: "Blackstone LaunchPad, UTD",
-    category: "Business",
-    creator: "UTD Business Club (Organization)"
+    category: "Business"
   },
   {
     id: "5",
@@ -55,8 +51,7 @@ export const events: Event[] = [
     date: "Aug 3, 2025",
     time: "7:00 PM - 10:00 PM",
     location: "SP/N Gallery, UTD",
-    category: "Art",
-    creator: "Arts Student Union (Club)"
+    category: "Art"
   },
   {
     id: "6",
@@ -66,8 +61,7 @@ export const events: Event[] = [
     date: "Sep 15, 2025",
     time: "5:00 PM - 7:00 PM",
     location: "Recreation Center West, UTD",
-    category: "Wellness",
-    creator: "Wellness Club (Student Group)"
+    category: "Wellness"
   }
 ];
 
