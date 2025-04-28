@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, User, LogIn, UserPlus } from "lucide-react";
+import { Mail, Lock, User, LogIn, UserPlus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -91,6 +91,28 @@ const AuthPage = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    // For guest login, we'll use Supabase's anonymous session
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Continuing as guest",
+        description: "You can create an account later to save your progress.",
+      });
+      
+      navigate("/events");
+    } catch (error: any) {
+      toast({
+        title: "Guest login failed",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -276,6 +298,17 @@ const AuthPage = () => {
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
         </div>
+      </div>
+
+      {/* Guest Entry */}
+      <div className="mt-6">
+        <Button 
+          variant="outline" 
+          onClick={handleGuestLogin}
+          className="flex items-center gap-2"
+        >
+          Continue as Guest <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
