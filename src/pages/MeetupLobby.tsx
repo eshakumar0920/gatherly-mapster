@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
@@ -18,7 +17,6 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { useMeetupService } from "@/services/flaskService";
 import { supabase } from "@/integrations/supabase/client";
 
-// Update the local Meetup interface to include category as optional
 interface Meetup {
   id: string;
   title: string;
@@ -29,7 +27,7 @@ interface Meetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
-  category?: string; // Added category property as optional
+  category?: string;
   attendees?: string[];
 }
 
@@ -54,7 +52,6 @@ const MeetupLobby = () => {
   const { attendMeetup, joinMeetupLobby: joinLocalLobby, joinedLobbies, attendedMeetups } = useUserStore();
   const { fetchMeetupById, checkInToMeetup: checkInToMeetupApi } = useMeetupService();
   
-  // Mock attendees data - this would ideally come from the API
   const mockAttendees: Attendee[] = [
     { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
     { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -74,7 +71,6 @@ const MeetupLobby = () => {
           return;
         }
         
-        // Try using Flask service first
         const flaskMeetup = await fetchMeetupById(meetupId);
         
         if (flaskMeetup) {
@@ -85,7 +81,6 @@ const MeetupLobby = () => {
           return;
         }
         
-        // If Flask service fails, try fetching directly from Supabase
         try {
           const { data, error } = await supabase
             .from('events')
@@ -94,10 +89,7 @@ const MeetupLobby = () => {
             .single();
             
           if (error) {
-            // If Supabase fails too, use mock data based on ID
-            console.log("Using mock data for meetup since 'events' table doesn't exist in Supabase or couldn't fetch the data");
-            
-            // Create a mock meetup based on ID
+            console.error("Supabase error:", error);
             const mockMeetup: Meetup = {
               id: meetupId,
               title: `Meetup ${meetupId}`,
@@ -115,7 +107,6 @@ const MeetupLobby = () => {
             setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
             setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
           } else if (data) {
-            // Transform Supabase data to Meetup format
             const meetupData: Meetup = {
               id: data.id.toString(),
               title: data.title,
@@ -123,9 +114,9 @@ const MeetupLobby = () => {
               dateTime: new Date(data.event_date).toLocaleString(),
               location: data.location,
               points: data.xp_reward || 3,
-              createdBy: "Student",
+              createdBy: data.creator_name || "Anonymous",
               creatorAvatar: "",
-              lobbySize: 5,
+              lobbySize: data.lobby_size || 5,
               category: data.category || "Other",
               attendees: []
             };
@@ -136,7 +127,6 @@ const MeetupLobby = () => {
           }
         } catch (supabaseError) {
           console.error("Supabase error:", supabaseError);
-          // Use mock data as a last resort
           const mockMeetup: Meetup = {
             id: meetupId,
             title: `Meetup ${meetupId}`,
@@ -176,7 +166,6 @@ const MeetupLobby = () => {
 
   const handleJoinLobby = async () => {
     if (meetup) {
-      // Use local state management regardless of API success
       joinLocalLobby(meetup.id);
       setIsJoinedLobby(true);
       toast({
@@ -194,11 +183,9 @@ const MeetupLobby = () => {
     if (meetup) {
       if (data.includes(meetupId as string)) {
         try {
-          // Try the API first, but fall back to local state
           const success = await checkInToMeetupApi(meetup.id);
           
           if (!success) {
-            // If API fails, use local state
             attendMeetup(meetup.id, meetup.points);
           }
           
@@ -210,7 +197,6 @@ const MeetupLobby = () => {
           });
         } catch (error) {
           console.error("Check-in error:", error);
-          // Use local state as fallback
           attendMeetup(meetup.id, meetup.points);
           setIsCheckedIn(true);
           toast({
