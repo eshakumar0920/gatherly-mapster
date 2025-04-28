@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
@@ -49,6 +50,7 @@ const MeetupLobby = () => {
   const [isJoinedLobby, setIsJoinedLobby] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [organizer, setOrganizer] = useState<{name: string, role: string}>({name: "Anonymous", role: "Student"});
   const { attendMeetup, joinMeetupLobby: joinLocalLobby, joinedLobbies, attendedMeetups } = useUserStore();
   const { fetchMeetupById, checkInToMeetup: checkInToMeetupApi } = useMeetupService();
   
@@ -75,6 +77,21 @@ const MeetupLobby = () => {
         
         if (flaskMeetup) {
           setMeetup(flaskMeetup as unknown as Meetup);
+          
+          // Set organizer info from flaskMeetup
+          if (flaskMeetup.createdBy) {
+            const creatorParts = flaskMeetup.createdBy.split(' ');
+            const creatorRole = creatorParts.length > 1 ? 
+              creatorParts[creatorParts.length - 1] : 'Organizer';
+            const creatorName = creatorParts.length > 1 ? 
+              creatorParts.slice(0, -1).join(' ') : flaskMeetup.createdBy;
+              
+            setOrganizer({
+              name: creatorName,
+              role: creatorRole
+            });
+          }
+          
           setIsJoinedLobby(joinedLobbies?.includes(flaskMeetup.id));
           setIsCheckedIn(attendedMeetups?.includes(flaskMeetup.id));
           setLoading(false);
@@ -104,6 +121,7 @@ const MeetupLobby = () => {
             };
 
             setMeetup(mockMeetup);
+            setOrganizer({name: "Event", role: "Organizer"});
             setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
             setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
           } else if (data) {
@@ -122,6 +140,23 @@ const MeetupLobby = () => {
             };
             
             setMeetup(meetupData);
+            
+            // Parse creator name to separate name and role
+            if (data.creator_name) {
+              const creatorParts = data.creator_name.split(' ');
+              const creatorRole = creatorParts.length > 1 ? 
+                creatorParts[creatorParts.length - 1] : 'Organizer';
+              const creatorName = creatorParts.length > 1 ? 
+                creatorParts.slice(0, -1).join(' ') : data.creator_name;
+                
+              setOrganizer({
+                name: creatorName,
+                role: creatorRole
+              });
+            } else {
+              setOrganizer({name: "Anonymous", role: "Organizer"});
+            }
+            
             setIsJoinedLobby(joinedLobbies?.includes(meetupData.id));
             setIsCheckedIn(attendedMeetups?.includes(meetupData.id));
           }
@@ -141,6 +176,7 @@ const MeetupLobby = () => {
           };
           
           setMeetup(mockMeetup);
+          setOrganizer({name: "Event", role: "Organizer"});
           setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
           setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
         }
@@ -349,7 +385,10 @@ const MeetupLobby = () => {
           
           <div className="flex items-center text-sm">
             <User className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>Hosted by {meetup?.createdBy}</span>
+            <div className="flex flex-col">
+              <span className="font-medium">{organizer.name}</span>
+              <span className="text-xs text-muted-foreground">{organizer.role}</span>
+            </div>
           </div>
         </div>
       </div>
