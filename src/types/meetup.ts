@@ -23,10 +23,10 @@ export interface EventRow {
   event_date: string;
   created_at: string;
   creator_id: number;
-  creator_name?: string; // Added creator_name as optional
+  creator_name: string | null;  // Added to match the new database column
   semester: string | null;
   organizer_xp_reward: number | null;
   xp_reward: number | null;
   category?: string;
-  lobby_size?: number; // Added lobby_size as optional
+  lobby_size: number | null;  // Added to match the new database column
 }

@@ -26,9 +26,11 @@ export type Database = {
           category: string | null
           created_at: string
           creator_id: number
+          creator_name: string | null
           description: string | null
           event_date: string
           id: number
+          lobby_size: number | null
           location: string
           organizer_xp_reward: number | null
           semester: string | null
@@ -39,9 +41,11 @@ export type Database = {
           category?: string | null
           created_at: string
           creator_id: number
+          creator_name?: string | null
           description?: string | null
           event_date: string
           id?: number
+          lobby_size?: number | null
           location: string
           organizer_xp_reward?: number | null
           semester?: string | null
@@ -52,9 +56,11 @@ export type Database = {
           category?: string | null
           created_at?: string
           creator_id?: number
+          creator_name?: string | null
           description?: string | null
           event_date?: string
           id?: number
+          lobby_size?: number | null
           location?: string
           organizer_xp_reward?: number | null
           semester?: string | null
