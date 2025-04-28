@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -71,20 +70,31 @@ const EventLobby = () => {
       
       setEvent(updatedEvent);
       
-      // Parse creator name to separate name and role
       if (updatedEvent.creator) {
         const creatorParts = updatedEvent.creator.split(' ');
-        const creatorRole = creatorParts.length > 1 ? 
-          creatorParts[creatorParts.length - 1] : 'Organizer';
-        const creatorName = creatorParts.length > 1 ? 
-          creatorParts.slice(0, -1).join(' ') : updatedEvent.creator;
+        let creatorName = updatedEvent.creator;
+        let creatorRole = "Organizer";
+        
+        if (creatorParts.length > 1) {
+          const roleKeywords = ["Department", "Club", "Society", "Association", "Initiative", "Union"];
           
+          for (const keyword of roleKeywords) {
+            if (updatedEvent.creator.includes(keyword)) {
+              creatorRole = keyword;
+              break;
+            }
+          }
+        }
+        
         setOrganizer({
           name: creatorName,
           role: creatorRole
         });
       } else {
-        setOrganizer({name: "Event", role: "Organizer"});
+        setOrganizer({
+          name: "UTD",
+          role: updatedEvent.category || "Organizer"
+        });
       }
     } else {
       console.log("Event not found for ID:", eventId);
