@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
@@ -45,7 +44,7 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
         
         // Successfully received array of meetups
-        setAllMeetups(meetupsData as Meetup[]);
+        setAllMeetups(meetupsData);
       } catch (error) {
         console.error("Error in fetching meetups:", error);
         setError(error instanceof Error ? error.message : 'Could not load meetups from the server');

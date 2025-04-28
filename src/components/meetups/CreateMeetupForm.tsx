@@ -70,7 +70,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       
       console.log("Submitting form with values:", values);
       
-      // Create the meetup using the Flask API
       const createdMeetup = await createMeetup({
         ...values,
         createdBy: user.email?.split('@')[0] || "Student",
@@ -78,12 +77,23 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       
       if (createdMeetup) {
         console.log("Meetup created successfully:", createdMeetup);
+        
         // Fetch updated meetups list
-        const updatedMeetups = await fetchMeetups();
-        console.log("Updated meetups after creation:", updatedMeetups);
-        onSuccess(updatedMeetups);
-        onClose();
-        form.reset();
+        try {
+          const updatedMeetups = await fetchMeetups();
+          console.log("Updated meetups after creation:", updatedMeetups);
+          onSuccess(updatedMeetups);
+          form.reset();
+          onClose();
+        } catch (fetchError) {
+          console.error("Error fetching updated meetups:", fetchError);
+          // Even if fetching fails, consider the creation successful
+          toast({
+            title: "Meetup created",
+            description: "Your meetup was created, but we couldn't refresh the list. Please reload the page.",
+          });
+          onClose();
+        }
       } else {
         // This will run if createMeetup returns null (which happens on error)
         console.error("Failed to create meetup, no error thrown but result is null");
@@ -204,7 +214,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
                   min="1" 
                   placeholder="5" 
                   {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
                 />
               </FormControl>
               <FormMessage />

@@ -138,9 +138,9 @@ export function useMeetupService() {
         description: meetupData.description,
         event_date: meetupData.dateTime,
         location: meetupData.location,
-        creator_id: 1,
+        creator_id: 1, // Using a fixed creator_id for now
         category: meetupData.category,
-        lobby_size: meetupData.lobbySize
+        lobby_size: parseInt(meetupData.lobbySize, 10) // Convert to number explicitly
       };
       
       console.log("Sending to backend:", backendEventData);
@@ -155,26 +155,29 @@ export function useMeetupService() {
       
       console.log("API response status:", response.status, response.statusText);
       
-      // Try to get the response content regardless of status
-      let responseText;
-      try {
-        responseText = await response.text();
-        console.log("Raw response:", responseText);
-      } catch (textError) {
-        console.error("Failed to get response text:", textError);
-        responseText = "Unable to read response";
-      }
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
       
-      // Try to parse as JSON if possible
       let data;
       try {
-        data = JSON.parse(responseText);
-        console.log("Parsed JSON response:", data);
+        // Only try to parse if the response contains content
+        if (responseText && responseText.trim() !== '') {
+          data = JSON.parse(responseText);
+          console.log("Parsed JSON response:", data);
+        } else {
+          console.warn("Empty response received");
+          toast({
+            title: "Error creating meetup",
+            description: "The server returned an empty response",
+            variant: "destructive"
+          });
+          return null;
+        }
       } catch (parseError) {
         console.error("Failed to parse response as JSON:", parseError, "Raw text:", responseText);
         toast({
           title: "Error creating meetup",
-          description: "The server returned an invalid response",
+          description: "The server returned an invalid response format",
           variant: "destructive"
         });
         return null;
@@ -194,18 +197,37 @@ export function useMeetupService() {
         return null;
       }
       
+      if (!data || !data.id) {
+        console.error("Response missing required data:", data);
+        toast({
+          title: "Error creating meetup",
+          description: "The server response was missing required data",
+          variant: "destructive"
+        });
+        return null;
+      }
+      
       toast({
         title: "Meetup created!",
         description: "Your meetup has been successfully created.",
       });
       
-      if (data && data.id) {
-        const newMeetup = await fetchMeetupById(data.id.toString());
-        return newMeetup;
-      } else {
-        console.warn("Created meetup, but ID was not returned");
-        return null;
-      }
+      // Instead of fetching the created meetup, construct it from the data we have
+      const newMeetup: FlaskMeetup = {
+        id: data.id.toString(),
+        title: backendEventData.title,
+        description: backendEventData.description,
+        dateTime: backendEventData.event_date,
+        location: backendEventData.location,
+        points: 3, // Default value
+        createdBy: meetupData.createdBy || "Student",
+        lobbySize: backendEventData.lobby_size,
+        category: backendEventData.category,
+        attendees: []
+      };
+      
+      return newMeetup;
+      
     } catch (error) {
       console.error("Error creating meetup:", error);
       toast({
@@ -215,7 +237,7 @@ export function useMeetupService() {
       });
       return null;
     }
-  }, [toast, fetchMeetupById]);
+  }, [toast]);
   
   const searchMeetups = useCallback(async (searchParams: EventSearchParams): Promise<FlaskMeetup[]> => {
     try {
