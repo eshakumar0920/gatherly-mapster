@@ -41,9 +41,9 @@ export const useMeetups = (selectedCategory: string | null) => {
             dateTime: new Date(event.event_date).toLocaleString(),
             location: event.location,
             points: event.xp_reward || 3,
-            createdBy: "Student",
+            createdBy: event.creator_name || "Anonymous",
             creatorAvatar: undefined,
-            lobbySize: 5,
+            lobbySize: event.lobby_size || 5,
             category: event.category || "Other",
             attendees: []
           }));

@@ -220,52 +220,59 @@ const MeetupLobby = () => {
     setIsQrScannerOpen(false);
   };
 
-  const AttendeesList = () => (
-    <div className="space-y-4">
-      <div className="flex gap-2 mb-4">
-        <Button 
-          variant={attendeeView === "all" ? "yellow" : "outline"} 
-          size="sm" 
-          onClick={() => setAttendeeView("all")}
-        >
-          All ({mockAttendees.length})
-        </Button>
-        <Button 
-          variant={attendeeView === "going" ? "yellow" : "outline"} 
-          size="sm" 
-          onClick={() => setAttendeeView("going")}
-        >
-          Going ({mockAttendees.filter(a => a.status === "going").length})
-        </Button>
-        <Button 
-          variant={attendeeView === "interested" ? "yellow" : "outline"} 
-          size="sm" 
-          onClick={() => setAttendeeView("interested")}
-        >
-          Interested ({mockAttendees.filter(a => a.status === "interested").length})
-        </Button>
-      </div>
+  function AttendeesList() {
+    const filteredAttendees = mockAttendees.filter(attendee => {
+      if (attendeeView === "all") return true;
+      return attendee.status === attendeeView;
+    });
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-2 mb-4">
+          <Button 
+            variant={attendeeView === "all" ? "yellow" : "outline"} 
+            size="sm" 
+            onClick={() => setAttendeeView("all")}
+          >
+            All ({mockAttendees.length})
+          </Button>
+          <Button 
+            variant={attendeeView === "going" ? "yellow" : "outline"} 
+            size="sm" 
+            onClick={() => setAttendeeView("going")}
+          >
+            Going ({mockAttendees.filter(a => a.status === "going").length})
+          </Button>
+          <Button 
+            variant={attendeeView === "interested" ? "yellow" : "outline"} 
+            size="sm" 
+            onClick={() => setAttendeeView("interested")}
+          >
+            Interested ({mockAttendees.filter(a => a.status === "interested").length})
+          </Button>
+        </div>
 
-      <div className="space-y-3">
-        {filteredAttendees.map(attendee => (
-          <div key={attendee.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={attendee.avatar} />
-                <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{attendee.name}</p>
-                <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
-                  {attendee.status === "going" ? "Going" : "Interested"}
-                </Badge>
+        <div className="space-y-3">
+          {filteredAttendees.map(attendee => (
+            <div key={attendee.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={attendee.avatar} />
+                  <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{attendee.name}</p>
+                  <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
+                    {attendee.status === "going" ? "Going" : "Interested"}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   if (loading) {
     return (
