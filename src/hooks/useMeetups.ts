@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
@@ -29,13 +30,21 @@ export const useMeetups = (selectedCategory: string | null) => {
         
         console.log('Received meetups data:', meetupsData);
         
-        if (!meetupsData || !Array.isArray(meetupsData)) {
-          console.warn('Received invalid meetups data:', meetupsData);
+        if (!meetupsData) {
+          console.warn('No meetups data received');
           setAllMeetups([]);
-          setError('Received invalid data from server');
+          setError('No meetups data was returned from the server');
           return;
         }
         
+        if (!Array.isArray(meetupsData)) {
+          console.warn('Received invalid meetups data type:', typeof meetupsData);
+          setAllMeetups([]);
+          setError('Received invalid data format from server');
+          return;
+        }
+        
+        // Successfully received array of meetups
         setAllMeetups(meetupsData as Meetup[]);
       } catch (error) {
         console.error("Error in fetching meetups:", error);

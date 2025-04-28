@@ -1,3 +1,4 @@
+
 import { meetupsApi, eventsApi, useApiErrorHandling, EventSearchParams } from './api';
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from 'react';
@@ -152,14 +153,25 @@ export function useMeetupService() {
         body: JSON.stringify(backendEventData),
       });
       
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
+      console.log("API response status:", response.status, response.statusText);
       
+      // Try to get the response content regardless of status
+      let responseText;
+      try {
+        responseText = await response.text();
+        console.log("Raw response:", responseText);
+      } catch (textError) {
+        console.error("Failed to get response text:", textError);
+        responseText = "Unable to read response";
+      }
+      
+      // Try to parse as JSON if possible
       let data;
       try {
         data = JSON.parse(responseText);
+        console.log("Parsed JSON response:", data);
       } catch (parseError) {
-        console.error("Failed to parse response as JSON:", parseError);
+        console.error("Failed to parse response as JSON:", parseError, "Raw text:", responseText);
         toast({
           title: "Error creating meetup",
           description: "The server returned an invalid response",
@@ -169,10 +181,14 @@ export function useMeetupService() {
       }
       
       if (!response.ok) {
-        console.error("Error response from server:", data);
+        const errorMessage = data && data.error 
+          ? data.error 
+          : response.statusText || "An unexpected error occurred";
+        
+        console.error("Error response from server:", errorMessage);
         toast({
           title: "Error creating meetup",
-          description: data.error || response.statusText || "An unexpected error occurred",
+          description: errorMessage,
           variant: "destructive"
         });
         return null;

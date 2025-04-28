@@ -39,6 +39,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { user, isLoggedIn } = useAuth();
   const { createMeetup, fetchMeetups } = useMeetupService();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -53,6 +54,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
+    setErrorDetails(null);
     try {
       setIsSubmitting(true);
       
@@ -78,18 +80,22 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         console.log("Meetup created successfully:", createdMeetup);
         // Fetch updated meetups list
         const updatedMeetups = await fetchMeetups();
+        console.log("Updated meetups after creation:", updatedMeetups);
         onSuccess(updatedMeetups);
         onClose();
         form.reset();
       } else {
         // This will run if createMeetup returns null (which happens on error)
         console.error("Failed to create meetup, no error thrown but result is null");
+        setErrorDetails("The server couldn't process your request. Please check all fields and try again.");
       }
     } catch (error) {
       console.error("Error in meetup creation submit handler:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      setErrorDetails(errorMessage);
       toast({
         title: "Error creating meetup",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -205,6 +211,12 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
             </FormItem>
           )}
         />
+        
+        {errorDetails && (
+          <div className="text-destructive text-sm">
+            <p>Error details: {errorDetails}</p>
+          </div>
+        )}
         
         <DialogFooter>
           <Button 
