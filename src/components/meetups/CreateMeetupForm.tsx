@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,6 +13,7 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { Meetup } from "@/types/meetup";
 import { useMeetupService } from "@/services/flaskService";
+import { useState } from "react";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -36,6 +38,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
   const { user, isLoggedIn } = useAuth();
   const { createMeetup, fetchMeetups } = useMeetupService();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,14 +54,19 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      setIsSubmitting(true);
+      
       if (!isLoggedIn || !user) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
+      
+      console.log("Submitting form with values:", values);
       
       // Create the meetup using the Flask API
       const createdMeetup = await createMeetup({
@@ -67,19 +75,25 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       });
       
       if (createdMeetup) {
+        console.log("Meetup created successfully:", createdMeetup);
         // Fetch updated meetups list
         const updatedMeetups = await fetchMeetups();
         onSuccess(updatedMeetups);
         onClose();
         form.reset();
+      } else {
+        // This will run if createMeetup returns null (which happens on error)
+        console.error("Failed to create meetup, no error thrown but result is null");
       }
     } catch (error) {
-      console.error("Error in meetup creation:", error);
+      console.error("Error in meetup creation submit handler:", error);
       toast({
         title: "Error creating meetup",
-        description: "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -193,7 +207,13 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         />
         
         <DialogFooter>
-          <Button type="submit" className="w-full">Create Meetup</Button>
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating..." : "Create Meetup"}
+          </Button>
         </DialogFooter>
       </form>
     </Form>

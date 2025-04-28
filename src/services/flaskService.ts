@@ -130,6 +130,8 @@ export function useMeetupService() {
 
   const createMeetup = useCallback(async (meetupData: any): Promise<FlaskMeetup | null> => {
     try {
+      console.log("Creating meetup with data:", meetupData);
+      
       const backendEventData = {
         title: meetupData.title,
         description: meetupData.description,
@@ -140,6 +142,8 @@ export function useMeetupService() {
         lobby_size: meetupData.lobbySize
       };
       
+      console.log("Sending to backend:", backendEventData);
+      
       const response = await fetch('/events', {
         method: 'POST',
         headers: {
@@ -148,30 +152,49 @@ export function useMeetupService() {
         body: JSON.stringify(backendEventData),
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError);
         toast({
           title: "Error creating meetup",
-          description: errorData.error || response.statusText,
+          description: "The server returned an invalid response",
           variant: "destructive"
         });
         return null;
       }
       
-      const data = await response.json();
+      if (!response.ok) {
+        console.error("Error response from server:", data);
+        toast({
+          title: "Error creating meetup",
+          description: data.error || response.statusText || "An unexpected error occurred",
+          variant: "destructive"
+        });
+        return null;
+      }
       
       toast({
         title: "Meetup created!",
         description: "Your meetup has been successfully created.",
       });
       
-      const newMeetup = await fetchMeetupById(data.id.toString());
-      return newMeetup;
+      if (data && data.id) {
+        const newMeetup = await fetchMeetupById(data.id.toString());
+        return newMeetup;
+      } else {
+        console.warn("Created meetup, but ID was not returned");
+        return null;
+      }
     } catch (error) {
       console.error("Error creating meetup:", error);
       toast({
         title: "Error creating meetup",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred while creating your meetup",
         variant: "destructive"
       });
       return null;
