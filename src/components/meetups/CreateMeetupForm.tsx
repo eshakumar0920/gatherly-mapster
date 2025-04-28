@@ -35,7 +35,7 @@ interface CreateMeetupFormProps {
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -53,7 +53,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
     try {
       const eventDate = new Date().toISOString();
       
-      if (!user || !user.id) {
+      if (!isLoggedIn || !user || !user.email) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
@@ -61,6 +61,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         });
         return;
       }
+      
+      // Log authentication state for debugging
+      console.log("Auth state:", { isLoggedIn, user });
       
       const { data: usersData, error: usersError } = await supabase
         .from('users')
