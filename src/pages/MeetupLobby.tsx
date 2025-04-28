@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
@@ -135,7 +134,7 @@ const MeetupLobby = () => {
             dateTime: format(new Date(), "MM/dd/yyyy h:mm a"),
             location: "UTD Campus",
             points: 3,
-            createdBy: "Anonymous", // Changed from "Student" to "Anonymous" for consistency
+            createdBy: "Student",
             creatorAvatar: "",
             lobbySize: 5,
             attendees: []

@@ -41,7 +41,7 @@ export const useMeetups = (selectedCategory: string | null) => {
             dateTime: new Date(event.event_date).toLocaleString(),
             location: event.location,
             points: event.xp_reward || 3,
-            createdBy: event.creator_name || "Anonymous", // Changed default from Student to Anonymous
+            createdBy: event.creator_name || "Anonymous",
             creatorAvatar: undefined,
             lobbySize: event.lobby_size || 5,
             category: event.category || "Other",
