@@ -16,32 +16,55 @@ interface MapLocation {
   lat: number;
   lng: number;
   description?: string;
+  category?: string;
+  isEvent?: boolean;
 }
 
-// Define consistent locations for UTD buildings
+// Define precise UTD building locations
 const UTD_LOCATIONS = {
   'ECSW Building': { lat: 32.9866, lng: -96.7511 },
+  'ECSW': { lat: 32.9866, lng: -96.7511 },
+  'ECSS Building': { lat: 32.9879, lng: -96.7511 },
+  'ECSS': { lat: 32.9879, lng: -96.7511 },
+  'ECSN': { lat: 32.9884, lng: -96.7517 },
   'Plinth': { lat: 32.9876, lng: -96.7485 },
   'Student Union': { lat: 32.9899, lng: -96.7501 },
   'Blackstone LaunchPad': { lat: 32.9864, lng: -96.7478 },
   'SP/N Gallery': { lat: 32.9855, lng: -96.7501 },
   'Recreation Center West': { lat: 32.9874, lng: -96.7525 },
+  'McDermott Library': { lat: 32.9886, lng: -96.7491 },
+  'School of Management': { lat: 32.9869, lng: -96.7456 },
+  'JSOM': { lat: 32.9869, lng: -96.7456 },
+  'Residence Halls': { lat: 32.9922, lng: -96.7489 },
+  'Activity Center': { lat: 32.9874, lng: -96.7524 },
+  'Arts & Humanities': { lat: 32.9855, lng: -96.7501 },
+  'Natural Sciences': { lat: 32.9866, lng: -96.7476 },
+  'Founders Building': { lat: 32.9875, lng: -96.7491 },
+  'Callier Center': { lat: 32.9892, lng: -96.7463 },
+  'Visitor Center': { lat: 32.9854, lng: -96.7513 },
   'default': { lat: 32.9886, lng: -96.7479 } // UTD center as default
 };
 
-// Helper function to get location coordinates based on venue
+// Helper function to get location coordinates based on venue with improved matching
 const getLocationCoordinates = (locationName: string) => {
-  // Try to match the location name with our predefined coordinates
+  if (!locationName) return UTD_LOCATIONS.default;
+  
+  // Exact match first
+  if (UTD_LOCATIONS[locationName as keyof typeof UTD_LOCATIONS]) {
+    return UTD_LOCATIONS[locationName as keyof typeof UTD_LOCATIONS];
+  }
+  
+  // Partial match
   for (const [key, value] of Object.entries(UTD_LOCATIONS)) {
-    if (locationName.includes(key)) {
+    if (locationName.includes(key) || key.includes(locationName)) {
       return value;
     }
   }
   
   // If no match, add a small offset to the default location to avoid overlap
   return {
-    lat: UTD_LOCATIONS.default.lat + (Math.random() - 0.5) * 0.001, // Very small offset
-    lng: UTD_LOCATIONS.default.lng + (Math.random() - 0.5) * 0.001
+    lat: UTD_LOCATIONS.default.lat + (Math.random() - 0.5) * 0.0005, // Very small offset
+    lng: UTD_LOCATIONS.default.lng + (Math.random() - 0.5) * 0.0005
   };
 };
 
@@ -75,7 +98,8 @@ const Maps = () => {
                 title: event.title,
                 lat: coords.lat,
                 lng: coords.lng,
-                description: event.description,
+                description: `${event.description || ''} - Location: ${event.location}`,
+                category: event.category,
                 isEvent: true
               };
             });
@@ -104,7 +128,8 @@ const Maps = () => {
                 title: event.title,
                 lat: coords.lat,
                 lng: coords.lng,
-                description: event.description || null,
+                description: `${event.description || ''} - Location: ${event.location}`,
+                category: event.category || null,
                 isEvent: true
               };
             });
@@ -126,7 +151,8 @@ const Maps = () => {
             title: event.title,
             lat: coords.lat,
             lng: coords.lng,
-            description: event.description,
+            description: `${event.description} - Location: ${event.location}`,
+            category: event.category,
             isEvent: true
           };
         });
@@ -150,7 +176,8 @@ const Maps = () => {
             title: event.title,
             lat: coords.lat,
             lng: coords.lng,
-            description: event.description,
+            description: `${event.description} - Location: ${event.location}`,
+            category: event.category,
             isEvent: true
           };
         });

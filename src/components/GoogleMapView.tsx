@@ -28,9 +28,30 @@ const UTD_CENTER = {
   lng: -96.7479
 };
 
+// Define precise building locations with exact coordinates
+const BUILDING_LOCATIONS = {
+  'ECSW': { lat: 32.9866, lng: -96.7511 },
+  'ECSN': { lat: 32.9884, lng: -96.7517 },
+  'ECSS': { lat: 32.9879, lng: -96.7511 },
+  'Plinth': { lat: 32.9876, lng: -96.7485 },
+  'Student Union': { lat: 32.9899, lng: -96.7501 },
+  'Blackstone LaunchPad': { lat: 32.9864, lng: -96.7478 },
+  'SP/N Gallery': { lat: 32.9855, lng: -96.7501 },
+  'Recreation Center': { lat: 32.9874, lng: -96.7525 },
+  'McDermott Library': { lat: 32.9886, lng: -96.7491 },
+  'School of Management': { lat: 32.9869, lng: -96.7456 },
+  'Residence Halls': { lat: 32.9922, lng: -96.7489 },
+  'Activity Center': { lat: 32.9874, lng: -96.7524 },
+  'Arts & Humanities': { lat: 32.9855, lng: -96.7501 },
+  'Natural Sciences': { lat: 32.9866, lng: -96.7476 },
+  'Founders Building': { lat: 32.9875, lng: -96.7491 },
+  'Callier Center': { lat: 32.9892, lng: -96.7463 },
+  'Visitor Center': { lat: 32.9854, lng: -96.7513 }
+};
+
 const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [allLocations] = useState<MapLocation[]>(locations); // No need to change locations after initial load
+  const [allLocations, setAllLocations] = useState<MapLocation[]>([]); 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<{[key: string]: L.Marker}>({});
@@ -82,6 +103,43 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       }
     };
   }, []);
+
+  // Process locations when they change
+  useEffect(() => {
+    // Process locations to ensure consistent coordinates
+    const processedLocations = locations.map(location => {
+      // Try to match building name to our precise coordinates
+      for (const [buildingName, coords] of Object.entries(BUILDING_LOCATIONS)) {
+        if (location.title.includes(buildingName) || 
+            (location.description && location.description.includes(buildingName)) ||
+            (location.category && location.category.includes(buildingName))) {
+          return {
+            ...location,
+            lat: coords.lat,
+            lng: coords.lng
+          };
+        }
+      }
+      
+      // Check location field if available
+      if (location.description) {
+        for (const [buildingName, coords] of Object.entries(BUILDING_LOCATIONS)) {
+          if (location.description.includes(buildingName)) {
+            return {
+              ...location,
+              lat: coords.lat,
+              lng: coords.lng
+            };
+          }
+        }
+      }
+      
+      // Return original coordinates if no match
+      return location;
+    });
+    
+    setAllLocations(processedLocations);
+  }, [locations]);
   
   // Update markers when locations change
   useEffect(() => {
@@ -93,7 +151,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       markersRef.current = {};
       
       // Add new markers
-      locations.forEach(location => {
+      allLocations.forEach(location => {
         // Create different colored markers based on the location type
         const markerColor = location.isEvent ? "blue" : 
                            (location.category === "Sports" ? "green" : 
@@ -129,7 +187,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         markersRef.current[location.id] = marker;
       });
     }
-  }, [locations, isLoading]);
+  }, [allLocations, isLoading]);
   
   return (
     <div className="w-full h-full relative rounded-lg overflow-hidden border border-gray-200">
