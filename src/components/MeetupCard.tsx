@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,24 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const navigate = useNavigate();
   
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
-  const currentAttendees = meetup.attendees?.length || 0;
+  const [currentAttendees, setCurrentAttendees] = useState(meetup.attendees?.length || 0);
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
+  
+  // Update the attendees count when the user joins
+  useEffect(() => {
+    // If user has joined this meetup's lobby, increment the attendee count by 1 if not already counted
+    if (isJoinedLobby) {
+      setCurrentAttendees(prev => {
+        // Check if the initial value already includes this user's join
+        const initialAttendeeCount = meetup.attendees?.length || 0;
+        // If the previous count is just the initial count, add 1 for this user
+        return Math.max(prev, initialAttendeeCount + 1);
+      });
+    } else {
+      // Reset to the initial attendees count if not joined
+      setCurrentAttendees(meetup.attendees?.length || 0);
+    }
+  }, [isJoinedLobby, meetup.attendees, meetup.id]);
   
   const formattedDateTime = (() => {
     if (meetup.dateTime == null) {
@@ -76,6 +92,9 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     }
     
     joinMeetupLobby(meetup.id);
+    
+    // Immediately update the attendee count when joining
+    setCurrentAttendees(prev => prev + 1);
     
     toast({
       title: "Joined lobby",
