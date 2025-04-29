@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -9,10 +8,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Meetup } from "@/types/meetup";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface MeetupCardProps {
   meetup: Meetup;
 }
+
+// Define mockAttendees here for consistent display across all meetup cards
+const mockAttendees = [
+  { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
+  { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
+  { id: "3", name: "Esther Howard", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", status: "interested" },
+];
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { joinMeetupLobby, joinedLobbies } = useUserStore();
@@ -152,10 +159,36 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             </div>
           </div>
           
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Users className="h-4 w-4 mr-1" />
-            <span>{currentAttendees}/{meetup.lobbySize}</span>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                <Users className="h-4 w-4 mr-1" />
+                <span>{currentAttendees}/{meetup.lobbySize}</span>
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" align="end">
+              <h4 className="font-medium text-sm mb-2">Attendees</h4>
+              <div className="space-y-2">
+                {mockAttendees.map(attendee => (
+                  <div key={attendee.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={attendee.avatar} />
+                        <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{attendee.name}</span>
+                    </div>
+                    <Badge 
+                      variant={attendee.status === "going" ? "default" : "outline"} 
+                      className="text-xs capitalize"
+                    >
+                      {attendee.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       
