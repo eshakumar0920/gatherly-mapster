@@ -31,7 +31,7 @@ const UTD_CENTER = {
 // Define precise building locations with exact coordinates
 const BUILDING_LOCATIONS = {
   'ECSW': { lat: 32.9866, lng: -96.7511 },
-  'ECSW Building': { lat: 32.9866, lng: -96.7511 },
+  'ECSW Building': { lat: 32.98605047033769, lng: -96.75152260357687 },
   'ECSW Courtyard': { lat: 32.9866, lng: -96.7511 },
   'Engineering and Computer Science West': { lat: 32.9866, lng: -96.7511 },
   'ECSN': { lat: 32.9884, lng: -96.7517 },
