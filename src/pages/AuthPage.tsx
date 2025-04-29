@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, User, LogIn, UserPlus } from "lucide-react";
+import { Mail, Lock, User, LogIn, UserPlus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -26,9 +28,14 @@ const AuthPage = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
 
+  const clearError = () => {
+    setErrorMessage("");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    clearError();
 
     try {
       const result = await login(loginEmail, loginPassword);
@@ -44,6 +51,8 @@ const AuthPage = () => {
       
       navigate("/events");
     } catch (error: any) {
+      console.error("Login error:", error);
+      setErrorMessage(error.message || "An error occurred during login");
       toast({
         title: "Login failed",
         description: error.message || "An error occurred during login",
@@ -57,6 +66,7 @@ const AuthPage = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    clearError();
     
     try {
       if (signupPassword !== signupConfirmPassword) {
@@ -84,6 +94,8 @@ const AuthPage = () => {
         navigate("/events");
       }
     } catch (error: any) {
+      console.error("Signup error:", error);
+      setErrorMessage(error.message || "An error occurred during signup");
       toast({
         title: "Sign up failed",
         description: error.message || "An error occurred during signup",
@@ -106,7 +118,14 @@ const AuthPage = () => {
 
       {/* Auth Container */}
       <div className="w-full max-w-md bg-card rounded-lg shadow-lg border border-border p-6">
-        <Tabs defaultValue="login" className="w-full">
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs defaultValue="login" className="w-full" onValueChange={clearError}>
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
