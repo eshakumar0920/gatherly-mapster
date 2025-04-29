@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMeetupService } from "@/services/flaskService";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Meetup {
   id: string;
@@ -34,7 +36,7 @@ interface Meetup {
 interface Attendee {
   id: string;
   name: string;
-  avatar: string;
+  avatar?: string;
   status: "going" | "interested";
 }
 
@@ -50,13 +52,11 @@ const MeetupLobby = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const { attendMeetup, joinMeetupLobby: joinLocalLobby, joinedLobbies, attendedMeetups } = useUserStore();
-  const { fetchMeetupById, checkInToMeetup: checkInToMeetupApi } = useMeetupService();
+  const { fetchMeetupById, checkInToMeetupApi } = useMeetupService();
+  const { user } = useAuth();
   
-  const mockAttendees: Attendee[] = [
-    { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
-    { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
-    { id: "3", name: "Esther Howard", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", status: "going" },
-  ];
+  // Generate dynamic attendees based on meetup ID
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
   
   useEffect(() => {
     const fetchMeetupData = async () => {
@@ -77,6 +77,57 @@ const MeetupLobby = () => {
           setMeetup(flaskMeetup as unknown as Meetup);
           setIsJoinedLobby(joinedLobbies?.includes(flaskMeetup.id));
           setIsCheckedIn(attendedMeetups?.includes(flaskMeetup.id));
+          
+          // Generate attendees based on meetup ID
+          const idSum = flaskMeetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+          
+          const baseAttendees: Attendee[] = [];
+          
+          // Add Jane Cooper for most meetups
+          if (idSum % 2 === 0) {
+            baseAttendees.push({ 
+              id: "1", 
+              name: "Jane Cooper", 
+              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+              status: "going" 
+            });
+          }
+          
+          // Add Wade Warren for some meetups
+          if (idSum % 3 === 0) {
+            baseAttendees.push({ 
+              id: "2", 
+              name: "Wade Warren", 
+              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+              status: "going" 
+            });
+          }
+          
+          // Only add Esther Howard for some meetups
+          if (idSum > 2) {
+            baseAttendees.push({ 
+              id: "3", 
+              name: "Esther Howard", 
+              avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
+              status: "interested" 
+            });
+          }
+          
+          // Check if current user is in the lobby
+          if (isJoinedLobby && user) {
+            // Add current user to attendees list
+            const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
+            
+            if (!userAlreadyInList) {
+              baseAttendees.push({
+                id: user.id,
+                name: user.email?.split('@')[0] || "Current User",
+                status: "going"
+              });
+            }
+          }
+          
+          setAttendees(baseAttendees);
           setLoading(false);
           return;
         }
@@ -106,6 +157,57 @@ const MeetupLobby = () => {
             setMeetup(mockMeetup);
             setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
             setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
+            
+            // Generate attendees based on meetup ID
+            const idSum = meetupId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+            
+            const baseAttendees: Attendee[] = [];
+            
+            // Add Jane Cooper for most meetups
+            if (idSum % 2 === 0) {
+              baseAttendees.push({ 
+                id: "1", 
+                name: "Jane Cooper", 
+                avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+                status: "going" 
+              });
+            }
+            
+            // Add Wade Warren for some meetups
+            if (idSum % 3 === 0) {
+              baseAttendees.push({ 
+                id: "2", 
+                name: "Wade Warren", 
+                avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+                status: "going" 
+              });
+            }
+            
+            // Only add Esther Howard for some meetups
+            if (idSum > 2) {
+              baseAttendees.push({ 
+                id: "3", 
+                name: "Esther Howard", 
+                avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
+                status: "interested" 
+              });
+            }
+            
+            // Check if current user is in the lobby
+            if (isJoinedLobby && user) {
+              // Add current user to attendees list
+              const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
+              
+              if (!userAlreadyInList) {
+                baseAttendees.push({
+                  id: user.id,
+                  name: user.email?.split('@')[0] || "Current User",
+                  status: "going"
+                });
+              }
+            }
+            
+            setAttendees(baseAttendees);
           } else if (data) {
             const meetupData: Meetup = {
               id: data.id.toString(),
@@ -124,6 +226,57 @@ const MeetupLobby = () => {
             setMeetup(meetupData);
             setIsJoinedLobby(joinedLobbies?.includes(meetupData.id));
             setIsCheckedIn(attendedMeetups?.includes(meetupData.id));
+            
+            // Generate attendees based on meetup ID
+            const idSum = meetupData.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+            
+            const baseAttendees: Attendee[] = [];
+            
+            // Add Jane Cooper for most meetups
+            if (idSum % 2 === 0) {
+              baseAttendees.push({ 
+                id: "1", 
+                name: "Jane Cooper", 
+                avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+                status: "going" 
+              });
+            }
+            
+            // Add Wade Warren for some meetups
+            if (idSum % 3 === 0) {
+              baseAttendees.push({ 
+                id: "2", 
+                name: "Wade Warren", 
+                avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+                status: "going" 
+              });
+            }
+            
+            // Only add Esther Howard for some meetups
+            if (idSum > 2) {
+              baseAttendees.push({ 
+                id: "3", 
+                name: "Esther Howard", 
+                avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
+                status: "interested" 
+              });
+            }
+            
+            // Check if current user is in the lobby
+            if (isJoinedLobby && user) {
+              // Add current user to attendees list
+              const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
+              
+              if (!userAlreadyInList) {
+                baseAttendees.push({
+                  id: user.id,
+                  name: user.email?.split('@')[0] || "Current User",
+                  status: "going"
+                });
+              }
+            }
+            
+            setAttendees(baseAttendees);
           }
         } catch (supabaseError) {
           console.error("Supabase error:", supabaseError);
@@ -143,6 +296,57 @@ const MeetupLobby = () => {
           setMeetup(mockMeetup);
           setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
           setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
+          
+          // Generate attendees based on meetup ID
+          const idSum = meetupId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+          
+          const baseAttendees: Attendee[] = [];
+          
+          // Add Jane Cooper for most meetups
+          if (idSum % 2 === 0) {
+            baseAttendees.push({ 
+              id: "1", 
+              name: "Jane Cooper", 
+              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+              status: "going" 
+            });
+          }
+          
+          // Add Wade Warren for some meetups
+          if (idSum % 3 === 0) {
+            baseAttendees.push({ 
+              id: "2", 
+              name: "Wade Warren", 
+              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+              status: "going" 
+            });
+          }
+          
+          // Only add Esther Howard for some meetups
+          if (idSum > 2) {
+            baseAttendees.push({ 
+              id: "3", 
+              name: "Esther Howard", 
+              avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
+              status: "interested" 
+            });
+          }
+          
+          // Check if current user is in the lobby
+          if (isJoinedLobby && user) {
+            // Add current user to attendees list
+            const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
+            
+            if (!userAlreadyInList) {
+              baseAttendees.push({
+                id: user.id,
+                name: user.email?.split('@')[0] || "Current User",
+                status: "going"
+              });
+            }
+          }
+          
+          setAttendees(baseAttendees);
         }
       } catch (error) {
         console.error("Error in fetching meetup:", error);
@@ -157,9 +361,9 @@ const MeetupLobby = () => {
     };
 
     fetchMeetupData();
-  }, [meetupId, joinedLobbies, attendedMeetups, toast, fetchMeetupById]);
+  }, [meetupId, joinedLobbies, attendedMeetups, toast, fetchMeetupById, user, isJoinedLobby]);
 
-  const filteredAttendees = mockAttendees.filter(attendee => {
+  const filteredAttendees = attendees.filter(attendee => {
     if (attendeeView === "all") return true;
     return attendee.status === attendeeView;
   });
@@ -168,6 +372,25 @@ const MeetupLobby = () => {
     if (meetup) {
       joinLocalLobby(meetup.id);
       setIsJoinedLobby(true);
+      
+      // Add current user to attendees list
+      if (user) {
+        setAttendees(prev => {
+          // Check if user is already in the list
+          if (!prev.some(a => a.id === user.id)) {
+            return [
+              ...prev, 
+              {
+                id: user.id,
+                name: user.email?.split('@')[0] || "Current User",
+                status: "going"
+              }
+            ];
+          }
+          return prev;
+        });
+      }
+      
       toast({
         title: "Joined lobby",
         description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
@@ -221,11 +444,6 @@ const MeetupLobby = () => {
   };
 
   function AttendeesList() {
-    const filteredAttendees = mockAttendees.filter(attendee => {
-      if (attendeeView === "all") return true;
-      return attendee.status === attendeeView;
-    });
-    
     return (
       <div className="space-y-4">
         <div className="flex gap-2 mb-4">
@@ -234,41 +452,45 @@ const MeetupLobby = () => {
             size="sm" 
             onClick={() => setAttendeeView("all")}
           >
-            All ({mockAttendees.length})
+            All ({attendees.length})
           </Button>
           <Button 
             variant={attendeeView === "going" ? "yellow" : "outline"} 
             size="sm" 
             onClick={() => setAttendeeView("going")}
           >
-            Going ({mockAttendees.filter(a => a.status === "going").length})
+            Going ({attendees.filter(a => a.status === "going").length})
           </Button>
           <Button 
             variant={attendeeView === "interested" ? "yellow" : "outline"} 
             size="sm" 
             onClick={() => setAttendeeView("interested")}
           >
-            Interested ({mockAttendees.filter(a => a.status === "interested").length})
+            Interested ({attendees.filter(a => a.status === "interested").length})
           </Button>
         </div>
 
         <div className="space-y-3">
-          {filteredAttendees.map(attendee => (
-            <div key={attendee.id} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={attendee.avatar} />
-                  <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{attendee.name}</p>
-                  <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
-                    {attendee.status === "going" ? "Going" : "Interested"}
-                  </Badge>
+          {filteredAttendees.length > 0 ? (
+            filteredAttendees.map(attendee => (
+              <div key={attendee.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={attendee.avatar} />
+                    <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{attendee.name}</p>
+                    <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
+                      {attendee.status === "going" ? "Going" : "Interested"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">No attendees found for this filter.</p>
+          )}
         </div>
       </div>
     );
@@ -395,16 +617,22 @@ const MeetupLobby = () => {
         </div>
 
         <div className="flex -space-x-2 overflow-hidden">
-          {mockAttendees.slice(0, 5).map((attendee) => (
-            <Avatar key={attendee.id} className="border-2 border-background">
-              <AvatarImage src={attendee.avatar} />
-              <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-          ))}
-          {mockAttendees.length > 5 && (
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted border-2 border-background text-xs font-medium">
-              +{mockAttendees.length - 5}
-            </div>
+          {attendees.length > 0 ? (
+            <>
+              {attendees.slice(0, 5).map((attendee) => (
+                <Avatar key={attendee.id} className="border-2 border-background">
+                  <AvatarImage src={attendee.avatar} />
+                  <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              ))}
+              {attendees.length > 5 && (
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted border-2 border-background text-xs font-medium">
+                  +{attendees.length - 5}
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">No attendees yet. Be the first!</p>
           )}
         </div>
       </div>
