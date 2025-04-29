@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useParams, useNavigate } from "react-router-dom";
@@ -52,7 +51,7 @@ const MeetupLobby = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const { attendMeetup, joinMeetupLobby: joinLocalLobby, joinedLobbies, attendedMeetups } = useUserStore();
-  const { fetchMeetupById, checkInToMeetupApi } = useMeetupService();
+  const { fetchMeetupById, checkInToMeetup } = useMeetupService();
   const { user } = useAuth();
   
   // Generate dynamic attendees based on meetup ID
@@ -406,7 +405,7 @@ const MeetupLobby = () => {
     if (meetup) {
       if (data.includes(meetupId as string)) {
         try {
-          const success = await checkInToMeetupApi(meetup.id);
+          const success = await checkInToMeetup(meetup.id);
           
           if (!success) {
             attendMeetup(meetup.id, meetup.points);
