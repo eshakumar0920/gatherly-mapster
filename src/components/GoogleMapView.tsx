@@ -31,15 +31,25 @@ const UTD_CENTER = {
 // Define precise building locations with exact coordinates
 const BUILDING_LOCATIONS = {
   'ECSW': { lat: 32.9866, lng: -96.7511 },
+  'ECSW Building': { lat: 32.9866, lng: -96.7511 },
+  'ECSW Courtyard': { lat: 32.9866, lng: -96.7511 },
+  'Engineering and Computer Science West': { lat: 32.9866, lng: -96.7511 },
   'ECSN': { lat: 32.9884, lng: -96.7517 },
+  'ECSN Building': { lat: 32.9884, lng: -96.7517 },
+  'Engineering and Computer Science North': { lat: 32.9884, lng: -96.7517 },
   'ECSS': { lat: 32.9879, lng: -96.7511 },
+  'ECSS Building': { lat: 32.9879, lng: -96.7511 },
+  'Engineering and Computer Science South': { lat: 32.9879, lng: -96.7511 },
   'Plinth': { lat: 32.9876, lng: -96.7485 },
   'Student Union': { lat: 32.9899, lng: -96.7501 },
   'Blackstone LaunchPad': { lat: 32.9864, lng: -96.7478 },
   'SP/N Gallery': { lat: 32.9855, lng: -96.7501 },
   'Recreation Center': { lat: 32.9874, lng: -96.7525 },
+  'Recreation Center West': { lat: 32.9874, lng: -96.7525 },
   'McDermott Library': { lat: 32.9886, lng: -96.7491 },
   'School of Management': { lat: 32.9869, lng: -96.7456 },
+  'JSOM': { lat: 32.9869, lng: -96.7456 },
+  'Naveen Jindal School of Management': { lat: 32.9869, lng: -96.7456 },
   'Residence Halls': { lat: 32.9922, lng: -96.7489 },
   'Activity Center': { lat: 32.9874, lng: -96.7524 },
   'Arts & Humanities': { lat: 32.9855, lng: -96.7501 },
@@ -55,6 +65,62 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<{[key: string]: L.Marker}>({});
+  
+  // Helper function to clean up location text for better matching
+  const normalizeLocationText = (text: string): string => {
+    return text.trim().toLowerCase()
+      .replace(/building/gi, "")
+      .replace(/center/gi, "")
+      .replace(/hall/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+  
+  // Improved function to find matching building coordinates
+  const findBuildingCoordinates = (locationText: string): { lat: number, lng: number } | null => {
+    if (!locationText) return null;
+    
+    // Direct match first
+    if (BUILDING_LOCATIONS[locationText as keyof typeof BUILDING_LOCATIONS]) {
+      return BUILDING_LOCATIONS[locationText as keyof typeof BUILDING_LOCATIONS];
+    }
+    
+    // Try normalized name match
+    const normalizedLocation = normalizeLocationText(locationText);
+    
+    for (const [buildingName, coords] of Object.entries(BUILDING_LOCATIONS)) {
+      const normalizedBuildingName = normalizeLocationText(buildingName);
+      
+      if (normalizedLocation === normalizedBuildingName) {
+        return coords;
+      }
+      
+      if (normalizedLocation.includes(normalizedBuildingName) || 
+          normalizedBuildingName.includes(normalizedLocation)) {
+        return coords;
+      }
+    }
+    
+    // Check for abbreviations
+    const locationWords = normalizedLocation.split(' ');
+    for (const [buildingName, coords] of Object.entries(BUILDING_LOCATIONS)) {
+      const buildingWords = normalizeLocationText(buildingName).split(' ');
+      
+      // Check if any word is an abbreviation of the building
+      const hasMatch = locationWords.some(word => 
+        buildingWords.some(buildingWord => 
+          (word.length > 2 && buildingWord.startsWith(word)) || 
+          (buildingWord.length > 2 && word.startsWith(buildingWord))
+        )
+      );
+      
+      if (hasMatch) {
+        return coords;
+      }
+    }
+    
+    return null;
+  };
   
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -108,33 +174,59 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   useEffect(() => {
     // Process locations to ensure consistent coordinates
     const processedLocations = locations.map(location => {
-      // Try to match building name to our precise coordinates
-      for (const [buildingName, coords] of Object.entries(BUILDING_LOCATIONS)) {
-        if (location.title.includes(buildingName) || 
-            (location.description && location.description.includes(buildingName)) ||
-            (location.category && location.category.includes(buildingName))) {
+      // Try to find building coordinates from title or description
+      let buildingCoords = null;
+      
+      // Check title first
+      buildingCoords = findBuildingCoordinates(location.title);
+      if (buildingCoords) {
+        return {
+          ...location,
+          lat: buildingCoords.lat,
+          lng: buildingCoords.lng
+        };
+      }
+      
+      // Check description if available
+      if (location.description) {
+        buildingCoords = findBuildingCoordinates(location.description);
+        if (buildingCoords) {
           return {
             ...location,
-            lat: coords.lat,
-            lng: coords.lng
+            lat: buildingCoords.lat,
+            lng: buildingCoords.lng
           };
         }
       }
       
-      // Check location field if available
-      if (location.description) {
-        for (const [buildingName, coords] of Object.entries(BUILDING_LOCATIONS)) {
-          if (location.description.includes(buildingName)) {
+      // Check location field if it's embedded in description
+      if (location.description && location.description.includes("Location:")) {
+        const locationMatch = location.description.match(/Location:\s*([^,\.]+)/i);
+        if (locationMatch && locationMatch[1]) {
+          buildingCoords = findBuildingCoordinates(locationMatch[1]);
+          if (buildingCoords) {
             return {
               ...location,
-              lat: coords.lat,
-              lng: coords.lng
+              lat: buildingCoords.lat,
+              lng: buildingCoords.lng
             };
           }
         }
       }
       
-      // Return original coordinates if no match
+      // If no match found and has a category, try to infer from category
+      if (location.category) {
+        buildingCoords = findBuildingCoordinates(location.category);
+        if (buildingCoords) {
+          return {
+            ...location,
+            lat: buildingCoords.lat,
+            lng: buildingCoords.lng
+          };
+        }
+      }
+      
+      // Return original coordinates if no match found
       return location;
     });
     
@@ -156,7 +248,8 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
         const markerColor = location.isEvent ? "blue" : 
                            (location.category === "Sports" ? "green" : 
                             location.category === "Academic" ? "red" : 
-                            location.category === "Gaming" ? "purple" : "orange");
+                            location.category === "Gaming" ? "purple" : 
+                            location.category === "Technology" ? "teal" : "orange");
         
         // Create custom icon with different colors
         const customIcon = L.divIcon({
@@ -174,12 +267,22 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
           iconAnchor: [15, 45],
           popupAnchor: [0, -45]
         });
+        
+        // Extract building name from location for displaying in popup
+        let buildingName = "";
+        if (location.description && location.description.includes("Location:")) {
+          const locationMatch = location.description.match(/Location:\s*([^,\.]+)/i);
+          if (locationMatch && locationMatch[1]) {
+            buildingName = locationMatch[1].trim();
+          }
+        }
 
         const marker = L.marker([location.lat, location.lng], { icon: customIcon })
           .addTo(mapRef.current!)
           .bindPopup(`
             <strong>${location.title}</strong>
             ${location.description ? `<br/>${location.description}` : ''}
+            ${buildingName ? `<br/><b>Building:</b> ${buildingName}` : ''}
             ${location.category ? `<br/><i>Category: ${location.category}</i>` : ''}
             ${location.isEvent ? '<br/><i>Event</i>' : '<br/><i>Meetup</i>'}
           `);
