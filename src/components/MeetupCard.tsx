@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -9,26 +10,79 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Meetup } from "@/types/meetup";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MeetupCardProps {
   meetup: Meetup;
 }
 
-// Define mockAttendees here for consistent display across all meetup cards
-const mockAttendees = [
-  { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
-  { id: "2", name: "Wade Warren", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", status: "going" },
-  { id: "3", name: "Esther Howard", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", status: "interested" },
-];
+interface Attendee {
+  id: string;
+  name: string;
+  avatar?: string;
+  status: "going" | "interested";
+}
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { joinMeetupLobby, joinedLobbies } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const [currentAttendees, setCurrentAttendees] = useState(meetup.attendees?.length || 0);
   const isLobbyFull = currentAttendees >= meetup.lobbySize;
+  
+  // Generate attendees list based on meetup ID to ensure each meetup has unique attendees
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  
+  // Initialize meetup-specific attendees
+  useEffect(() => {
+    // Get some variation based on meetup ID
+    const idSum = meetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+    
+    // Create a unique set of attendees based on the meetup ID
+    const baseAttendees: Attendee[] = [
+      { 
+        id: "1", 
+        name: "Jane Cooper", 
+        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+        status: idSum % 2 === 0 ? "going" : "interested" 
+      },
+      { 
+        id: "2", 
+        name: "Wade Warren", 
+        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+        status: idSum % 3 === 0 ? "interested" : "going" 
+      }
+    ];
+    
+    // Only add additional attendees for some meetups
+    if (idSum > 2) {
+      baseAttendees.push({ 
+        id: "3", 
+        name: "Esther Howard", 
+        avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
+        status: "interested" 
+      });
+    }
+    
+    // Check if current user is in the lobby
+    if (isJoinedLobby && user) {
+      // Add current user to attendees list
+      const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
+      
+      if (!userAlreadyInList) {
+        baseAttendees.push({
+          id: user.id,
+          name: user.email?.split('@')[0] || "Current User",
+          status: "going"
+        });
+      }
+    }
+    
+    setAttendees(baseAttendees);
+  }, [meetup.id, isJoinedLobby, user]);
   
   // Update the attendees count when the user joins
   useEffect(() => {
@@ -103,6 +157,24 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     // Immediately update the attendee count when joining
     setCurrentAttendees(prev => prev + 1);
     
+    // Update attendees list to include the current user
+    if (user) {
+      setAttendees(prev => {
+        // Check if user is already in the list
+        if (!prev.some(a => a.id === user.id)) {
+          return [
+            ...prev, 
+            {
+              id: user.id,
+              name: user.email?.split('@')[0] || "Current User",
+              status: "going"
+            }
+          ];
+        }
+        return prev;
+      });
+    }
+    
     toast({
       title: "Joined lobby",
       description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
@@ -164,28 +236,49 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                 <Users className="h-4 w-4 mr-1" />
                 <span>{currentAttendees}/{meetup.lobbySize}</span>
+                
+                {/* Show mini avatars for attendees */}
+                {attendees.length > 0 && (
+                  <div className="flex -space-x-2 ml-2">
+                    {attendees.slice(0, 2).map(attendee => (
+                      <Avatar key={attendee.id} className="h-5 w-5 border border-background">
+                        <AvatarImage src={attendee.avatar} />
+                        <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    ))}
+                    {attendees.length > 2 && (
+                      <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-xs">
+                        +{attendees.length - 2}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-2" align="end">
               <h4 className="font-medium text-sm mb-2">Attendees</h4>
               <div className="space-y-2">
-                {mockAttendees.map(attendee => (
-                  <div key={attendee.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={attendee.avatar} />
-                        <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">{attendee.name}</span>
+                {attendees.length > 0 ? (
+                  attendees.map(attendee => (
+                    <div key={attendee.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={attendee.avatar} />
+                          <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{attendee.name}</span>
+                      </div>
+                      <Badge 
+                        variant={attendee.status === "going" ? "default" : "outline"} 
+                        className="text-xs capitalize"
+                      >
+                        {attendee.status}
+                      </Badge>
                     </div>
-                    <Badge 
-                      variant={attendee.status === "going" ? "default" : "outline"} 
-                      className="text-xs capitalize"
-                    >
-                      {attendee.status}
-                    </Badge>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No attendees yet. Be the first!</p>
+                )}
               </div>
             </PopoverContent>
           </Popover>
