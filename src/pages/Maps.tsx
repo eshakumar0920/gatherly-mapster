@@ -18,6 +18,33 @@ interface MapLocation {
   description?: string;
 }
 
+// Define consistent locations for UTD buildings
+const UTD_LOCATIONS = {
+  'ECSW Building': { lat: 32.9866, lng: -96.7511 },
+  'Plinth': { lat: 32.9876, lng: -96.7485 },
+  'Student Union': { lat: 32.9899, lng: -96.7501 },
+  'Blackstone LaunchPad': { lat: 32.9864, lng: -96.7478 },
+  'SP/N Gallery': { lat: 32.9855, lng: -96.7501 },
+  'Recreation Center West': { lat: 32.9874, lng: -96.7525 },
+  'default': { lat: 32.9886, lng: -96.7479 } // UTD center as default
+};
+
+// Helper function to get location coordinates based on venue
+const getLocationCoordinates = (locationName: string) => {
+  // Try to match the location name with our predefined coordinates
+  for (const [key, value] of Object.entries(UTD_LOCATIONS)) {
+    if (locationName.includes(key)) {
+      return value;
+    }
+  }
+  
+  // If no match, add a small offset to the default location to avoid overlap
+  return {
+    lat: UTD_LOCATIONS.default.lat + (Math.random() - 0.5) * 0.001, // Very small offset
+    lng: UTD_LOCATIONS.default.lng + (Math.random() - 0.5) * 0.001
+  };
+};
+
 const Maps = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mapLocations, setMapLocations] = useState<MapLocation[]>([]);
@@ -40,21 +67,25 @@ const Maps = () => {
           
           if (!response.error && response.data && response.data.length > 0) {
             // Successfully got events from API
-            const apiLocations = response.data.map(event => ({
-              id: String(event.id),
-              title: event.title,
-              // Generate locations around UTD
-              lat: 32.9886 + (Math.random() - 0.5) * 0.01,
-              lng: -96.7479 + (Math.random() - 0.5) * 0.01,
-              description: event.description,
-              isEvent: true
-            }));
+            const apiLocations = response.data.map(event => {
+              const coords = getLocationCoordinates(event.location);
+              
+              return {
+                id: String(event.id),
+                title: event.title,
+                lat: coords.lat,
+                lng: coords.lng,
+                description: event.description,
+                isEvent: true
+              };
+            });
             
             setMapLocations(apiLocations);
             return;
           }
         } catch (apiError) {
           console.error("Error fetching from API, falling back to Supabase:", apiError);
+          console.log("Failed to get API events, using mock data");
         }
         
         // Try Supabase if API fails
@@ -65,15 +96,18 @@ const Maps = () => {
             .ilike(searchQuery ? 'title' : 'id', searchQuery ? `%${searchQuery}%` : '%');
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
-            const supabaseLocations = supabaseEvents.map(event => ({
-              id: String(event.id),
-              title: event.title,
-              // Generate locations around UTD
-              lat: 32.9886 + (Math.random() - 0.5) * 0.01,
-              lng: -96.7479 + (Math.random() - 0.5) * 0.01,
-              description: event.description || null,
-              isEvent: true
-            }));
+            const supabaseLocations = supabaseEvents.map(event => {
+              const coords = getLocationCoordinates(event.location);
+              
+              return {
+                id: String(event.id),
+                title: event.title,
+                lat: coords.lat,
+                lng: coords.lng,
+                description: event.description || null,
+                isEvent: true
+              };
+            });
             
             setMapLocations(supabaseLocations);
             return;
@@ -84,15 +118,18 @@ const Maps = () => {
         
         // Fall back to mock data if both API and Supabase fail
         const mockEvents = getEvents();
-        const mockLocations = mockEvents.map(event => ({
-          id: event.id,
-          title: event.title,
-          // Generate locations around UTD
-          lat: 32.9886 + (Math.random() - 0.5) * 0.01,
-          lng: -96.7479 + (Math.random() - 0.5) * 0.01,
-          description: event.description,
-          isEvent: true
-        }));
+        const mockLocations = mockEvents.map(event => {
+          const coords = getLocationCoordinates(event.location);
+          
+          return {
+            id: event.id,
+            title: event.title,
+            lat: coords.lat,
+            lng: coords.lng,
+            description: event.description,
+            isEvent: true
+          };
+        });
         
         setMapLocations(mockLocations);
       } catch (error) {
@@ -105,14 +142,18 @@ const Maps = () => {
         
         // Use mock data as last resort
         const events = getEvents();
-        const locations = events.map(event => ({
-          id: event.id,
-          title: event.title,
-          lat: 32.9886 + (Math.random() - 0.5) * 0.01,
-          lng: -96.7479 + (Math.random() - 0.5) * 0.01,
-          description: event.description,
-          isEvent: true
-        }));
+        const locations = events.map(event => {
+          const coords = getLocationCoordinates(event.location);
+          
+          return {
+            id: event.id,
+            title: event.title,
+            lat: coords.lat,
+            lng: coords.lng,
+            description: event.description,
+            isEvent: true
+          };
+        });
         
         setMapLocations(locations);
       } finally {

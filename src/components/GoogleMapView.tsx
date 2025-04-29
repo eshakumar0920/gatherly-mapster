@@ -7,7 +7,6 @@ import "leaflet/dist/leaflet.css";
 // Fix Leaflet icon issues
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { supabase } from "@/integrations/supabase/client";
 
 interface MapLocation {
   id: string;
@@ -31,32 +30,10 @@ const UTD_CENTER = {
 
 const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [allLocations, setAllLocations] = useState<MapLocation[]>(locations);
+  const [allLocations] = useState<MapLocation[]>(locations); // No need to change locations after initial load
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  // Fetch meetup locations from mock data or other source
-  useEffect(() => {
-    const fetchMeetupLocations = async () => {
-      try {
-        // Since we don't have an events table in the schema, we'll use hardcoded data or the locations prop
-        console.log('Using provided location data:', locations);
-        
-        // Mark event locations
-        const eventLocations = locations.map(location => ({
-          ...location,
-          isEvent: true
-        }));
-
-        // Set combined locations
-        setAllLocations(eventLocations);
-      } catch (err) {
-        console.error('Failed to fetch locations:', err);
-      }
-    };
-
-    fetchMeetupLocations();
-  }, [locations]);
+  const markersRef = useRef<{[key: string]: L.Marker}>({});
   
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -110,14 +87,13 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   useEffect(() => {
     if (mapRef.current && !isLoading) {
       // Clear existing markers
-      mapRef.current.eachLayer((layer) => {
-        if (layer instanceof L.Marker) {
-          mapRef.current?.removeLayer(layer);
-        }
+      Object.values(markersRef.current).forEach(marker => {
+        mapRef.current?.removeLayer(marker);
       });
+      markersRef.current = {};
       
       // Add new markers
-      allLocations.forEach(location => {
+      locations.forEach(location => {
         // Create different colored markers based on the location type
         const markerColor = location.isEvent ? "blue" : 
                            (location.category === "Sports" ? "green" : 
@@ -141,7 +117,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
           popupAnchor: [0, -45]
         });
 
-        L.marker([location.lat, location.lng], { icon: customIcon })
+        const marker = L.marker([location.lat, location.lng], { icon: customIcon })
           .addTo(mapRef.current!)
           .bindPopup(`
             <strong>${location.title}</strong>
@@ -149,9 +125,11 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
             ${location.category ? `<br/><i>Category: ${location.category}</i>` : ''}
             ${location.isEvent ? '<br/><i>Event</i>' : '<br/><i>Meetup</i>'}
           `);
+          
+        markersRef.current[location.id] = marker;
       });
     }
-  }, [allLocations, isLoading]);
+  }, [locations, isLoading]);
   
   return (
     <div className="w-full h-full relative rounded-lg overflow-hidden border border-gray-200">
