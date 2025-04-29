@@ -22,9 +22,9 @@ interface MapLocation {
 
 // Define precise UTD building locations
 const UTD_LOCATIONS = {
-  'ECSW Building': { lat: 32.9866, lng: -96.7511 },
-  'ECSW': { lat: 32.9866, lng: -96.7511 },
-  'ECSW Courtyard': { lat: 32.9866, lng: -96.7511 },
+  'ECSW Building': { lat: 32.98605047033769, lng: -96.75152260357687 }, // Updated coordinates
+  'ECSW': { lat: 32.98605047033769, lng: -96.75152260357687 }, // Updated coordinates
+  'ECSW Courtyard': { lat: 32.98605047033769, lng: -96.75152260357687 }, // Updated coordinates
   'Engineering and Computer Science West': { lat: 32.9866, lng: -96.7511 },
   'ECSS Building': { lat: 32.9879, lng: -96.7511 },
   'ECSS': { lat: 32.9879, lng: -96.7511 },

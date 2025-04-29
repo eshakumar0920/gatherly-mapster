@@ -32,7 +32,7 @@ const UTD_CENTER = {
 const BUILDING_LOCATIONS = {
   'ECSW': { lat: 32.9866, lng: -96.7511 },
   'ECSW Building': { lat: 32.98605047033769, lng: -96.75152260357687 },
-  'ECSW Courtyard': { lat: 32.9866, lng: -96.7511 },
+  'ECSW Courtyard': { lat: 32.98605047033769, lng: -96.75152260357687 },
   'Engineering and Computer Science West': { lat: 32.9866, lng: -96.7511 },
   'ECSN': { lat: 32.9884, lng: -96.7517 },
   'ECSN Building': { lat: 32.9884, lng: -96.7517 },
@@ -61,7 +61,7 @@ const BUILDING_LOCATIONS = {
 
 // Manual mapping for specific events
 const EVENT_LOCATION_OVERRIDES = {
-  "UTD Hackathon 2025": { lat: 32.9866, lng: -96.7511 }, // ECSW Courtyard exact location
+  "UTD Hackathon 2025": { lat: 32.98605047033769, lng: -96.75152260357687 }, // Updated ECSW Building exact location
   "Comet Concert Series": { lat: 32.9876, lng: -96.7485 }, // Plinth exact location
   "International Food Festival": { lat: 32.9899, lng: -96.7501 }, // Student Union exact location
   "Student Entrepreneur Showcase": { lat: 32.9864, lng: -96.7478 }, // Blackstone LaunchPad
