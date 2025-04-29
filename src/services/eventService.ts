@@ -1,7 +1,7 @@
 
 import { Event } from "@/components/EventCard";
 
-// Mock data for events with updated years
+// Mock data for events with updated years and improved location formatting
 export const events: Event[] = [
   {
     id: "1",
@@ -10,7 +10,7 @@ export const events: Event[] = [
     image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
     date: "Aug 15, 2025",
     time: "9:00 AM - 5:00 PM",
-    location: "ECSW Building, UTD",
+    location: "ECSW Courtyard, UTD",
     category: "Technology"
   },
   {

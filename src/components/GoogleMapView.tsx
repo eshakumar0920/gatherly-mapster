@@ -59,6 +59,16 @@ const BUILDING_LOCATIONS = {
   'Visitor Center': { lat: 32.9854, lng: -96.7513 }
 };
 
+// Manual mapping for specific events
+const EVENT_LOCATION_OVERRIDES = {
+  "UTD Hackathon 2025": { lat: 32.9866, lng: -96.7511 }, // ECSW Courtyard exact location
+  "Comet Concert Series": { lat: 32.9876, lng: -96.7485 }, // Plinth exact location
+  "International Food Festival": { lat: 32.9899, lng: -96.7501 }, // Student Union exact location
+  "Student Entrepreneur Showcase": { lat: 32.9864, lng: -96.7478 }, // Blackstone LaunchPad
+  "Student Art Showcase": { lat: 32.9855, lng: -96.7501 }, // SP/N Gallery
+  "Wellness Wednesday": { lat: 32.9874, lng: -96.7525 } // Recreation Center West
+};
+
 const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [allLocations, setAllLocations] = useState<MapLocation[]>([]); 
@@ -77,10 +87,15 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   };
   
   // Improved function to find matching building coordinates
-  const findBuildingCoordinates = (locationText: string): { lat: number, lng: number } | null => {
-    if (!locationText) return null;
+  const findBuildingCoordinates = (locationText: string, eventTitle?: string): { lat: number, lng: number } | null => {
+    if (!locationText && !eventTitle) return null;
     
-    // Direct match first
+    // First check if we have a direct override for this event title
+    if (eventTitle && EVENT_LOCATION_OVERRIDES[eventTitle as keyof typeof EVENT_LOCATION_OVERRIDES]) {
+      return EVENT_LOCATION_OVERRIDES[eventTitle as keyof typeof EVENT_LOCATION_OVERRIDES];
+    }
+    
+    // Direct match for location
     if (BUILDING_LOCATIONS[locationText as keyof typeof BUILDING_LOCATIONS]) {
       return BUILDING_LOCATIONS[locationText as keyof typeof BUILDING_LOCATIONS];
     }
@@ -117,6 +132,19 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       if (hasMatch) {
         return coords;
       }
+    }
+    
+    // Special hardcoded cases
+    if (normalizedLocation.includes("ecsw") || normalizedLocation.includes("engineering") && normalizedLocation.includes("west")) {
+      return BUILDING_LOCATIONS["ECSW Courtyard"];
+    }
+    
+    if (normalizedLocation.includes("ecss") || normalizedLocation.includes("engineering") && normalizedLocation.includes("south")) {
+      return BUILDING_LOCATIONS["ECSS Building"];
+    }
+    
+    if (normalizedLocation.includes("ecsn") || normalizedLocation.includes("engineering") && normalizedLocation.includes("north")) {
+      return BUILDING_LOCATIONS["ECSN Building"];
     }
     
     return null;
@@ -174,11 +202,21 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
   useEffect(() => {
     // Process locations to ensure consistent coordinates
     const processedLocations = locations.map(location => {
+      // First check direct event title overrides
+      if (EVENT_LOCATION_OVERRIDES[location.title as keyof typeof EVENT_LOCATION_OVERRIDES]) {
+        const overrideCoords = EVENT_LOCATION_OVERRIDES[location.title as keyof typeof EVENT_LOCATION_OVERRIDES];
+        return {
+          ...location,
+          lat: overrideCoords.lat,
+          lng: overrideCoords.lng
+        };
+      }
+      
       // Try to find building coordinates from title or description
       let buildingCoords = null;
       
       // Check title first
-      buildingCoords = findBuildingCoordinates(location.title);
+      buildingCoords = findBuildingCoordinates(location.title, location.title);
       if (buildingCoords) {
         return {
           ...location,
@@ -189,7 +227,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       
       // Check description if available
       if (location.description) {
-        buildingCoords = findBuildingCoordinates(location.description);
+        buildingCoords = findBuildingCoordinates(location.description, location.title);
         if (buildingCoords) {
           return {
             ...location,
@@ -203,7 +241,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       if (location.description && location.description.includes("Location:")) {
         const locationMatch = location.description.match(/Location:\s*([^,\.]+)/i);
         if (locationMatch && locationMatch[1]) {
-          buildingCoords = findBuildingCoordinates(locationMatch[1]);
+          buildingCoords = findBuildingCoordinates(locationMatch[1], location.title);
           if (buildingCoords) {
             return {
               ...location,
@@ -216,7 +254,7 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
       
       // If no match found and has a category, try to infer from category
       if (location.category) {
-        buildingCoords = findBuildingCoordinates(location.category);
+        buildingCoords = findBuildingCoordinates(location.category, location.title);
         if (buildingCoords) {
           return {
             ...location,
