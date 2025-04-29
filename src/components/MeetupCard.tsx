@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -30,34 +29,37 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { user } = useAuth();
   
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
-  const [currentAttendees, setCurrentAttendees] = useState(meetup.attendees?.length || 0);
-  const isLobbyFull = currentAttendees >= meetup.lobbySize;
-  
-  // Generate attendees list based on meetup ID to ensure each meetup has unique attendees
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   
-  // Initialize meetup-specific attendees
+  // Initialize meetup-specific attendees based on meetup ID
   useEffect(() => {
     // Get some variation based on meetup ID
     const idSum = meetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
     
     // Create a unique set of attendees based on the meetup ID
-    const baseAttendees: Attendee[] = [
-      { 
+    const baseAttendees: Attendee[] = [];
+    
+    // Add Jane Cooper for most meetups
+    if (idSum % 2 === 0) {
+      baseAttendees.push({ 
         id: "1", 
         name: "Jane Cooper", 
         avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
-        status: idSum % 2 === 0 ? "going" : "interested" 
-      },
-      { 
+        status: "going" 
+      });
+    }
+    
+    // Add Wade Warren for some meetups
+    if (idSum % 3 === 0) {
+      baseAttendees.push({ 
         id: "2", 
         name: "Wade Warren", 
         avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
-        status: idSum % 3 === 0 ? "interested" : "going" 
-      }
-    ];
+        status: "going" 
+      });
+    }
     
-    // Only add additional attendees for some meetups
+    // Only add Esther Howard for some meetups
     if (idSum > 2) {
       baseAttendees.push({ 
         id: "3", 
@@ -83,22 +85,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     
     setAttendees(baseAttendees);
   }, [meetup.id, isJoinedLobby, user]);
-  
-  // Update the attendees count when the user joins
-  useEffect(() => {
-    // If user has joined this meetup's lobby, increment the attendee count by 1 if not already counted
-    if (isJoinedLobby) {
-      setCurrentAttendees(prev => {
-        // Check if the initial value already includes this user's join
-        const initialAttendeeCount = meetup.attendees?.length || 0;
-        // If the previous count is just the initial count, add 1 for this user
-        return Math.max(prev, initialAttendeeCount + 1);
-      });
-    } else {
-      // Reset to the initial attendees count if not joined
-      setCurrentAttendees(meetup.attendees?.length || 0);
-    }
-  }, [isJoinedLobby, meetup.attendees, meetup.id]);
   
   const formattedDateTime = (() => {
     if (meetup.dateTime == null) {
@@ -143,7 +129,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const handleJoinMeetup = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (isLobbyFull) {
+    if (attendees.length >= meetup.lobbySize) {
       toast({
         title: "Lobby is full",
         description: `This meetup has reached its maximum capacity of ${meetup.lobbySize} attendees.`,
@@ -153,9 +139,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     }
     
     joinMeetupLobby(meetup.id);
-    
-    // Immediately update the attendee count when joining
-    setCurrentAttendees(prev => prev + 1);
     
     // Update attendees list to include the current user
     if (user) {
@@ -186,6 +169,9 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const handleViewDetails = () => {
     navigate(`/meetups/${meetup.id}`);
   };
+  
+  // Check if the lobby is full based on actual attendees array
+  const isLobbyFull = attendees.length >= meetup.lobbySize;
   
   return (
     <div className="border rounded-lg p-4 bg-card animate-fade-in" onClick={handleViewDetails}>
@@ -235,13 +221,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             <PopoverTrigger asChild>
               <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                 <Users className="h-4 w-4 mr-1" />
-                <span>{currentAttendees}/{meetup.lobbySize}</span>
+                <span>{attendees.length}/{meetup.lobbySize}</span>
                 
                 {/* Show mini avatars for attendees */}
                 {attendees.length > 0 && (
                   <div className="flex -space-x-2 ml-2">
-                    {attendees.slice(0, 2).map(attendee => (
-                      <Avatar key={attendee.id} className="h-5 w-5 border border-background">
+                    {attendees.slice(0, 2).map((attendee, index) => (
+                      <Avatar key={`${attendee.id}-${index}`} className="h-5 w-5 border border-background">
                         <AvatarImage src={attendee.avatar} />
                         <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
                       </Avatar>
@@ -259,8 +245,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               <h4 className="font-medium text-sm mb-2">Attendees</h4>
               <div className="space-y-2">
                 {attendees.length > 0 ? (
-                  attendees.map(attendee => (
-                    <div key={attendee.id} className="flex items-center justify-between">
+                  attendees.map((attendee, index) => (
+                    <div key={`${attendee.id}-${index}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={attendee.avatar} />
