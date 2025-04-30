@@ -1,6 +1,5 @@
-
 import { useNavigate } from "react-router-dom";
-import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
+import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
