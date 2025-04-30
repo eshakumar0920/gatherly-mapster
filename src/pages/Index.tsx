@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, Plus, X, Star } from "lucide-react"; // Added Star import
+import { Search, Plus, X, Star } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -153,11 +153,11 @@ const Index = () => {
         </h1>
       </div>
 
-      {/* Header */}
+      {/* Header - Updated with welcome message */}
       <header className="p-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">UTD Events</h1>
-          <p className="text-muted-foreground">Discover student-led events and meetups around campus</p>
+          <h1 className="text-2xl font-bold">Welcome to impulse</h1>
+          <p className="text-muted-foreground">Discover exciting UTD events and connect with fellow students</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full">
