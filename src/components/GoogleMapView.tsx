@@ -67,8 +67,8 @@ const EVENT_LOCATION_OVERRIDES = {
   "Student Entrepreneur Showcase": { lat: 32.98642345678901, lng: -96.74784567890123 }, // Blackstone LaunchPad with full precision
   "Student Art Showcase": { lat: 32.98553456789012, lng: -96.75012345678901 }, // SP/N Gallery with full precision
   "Wellness Wednesday": { lat: 32.98742345678901, lng: -96.75254567890123 }, // Recreation Center West with full precision
-  "UTD Symphony Orchestra Spring Concert": { lat: 32.988451582173454, lng: -96.74861335191952 }, // Added Symphony Orchestra event at Jonsson Performance Hall
-  "UTD Jazz Ensemble Spring Concert": { lat: 32.988451582173454, lng: -96.74861335191952 } // Added Jazz Ensemble event at Jonsson Performance Hall
+  "UTD Symphony Orchestra Spring Concert": { lat: 32.988451582173454, lng: -96.74861335191952 }, // Symphony Orchestra event at Jonsson Performance Hall
+  "UTD Jazz Ensemble Spring Concert": { lat: 32.988451582173454 + 0.00004, lng: -96.74861335191952 - 0.00004 } // Slightly offset Jazz Ensemble event for visibility
 };
 
 const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
