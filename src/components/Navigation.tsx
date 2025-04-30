@@ -10,9 +10,9 @@ const Navigation = () => {
   const userState = useUserStore();
   const [level, setLevel] = useState(1);
   
-  // Use local state to prevent rendering issues with Zustand
+  // Use local state to prevent rendering issues with Zustand and provide fallback
   useEffect(() => {
-    setLevel(userState.level || 1);
+    setLevel(userState.level !== undefined ? userState.level : 1);
   }, [userState.level]);
   
   const navItems = [

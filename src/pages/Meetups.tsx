@@ -12,7 +12,6 @@ import { categories } from "@/services/eventService";
 import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
-import { useMeetups } from "@/hooks/useMeetups";
 import { useLeveling } from "@/hooks/useLeveling";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -24,14 +23,14 @@ const Meetups = () => {
   const [localPoints, setLocalPoints] = useState(0);
   const [localLevel, setLocalLevel] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const { points, level, setUserId } = useUserStore();
+  const { points, level, setUserId, userId } = useUserStore();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   
   // Use local state for UI to prevent flickering
   useEffect(() => {
-    setLocalPoints(points || 0);
-    setLocalLevel(level || 1);
+    if (points !== undefined) setLocalPoints(points);
+    if (level !== undefined) setLocalLevel(level);
   }, [points, level]);
   
   // Pass the selectedCategory to the hook for filtering at the database level
@@ -46,14 +45,21 @@ const Meetups = () => {
 
   // Fetch user ID if logged in - with error handling
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchUserId = async () => {
+      // If userId is already set, no need to fetch again
+      if (userId) {
+        setIsLoading(false);
+        return;
+      }
+
       if (!user?.email) {
         setIsLoading(false);
         return;
       }
       
       try {
-        setIsLoading(true);
         console.log("Fetching user ID for email:", user.email);
         
         const { data, error } = await supabase
@@ -62,28 +68,45 @@ const Meetups = () => {
           .eq('email', user.email)
           .single();
           
-        if (error) {
+        if (error && isMounted) {
           console.error("Error fetching user ID:", error);
           toast({
             title: "Error loading profile",
             description: "Please try refreshing the page",
             variant: "destructive"
           });
-        } else if (data) {
+          
+          // Still proceed, even with error
+          setIsLoading(false);
+        } else if (data && isMounted) {
           console.log("Found user data:", data);
-          setUserId(data.id.toString());
-        } else {
+          if (data.id) {
+            await setUserId(data.id.toString());
+          }
+        } else if (isMounted) {
           console.log("No user found for email:", user.email);
         }
       } catch (err) {
-        console.error("Exception fetching user ID:", err);
+        if (isMounted) {
+          console.error("Exception fetching user ID:", err);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
     
-    fetchUserId();
-  }, [user, setUserId, toast]);
+    if (isLoggedIn) {
+      fetchUserId();
+    } else {
+      setIsLoading(false);
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user, setUserId, userId, isLoggedIn, toast]);
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value === "all" ? null : value);
@@ -106,11 +129,26 @@ const Meetups = () => {
     navigate("/maps");
   };
 
-  // Handle error display
-  if (meetupsError) {
+  // If the loading takes too long (more than 5 seconds), show a retry button
+  const [showRetry, setShowRetry] = useState(false);
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setShowRetry(true);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [isLoading]);
+
+  // Handle error display or excessive loading time
+  if (meetupsError || (showRetry && isLoading)) {
     return (
       <div className="p-4 text-center">
-        <p className="text-red-500 mb-4">Error loading meetups</p>
+        <p className="text-red-500 mb-4">
+          {meetupsError ? "Error loading meetups" : "Loading is taking longer than expected"}
+        </p>
         <Button onClick={() => window.location.reload()}>Retry</Button>
         <Navigation />
       </div>
