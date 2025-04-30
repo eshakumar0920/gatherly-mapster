@@ -75,6 +75,7 @@ export interface UserActions {
   joinMeetupLobby: (meetupId: string) => void;
   attendMeetup: (meetupId: string, points: number) => void;
   setUserId: (userId: string) => void;
+  syncProfile: () => Promise<void>;
 }
 
 export interface Friend {
