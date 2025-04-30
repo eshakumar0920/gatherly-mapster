@@ -51,7 +51,7 @@ const BUILDING_LOCATIONS = {
   'JSOM': { lat: 32.98694567890123, lng: -96.74564567890123 }, // Full precision coordinates
   'Naveen Jindal School of Management': { lat: 32.98694567890123, lng: -96.74564567890123 }, // Full precision coordinates
   'Residence Halls': { lat: 32.99224567890123, lng: -96.74894567890123 }, // Full precision coordinates
-  'Activity Center': { lat: 32.98742345678901, lng: -96.75244567890123 }, // Full precision coordinates
+  'Activity Center': { lat: 32.98531218774229, lng: -96.74931425397465 }, // Full precision coordinates
   'Arts & Humanities': { lat: 32.98553456789012, lng: -96.75012345678901 }, // Full precision coordinates
   'Natural Sciences': { lat: 32.98664567890123, lng: -96.74764567890123 }, // Full precision coordinates
   'Founders Building': { lat: 32.98754567890123, lng: -96.74914567890123 }, // Full precision coordinates
