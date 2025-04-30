@@ -223,7 +223,31 @@ const Index = () => {
             <ContentLoader message="Loading content..." />
           ) : (
             <>
-              {/* Meetups Section */}
+              {/* Events Section - Now first */}
+              <div className="pb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-lg font-semibold">Featured Events</h2>
+                  <Button variant="link" className="text-sm p-0" onClick={() => navigate('/events')}>
+                    See all
+                  </Button>
+                </div>
+                
+                {featuredEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {featuredEvents.slice(0, 3).map(event => (
+                      <div key={event.id} onClick={() => handleEventClick(event.id)} className="cursor-pointer">
+                        <EventCard event={event} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">
+                    No events found in this category
+                  </p>
+                )}
+              </div>
+
+              {/* Meetups Section - Now second */}
               <div className="pb-6">
                 <div className="flex justify-between items-center mb-2">
                   <h2 className="text-lg font-semibold">Student Meetups</h2>
@@ -253,30 +277,6 @@ const Index = () => {
                 ) : (
                   <p className="text-center text-muted-foreground py-4">
                     No meetups found in this category
-                  </p>
-                )}
-              </div>
-
-              {/* Events Section */}
-              <div className="pb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-lg font-semibold">Featured Events</h2>
-                  <Button variant="link" className="text-sm p-0" onClick={() => navigate('/events')}>
-                    See all
-                  </Button>
-                </div>
-                
-                {featuredEvents.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {featuredEvents.slice(0, 3).map(event => (
-                      <div key={event.id} onClick={() => handleEventClick(event.id)} className="cursor-pointer">
-                        <EventCard event={event} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    No events found in this category
                   </p>
                 )}
               </div>
