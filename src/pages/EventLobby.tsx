@@ -1,8 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, Check } from "lucide-react";
+import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +36,6 @@ const EventLobby = () => {
   const { attendMeetup } = useUserStore();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [organizer, setOrganizer] = useState<any>(null);
   
@@ -108,51 +106,6 @@ const EventLobby = () => {
     return attendee.status === attendeeView;
   });
 
-  const handleCheckIn = () => {
-    setIsCheckedIn(true);
-    
-    // Add to user's attended events
-    if (eventId && event?.points) {
-      attendMeetup(eventId, event.points);
-    }
-    
-    toast({
-      title: "Check-in successful!",
-      description: "You've checked in to this event",
-      variant: "default",
-    });
-  };
-  
-  const handleQRScan = () => {
-    setIsQRScannerOpen(true);
-  };
-  
-  const handleQRScanSuccess = (data: string) => {
-    setIsQRScannerOpen(false);
-    handleCheckIn();
-  };
-
-  if (!event) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium">
-            <span className="font-bold">i</span>mpulse
-          </h1>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <h2 className="text-xl mb-4">Event not found</h2>
-          <Button onClick={() => navigate("/events")} className="bg-primary text-primary-foreground">
-            Back to Events
-          </Button>
-        </div>
-        
-        <Navigation />
-      </div>
-    );
-  }
-
   const AttendeesList = () => (
     <div className="space-y-4">
       <div className="flex gap-2 mb-4">
@@ -199,6 +152,27 @@ const EventLobby = () => {
       </div>
     </div>
   );
+
+  if (!event) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="p-4 pt-6 w-full text-center">
+          <h1 className="text-2xl font-medium">
+            <span className="font-bold">i</span>mpulse
+          </h1>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <h2 className="text-xl mb-4">Event not found</h2>
+          <Button onClick={() => navigate("/events")} className="bg-primary text-primary-foreground">
+            Back to Events
+          </Button>
+        </div>
+        
+        <Navigation />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-20 min-h-screen bg-background">
@@ -319,23 +293,14 @@ const EventLobby = () => {
 
       <Separator />
 
-      <div className="p-4 grid grid-cols-2 gap-3">
-        {isCheckedIn ? (
-          <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-            <Check className="mr-2 h-4 w-4" />
-            Checked In
-          </Button>
-        ) : (
-          <Button 
-            className="w-full bg-primary text-primary-foreground"
-            onClick={handleQRScan}
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Check In
-          </Button>
-        )}
-        <Button variant="outline" className="w-full">
-          Interested
+      <div className="p-4">
+        <Button 
+          variant="default" 
+          className="w-full bg-primary text-primary-foreground"
+          onClick={() => setIsQRScannerOpen(true)}
+        >
+          <QrCode className="mr-2 h-4 w-4" />
+          View Event QR Code
         </Button>
       </div>
 
@@ -343,9 +308,22 @@ const EventLobby = () => {
       <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
         <DialogContent className="p-0 sm:max-w-md">
           <QRScanner 
-            onSuccess={handleQRScanSuccess}
+            onSuccess={(data) => {
+              setIsQRScannerOpen(false);
+              toast({
+                title: "QR Code Scanned",
+                description: `You earned ${event.points || 5} points!`,
+                variant: "default",
+              });
+              
+              // Award points to the user
+              if (eventId && event?.points) {
+                attendMeetup(eventId, event.points);
+              }
+            }}
             onCancel={() => setIsQRScannerOpen(false)}
             meetupId={eventId}
+            mode="display"
           />
         </DialogContent>
       </Dialog>

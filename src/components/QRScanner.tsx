@@ -76,10 +76,10 @@ const QRScanner = ({
     );
   }
   
-  // Scanner mode (default)
+  // Scanner mode (default) - with yellow background
   return (
-    <div className="flex flex-col items-center justify-center p-4 space-y-6">
-      <div className="relative w-full max-w-xs aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+    <div className="flex flex-col items-center justify-center p-4 space-y-6 bg-[#FEF7CD]">
+      <div className="relative w-full max-w-xs aspect-square bg-white/90 rounded-lg flex items-center justify-center overflow-hidden">
         {scanning ? (
           <div className="animate-pulse">
             <Camera className="h-16 w-16 text-primary opacity-50" />
