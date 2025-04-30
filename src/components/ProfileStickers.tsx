@@ -59,7 +59,7 @@ export const ProfileSticker: React.FC<ProfileStickerProps> = ({
 
 // This component shows the sticker selection dialog
 const ProfileStickers: React.FC = () => {
-  const { showStickers, setShowStickers, selectedSticker, setSelectedSticker } = useLevelUp();
+  const { showAvatars: showStickers, setShowAvatars: setShowStickers, selectedAvatar: selectedSticker, setSelectedAvatar: setSelectedSticker } = useLevelUp();
   const { level } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Dialog,
@@ -41,18 +40,32 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
   const IconComponent = sticker.icon;
   
   // Map size prop to actual Tailwind classes
-  const sizeClasses = {
+  const avatarSizes = {
     sm: 'h-8 w-8',
     md: 'h-12 w-12',
     lg: 'h-24 w-24'
   };
   
-  const iconSize = sizeClasses[size];
+  const stickerSizes = {
+    sm: 'h-4 w-4',
+    md: 'h-6 w-6',
+    lg: 'h-8 w-8'
+  };
+  
+  const avatarSize = avatarSizes[size];
+  const stickerSize = stickerSizes[size];
   
   return (
-    <div className={`${className} flex items-center justify-center`}>
-      <div className={`${sticker.color} rounded-full p-4 shadow-md ${iconSize}`}>
+    <div className={`${className} flex items-center relative`}>
+      <div className={`${sticker.color} rounded-full p-4 shadow-md ${avatarSize}`}>
         <IconComponent className="w-full h-full" fill="currentColor" />
+      </div>
+      
+      {/* Badge positioned to the side of the avatar as it was before */}
+      <div className="absolute -bottom-1 -left-1">
+        <div className={`bg-white rounded-full p-1 shadow-md ${sticker.color}`}>
+          <IconComponent className={stickerSize} fill="currentColor" />
+        </div>
       </div>
     </div>
   );
