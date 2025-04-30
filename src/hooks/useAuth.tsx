@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserStore } from "@/services/meetupService";
 
 // Use an environment variable with a fallback for the auth base URL
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5000'; 
@@ -16,85 +15,22 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  
-  const { toast } = useToast();
-  const setUserId = useUserStore(state => state.setUserId);
 
-  // Restore session from localStorage on mount and setup auth state listener
+  const { toast } = useToast();
+
+  // Restore session from localStorage on mount
   useEffect(() => {
-    // Set up auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setIsLoggedIn(true);
-          setUser(session.user);
-          setAccessToken(session.access_token);
-          if (session.user) {
-            setVerifiedEmail(session.user.email || "");
-            setIsEmailVerified(true);
-            
-            // Update user ID in the store
-            if (session.user.id) {
-              setUserId(session.user.id);
-            }
-          }
-        }
-        
-        if (event === 'SIGNED_OUT') {
-          setIsLoggedIn(false);
-          setUser(null);
-          setAccessToken(null);
-          setVerifiedEmail("");
-          setIsEmailVerified(false);
-        }
-      }
-    );
-    
-    // Check current session
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          setIsLoggedIn(true);
-          setUser(session.user);
-          setAccessToken(session.access_token);
-          if (session.user) {
-            setVerifiedEmail(session.user.email || "");
-            setIsEmailVerified(true);
-            
-            // Update user ID in the store
-            if (session.user.id) {
-              setUserId(session.user.id);
-            }
-          }
-        } else {
-          // Fallback to localStorage check
-          const token = window.localStorage.getItem("impulse_access_token");
-          const email = window.localStorage.getItem("impulse_user_email");
-          if (token && email) {
-            setIsLoggedIn(true);
-            setAccessToken(token);
-            setVerifiedEmail(email);
-            setUser({ email });
-            setIsEmailVerified(true); 
-          }
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error checking session:", error);
-        setIsLoading(false);
-      }
-    };
-    
-    checkSession();
-    
-    // Cleanup
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [setUserId]);
+    const token = window.localStorage.getItem("impulse_access_token");
+    const email = window.localStorage.getItem("impulse_user_email");
+    if (token && email) {
+      setIsLoggedIn(true);
+      setAccessToken(token);
+      setVerifiedEmail(email);
+      setUser({ email });
+      setIsEmailVerified(true); // No email_confirmed_at in custom backend, assume true after login
+    }
+    setIsLoading(false);
+  }, []);
 
   // Verify user token if needed
   const verify = async (token: string) => {
@@ -208,11 +144,6 @@ export const useAuth = () => {
           setUser(data.user);
           setAccessToken(data.session.access_token);
           
-          // Update user ID in store
-          if (data.user.id) {
-            setUserId(data.user.id);
-          }
-          
           return { success: true, data };
         } else {
           throw new Error("Invalid response from Supabase");
@@ -296,11 +227,6 @@ export const useAuth = () => {
         const { data, error: supabaseError } = await supabase.auth.signUp(signupData);
         
         if (supabaseError) throw supabaseError;
-        
-        // If user was created, update user ID in store
-        if (data.user && data.user.id) {
-          setUserId(data.user.id);
-        }
         
         // Sign up successful
         return { success: true, data };

@@ -301,45 +301,6 @@ export type Database = {
           },
         ]
       }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          email: string | null
-          id: string
-          level: number | null
-          name: string
-          points: number | null
-          selected_sticker: number | null
-          tags: string[] | null
-          updated_at: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: string | null
-          id: string
-          level?: number | null
-          name: string
-          points?: number | null
-          selected_sticker?: number | null
-          tags?: string[] | null
-          updated_at?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          level?: number | null
-          name?: string
-          points?: number | null
-          selected_sticker?: number | null
-          tags?: string[] | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       reward_box_tiers: {
         Row: {
           id: number

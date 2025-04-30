@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload, RefreshCcw } from "lucide-react";
+import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
@@ -39,7 +39,7 @@ const availableTags: TagType[] = [
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const { toast } = useToast();
   const { 
     points, 
@@ -51,17 +51,11 @@ const Profile = () => {
     tags, 
     selectedSticker,
     avatar,
-    userId,
-    isLoading,
-    isSyncing,
-    lastSyncTime,
     addFriend, 
     removeFriend, 
     updateTags,
     updateProfile,
     updateAvatar,
-    setUserId,
-    syncProfile
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
@@ -102,28 +96,10 @@ const Profile = () => {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(avatar || null);
   
-  // When component mounts, update the userId from auth
-  useEffect(() => {
-    if (user?.id && user.id !== userId) {
-      setUserId(user.id);
-    }
-  }, [user, userId, setUserId]);
-
-  // Update local form state when profile data changes
-  useEffect(() => {
-    setProfileForm({ name, email });
-    setSelectedTags(tags);
-    setAvatarUrl(avatar);
-  }, [name, email, tags, avatar]);
-  
   const pointsToNextLevel = level * 10;
   const progress = (points % 10) * 10;
   
-  const handleLogout = async () => {
-    // Sync profile one last time before logout
-    if (userId) {
-      await syncProfile();
-    }
+  const handleLogout = () => {
     logout();
     navigate("/auth");
   };
@@ -212,15 +188,18 @@ const Profile = () => {
       const objectUrl = URL.createObjectURL(file);
       setAvatarUrl(objectUrl);
       
-      // Update avatar in state
-      updateAvatar(objectUrl);
-      setUploadingAvatar(false);
-      setIsProfilePictureDialogOpen(false);
-      
-      toast({
-        title: "Profile picture updated!",
-        description: "Your profile picture has been successfully updated."
-      });
+      // Simulate upload with a delay
+      setTimeout(() => {
+        // Update avatar in state
+        updateAvatar(objectUrl);
+        setUploadingAvatar(false);
+        setIsProfilePictureDialogOpen(false);
+        
+        toast({
+          title: "Profile picture updated!",
+          description: "Your profile picture has been successfully updated."
+        });
+      }, 1000);
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast({
@@ -249,22 +228,6 @@ const Profile = () => {
       description: "Your privacy preferences have been saved."
     });
   };
-
-  const handleManualSync = async () => {
-    await syncProfile();
-    toast({
-      title: "Profile synced",
-      description: "Your profile has been synchronized with the server."
-    });
-  };
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
   
   return (
     <div className="pb-20">
@@ -335,22 +298,6 @@ const Profile = () => {
                 Edit
               </Button>
             </div>
-
-            {lastSyncTime && (
-              <div className="text-xs text-muted-foreground mt-2 flex items-center">
-                <span>Last synced: {new Date(lastSyncTime).toLocaleTimeString()}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 ml-1 p-0" 
-                  onClick={handleManualSync}
-                  disabled={isSyncing}
-                >
-                  <RefreshCcw className={`h-3 w-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span className="sr-only">Sync</span>
-                </Button>
-              </div>
-            )}
           </div>
           
           <div className="bg-primary/5 p-4 rounded-lg">
