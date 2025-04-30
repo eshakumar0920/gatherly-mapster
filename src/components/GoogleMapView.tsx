@@ -44,14 +44,14 @@ const BUILDING_LOCATIONS = {
   'Student Union': { lat: 32.98671581142176, lng: -96.74944890766317 }, // Updated Student Union coordinates
   'Blackstone LaunchPad': { lat: 32.98642345678901, lng: -96.74784567890123 }, // Full precision coordinates
   'SP/N Gallery': { lat: 32.98553456789012, lng: -96.75012345678901 }, // Full precision coordinates
-  'Recreation Center': { lat: 32.98473311381475, lng: -96.74957086651197 }, // Updated Activity Center coordinates
-  'Recreation Center West': { lat: 32.98473311381475, lng: -96.74957086651197 }, // Updated Activity Center coordinates
+  'Recreation Center': { lat: 32.984835483244666, lng: -96.74954270331894 }, // Updated Activity Center coordinates
+  'Recreation Center West': { lat: 32.984835483244666, lng: -96.74954270331894 }, // Updated Activity Center coordinates
   'McDermott Library': { lat: 32.98864567890123, lng: -96.74914567890123 }, // Full precision coordinates
   'School of Management': { lat: 32.98694567890123, lng: -96.74564567890123 }, // Full precision coordinates
   'JSOM': { lat: 32.98694567890123, lng: -96.74564567890123 }, // Full precision coordinates
   'Naveen Jindal School of Management': { lat: 32.98694567890123, lng: -96.74564567890123 }, // Full precision coordinates
   'Residence Halls': { lat: 32.99224567890123, lng: -96.74894567890123 }, // Full precision coordinates
-  'Activity Center': { lat: 32.98473311381475, lng: -96.74957086651197 }, // Updated Activity Center coordinates
+  'Activity Center': { lat: 32.984835483244666, lng: -96.74954270331894 }, // Updated Activity Center coordinates
   'Arts & Humanities': { lat: 32.98553456789012, lng: -96.75012345678901 }, // Full precision coordinates
   'Natural Sciences': { lat: 32.98664567890123, lng: -96.74764567890123 }, // Full precision coordinates
   'Founders Building': { lat: 32.98754567890123, lng: -96.74914567890123 }, // Full precision coordinates

@@ -62,8 +62,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "activity",
     title: "Activity Center",
-    lat: 32.98473311381475,
-    lng: -96.74957086651197,
+    lat: 32.984835483244666,
+    lng: -96.74954270331894,
     description: "Recreation center with gym and athletic facilities"
   },
   {
