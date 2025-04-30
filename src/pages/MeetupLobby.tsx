@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MapPin, Clock, User, Scan, UserCheck, Check, Trash2 } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, Scan, UserCheck, Check, Trash2, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -65,6 +65,7 @@ const MeetupLobby = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [isCreator, setIsCreator] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isQRDisplayOpen, setIsQRDisplayOpen] = useState<boolean>(false);
   
   useEffect(() => {
     // Check if the meetup is in attended meetups
@@ -437,16 +438,29 @@ const MeetupLobby = () => {
             <h1 className="text-lg font-semibold">Meetup Details</h1>
           </div>
           
-          {isCreator && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-red-500 hover:text-red-700 hover:bg-red-100"
-              onClick={() => setIsDeleteDialogOpen(true)}
-            >
-              <Trash2 className="h-5 w-5" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {isCreator && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-primary hover:bg-primary/10"
+                onClick={() => setIsQRDisplayOpen(true)}
+              >
+                <QrCode className="h-5 w-5" />
+              </Button>
+            )}
+            
+            {isCreator && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       
@@ -578,6 +592,18 @@ const MeetupLobby = () => {
             onCancel={() => setIsQRScannerOpen(false)}
             meetupId={meetupId}
             mode="scan"
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Display Dialog (for creators) */}
+      <Dialog open={isQRDisplayOpen} onOpenChange={setIsQRDisplayOpen}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <QRScanner
+            onSuccess={() => {}} // Not used in display mode
+            onCancel={() => setIsQRDisplayOpen(false)}
+            meetupId={meetupId}
+            mode="display"
           />
         </DialogContent>
       </Dialog>

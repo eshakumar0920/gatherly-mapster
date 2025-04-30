@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Camera, Ban, Check, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ interface QRScannerProps {
   onSuccess: (data: string) => void;
   onCancel: () => void;
   meetupId?: string;
-  mode?: "scan" | "display"; // New prop for switching between scanning and displaying
+  mode?: "scan" | "display"; // For switching between scanning and displaying
 }
 
 const QRScanner = ({ 
@@ -47,10 +48,10 @@ const QRScanner = ({
     }, 1500);
   };
   
-  // Display QR code mode
+  // Display QR code mode - with yellow background to match the app theme
   if (mode === "display" && qrData) {
     return (
-      <div className="flex flex-col items-center justify-center p-4 space-y-6">
+      <div className="flex flex-col items-center justify-center p-4 space-y-6 bg-[#FEF7CD]">
         <div className="relative w-full max-w-xs aspect-square bg-white rounded-lg flex items-center justify-center overflow-hidden p-4">
           {/* Display QR code image */}
           <div className="flex flex-col items-center space-y-4">
@@ -60,7 +61,7 @@ const QRScanner = ({
         </div>
         
         <p className="text-center text-sm text-muted-foreground">
-          Show this QR code to the meetup organizer to check in.
+          Show this QR code to attendees so they can check in to your meetup.
         </p>
         
         <Button
