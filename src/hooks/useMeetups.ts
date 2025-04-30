@@ -50,8 +50,26 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
-  // Helper function to get an illustrated avatar for a user - use the user's selected avatar
+  // Special avatars for specific people
+  const specialAvatars = {
+    "patrick": "https://api.dicebear.com/7.x/avataaars/svg?seed=Patrick&mouth=smile&eyes=happy&skinColor=f5d0c5&hairColor=a55728&accessoriesType=round&facialHairType=none&facialHairColor=a55728&clotheType=hoodie&clotheColor=3c4f5c&graphicType=bear&eyeType=happy&eyebrowType=default&mouthType=smile&top=shortHair",
+    "neethu": "https://api.dicebear.com/7.x/avataaars/svg?seed=Neethu&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=overall&clotheColor=d14836&graphicType=diamond&eyeType=happy&eyebrowType=default&mouthType=smile&top=longHair",
+    "esha": "https://api.dicebear.com/7.x/avataaars/svg?seed=Esha&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=624a2e&graphicType=skull&eyeType=happy&eyebrowType=default&mouthType=smile&top=longHair",
+    "sophia": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&mouth=smile&eyes=happy&skinColor=f5d0c5&hairColor=4a312c&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=5199e4&graphicType=pizza&eyeType=happy&eyebrowType=default&mouthType=smile&top=longHair"
+  };
+
+  // Helper function to get an illustrated avatar for a user with happy facial expressions
   const getIllustratedAvatar = (id: string, name?: string) => {
+    // Check for special avatars first
+    if (name) {
+      const lowerName = name.toLowerCase();
+      for (const [specialName, avatar] of Object.entries(specialAvatars)) {
+        if (lowerName.includes(specialName)) {
+          return avatar;
+        }
+      }
+    }
+    
     // If this is for the current user and they have a selected avatar
     if (avatar) {
       return avatar;
@@ -60,10 +78,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const avatars = [
       "/placeholder.svg",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily", 
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver"
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&mouth=smile&eyes=happy",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily&mouth=smile&eyes=happy", 
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight&mouth=smile&eyes=happy",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver&mouth=smile&eyes=happy"
     ];
     return avatars[charSum % avatars.length];
   };
@@ -294,14 +312,19 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
+  // Update joinMeetupLobby to accept string IDs
   const joinMeetupLobby = async (meetupId: string, userId: string): Promise<boolean> => {
     try {
+      // Convert string IDs to numbers for database operations
+      const numericMeetupId = parseInt(meetupId);
+      const numericUserId = parseInt(userId);
+      
       // First check if user is already in the lobby
       const { data: existingParticipant, error: checkError } = await supabase
         .from('participants')
         .select('*')
-        .eq('event_id', parseInt(meetupId))
-        .eq('user_id', parseInt(userId))
+        .eq('event_id', numericMeetupId)
+        .eq('user_id', numericUserId)
         .single();
       
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
@@ -318,10 +341,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         return true;
       }
       
-      // Insert participant - convert string IDs to numbers for the database
+      // Insert participant - using numeric IDs for the database
       const { error } = await supabase.from('participants').insert({
-        event_id: parseInt(meetupId),
-        user_id: parseInt(userId),
+        event_id: numericMeetupId,
+        user_id: numericUserId,
         joined_at: new Date().toISOString(),
         attendance_status: 'registered'
       });
@@ -355,6 +378,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
 
   const checkInToMeetup = async (meetupId: string, userId: string): Promise<boolean> => {
     try {
+      // Convert string IDs to numbers for database operations
+      const numericMeetupId = parseInt(meetupId);
+      const numericUserId = parseInt(userId);
+      
       // Find the meetup to get its points value based on lobby size
       const meetup = allMeetups.find(m => m.id === meetupId);
       const pointsToAward = meetup ? meetup.points : 3;
@@ -366,8 +393,8 @@ export const useMeetups = (selectedCategory: string | null = null) => {
           attendance_status: 'attended',
           xp_earned: pointsToAward // Use the points based on lobby size
         })
-        .eq('event_id', parseInt(meetupId))
-        .eq('user_id', parseInt(userId));
+        .eq('event_id', numericMeetupId)
+        .eq('user_id', numericUserId);
       
       if (error) {
         console.error("Error checking in to meetup:", error);
