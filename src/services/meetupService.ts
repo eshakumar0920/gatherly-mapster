@@ -1,202 +1,136 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { Meetup } from "@/types/meetup";
-import { format } from "date-fns";
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Friend, Tag, sampleFriends } from "./types";
 
-// Create valid dates for the mock meetups
-const createValidDate = (year: number, month: number, day: number, hour: number, minute: number) => {
-  try {
-    const date = new Date(year, month - 1, day, hour, minute);
-    if (isNaN(date.getTime())) {
-      return "Invalid date";
-    }
-    return format(date, "yyyy-MM-dd HH:mm:ss");
-  } catch (error) {
-    console.error("Error creating date:", error);
-    return "Invalid date";
-  }
-};
-
-// Student information with realistic avatars and names
-const students = [
-  {
-    name: "Olivia Martinez",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg"
-  },
-  {
-    name: "Ethan Chen",
-    avatar: "https://randomuser.me/api/portraits/men/2.jpg"
-  },
-  {
-    name: "Sophia Patel",
-    avatar: "https://randomuser.me/api/portraits/women/3.jpg"
-  },
-  {
-    name: "Lucas Williams",
-    avatar: "https://randomuser.me/api/portraits/men/4.jpg"
-  },
-  {
-    name: "Ava Rodriguez",
-    avatar: "https://randomuser.me/api/portraits/women/5.jpg"
-  }
-];
-
-// Mock data for meetups updated with student creators
+// Enhanced mock meetup data with a more professional appearance
 export const meetups: Meetup[] = [
   {
-    id: "1",
-    title: "Tech Innovators Meetup",
-    description: "Connect with fellow tech enthusiasts and discuss the latest innovations!",
-    dateTime: createValidDate(2025, 2, 15, 18, 0),
-    location: "ECSW Building, Room 2.412",
+    id: "101",
+    title: "Algorithm Study Group",
+    description: "Weekly meetup for computer science students to practice algorithm problems together and prepare for technical interviews.",
+    dateTime: "2025-05-10T14:00:00",
+    location: "ECSS Building, Room 2.306",
     points: 5,
-    createdBy: students[0].name,
-    creatorAvatar: students[0].avatar,
+    createdBy: "CS Student Association",
+    creatorAvatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 15,
+    category: "academic"
+  },
+  {
+    id: "102",
+    title: "Machine Learning Workshop",
+    description: "Hands-on session exploring neural networks and practical applications of ML with TensorFlow and PyTorch.",
+    dateTime: "2025-05-15T17:30:00",
+    location: "ECSN Building, Room 2.126",
+    points: 8,
+    createdBy: "AI Research Club",
+    creatorAvatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=200&h=200&q=80",
     lobbySize: 20,
-    category: "Technology",
-    attendees: []
+    category: "tech"
   },
   {
-    id: "2",
-    title: "Art & Design Networking",
-    description: "A casual meetup for artists, designers, and creative minds to share ideas and inspiration.",
-    dateTime: createValidDate(2025, 3, 22, 19, 30),
-    location: "SP/N Gallery Lounge",
-    points: 3,
-    createdBy: students[1].name,
-    creatorAvatar: students[1].avatar,
-    lobbySize: 15,
-    category: "Art",
-    attendees: []
-  },
-  {
-    id: "3",
-    title: "Entrepreneurship Workshop",
-    description: "Learn from successful student entrepreneurs and network with like-minded peers.",
-    dateTime: createValidDate(2025, 4, 10, 16, 0),
-    location: "Blackstone LaunchPad",
-    points: 7,
-    createdBy: students[2].name,
-    creatorAvatar: students[2].avatar,
-    lobbySize: 25,
-    category: "Business",
-    attendees: []
-  },
-  {
-    id: "4",
-    title: "Music Jam Session",
-    description: "Open mic and jam session for musicians of all skill levels.",
-    dateTime: createValidDate(2025, 5, 5, 20, 0),
-    location: "Student Union Music Room",
+    id: "103",
+    title: "Chess Tournament",
+    description: "Monthly chess competition open to players of all skill levels. Prizes for top performers!",
+    dateTime: "2025-05-12T18:00:00",
+    location: "Student Union, Galaxy Rooms",
     points: 4,
-    createdBy: students[3].name,
-    creatorAvatar: students[3].avatar,
-    lobbySize: 12,
-    category: "Music",
-    attendees: []
+    createdBy: "UTD Chess Club",
+    creatorAvatar: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&w=200&h=200&q=80", 
+    lobbySize: 32,
+    category: "competition"
   },
   {
-    id: "5",
-    title: "Wellness and Mindfulness",
-    description: "Guided meditation and stress-relief techniques for students.",
-    dateTime: createValidDate(2025, 6, 18, 17, 30),
-    location: "Recreation Center Yoga Studio",
+    id: "104",
+    title: "Ultimate Frisbee Game",
+    description: "Casual ultimate frisbee game on the soccer fields. No experience required, just come have fun!",
+    dateTime: "2025-05-08T16:00:00",
+    location: "Soccer Fields, UTD",
     points: 3,
-    createdBy: students[4].name,
-    creatorAvatar: students[4].avatar,
+    createdBy: "Recreational Sports",
+    creatorAvatar: "https://images.unsplash.com/photo-1603415526960-f7e0328c63b1?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 14,
+    category: "sports"
+  },
+  {
+    id: "105",
+    title: "Student Government Meeting",
+    description: "Open student government meeting discussing upcoming campus initiatives and funding opportunities.",
+    dateTime: "2025-05-14T15:30:00",
+    location: "Student Services Building, SSB 3.300",
+    points: 6,
+    createdBy: "Student Government",
+    creatorAvatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 25,
+    category: "community"
+  },
+  {
+    id: "106",
+    title: "Anime & Manga Club",
+    description: "Weekly gathering to watch anime, discuss manga, and share fan theories. Snacks provided!",
+    dateTime: "2025-05-09T19:00:00",
+    location: "McDermott Library, MC 2.524",
+    points: 3,
+    createdBy: "Anime Club",
+    creatorAvatar: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 20,
+    category: "entertainment"
+  },
+  {
+    id: "107",
+    title: "Resume Workshop",
+    description: "Get personalized feedback on your resume from career advisors and industry professionals.",
+    dateTime: "2025-05-11T13:00:00",
+    location: "JSOM Building, Room 1.118",
+    points: 7,
+    createdBy: "Career Center",
+    creatorAvatar: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=200&h=200&q=80",
     lobbySize: 15,
-    category: "Wellness",
-    attendees: []
+    category: "career"
+  },
+  {
+    id: "108",
+    title: "Game Development Hackathon",
+    description: "24-hour game development challenge. Form teams and create a playable game from scratch!",
+    dateTime: "2025-05-16T09:00:00",
+    location: "ECSW Building, Makerspace",
+    points: 10,
+    createdBy: "Game Dev Society",
+    creatorAvatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 30,
+    category: "gaming"
   }
 ];
 
-interface UserState {
-  joinedLobbies: string[] | null;
-  attendedMeetups: string[] | null;
+// UserStore with persist middleware to maintain state across page refreshes
+interface UserStore {
   points: number;
   level: number;
-  name: string;
-  email: string;
-  friends: Friend[];
-  tags: Tag[];
-  selectedSticker: number | null;
+  joinedLobbies: string[];
+  attendedMeetups: string[];
+  attendMeetup: (meetupId: string, pointsEarned: number) => void;
   joinMeetupLobby: (meetupId: string) => void;
-  attendMeetup: (meetupId: string, points: number) => void;
-  addFriend: (friend: Friend) => void;
-  removeFriend: (friendId: string) => void;
-  updateTags: (tags: Tag[]) => void;
-  updateProfile: (name: string, email: string) => void;
-  setSelectedSticker: (sticker: number | null) => void;
-  reset: () => void;
 }
 
-export const useUserStore = create<UserState>()(
+export const useUserStore = create<UserStore>()(
   persist(
     (set) => ({
-      joinedLobbies: [],
-      attendedMeetups: [],
       points: 0,
       level: 1,
-      name: "John Doe",
-      email: "johndoe@example.com",
-      friends: sampleFriends,
-      tags: ["Technology", "Gaming"],
-      selectedSticker: null,
+      joinedLobbies: [],
+      attendedMeetups: [],
+      attendMeetup: (meetupId: string, pointsEarned: number) =>
+        set((state) => ({
+          points: state.points + pointsEarned,
+          attendedMeetups: [...state.attendedMeetups, meetupId],
+        })),
       joinMeetupLobby: (meetupId: string) =>
         set((state) => ({
-          joinedLobbies: [...(state.joinedLobbies || []), meetupId],
+          joinedLobbies: [...state.joinedLobbies, meetupId],
         })),
-      attendMeetup: (meetupId: string, points: number) =>
-        set((state) => {
-          const newPoints = state.points + points;
-          const newLevel = Math.floor(newPoints / 10) + 1;
-          
-          return {
-            attendedMeetups: [...(state.attendedMeetups || []), meetupId],
-            points: newPoints,
-            level: newLevel,
-          };
-        }),
-      addFriend: (friend: Friend) =>
-        set((state) => ({
-          friends: [...state.friends, friend]
-        })),
-      removeFriend: (friendId: string) =>
-        set((state) => ({
-          friends: state.friends.filter(friend => friend.id !== friendId)
-        })),
-      updateTags: (tags: Tag[]) =>
-        set(() => ({
-          tags
-        })),
-      updateProfile: (name: string, email: string) =>
-        set(() => ({
-          name,
-          email
-        })),
-      setSelectedSticker: (sticker: number | null) =>
-        set(() => ({
-          selectedSticker: sticker
-        })),
-      reset: () => set({ 
-        joinedLobbies: [], 
-        attendedMeetups: [], 
-        points: 0,
-        level: 1,
-        name: "John Doe",
-        email: "johndoe@example.com",
-        friends: [],
-        tags: [],
-        selectedSticker: null
-      }),
     }),
     {
-      name: 'user-storage',
+      name: "user-storage",
     }
   )
 );
-
-export const getMeetups = () => {
-  return meetups;
-};

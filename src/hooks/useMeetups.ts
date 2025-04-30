@@ -29,6 +29,14 @@ export const useMeetups = (selectedCategory: string | null) => {
             description: "Could not load meetups from the database",
             variant: "destructive"
           });
+          
+          // Fall back to filtered sample meetups
+          const filteredMeetups = selectedCategory 
+            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : sampleMeetups;
+          
+          setAllMeetups(filteredMeetups);
+          setIsLoading(false);
           return;
         }
         
@@ -42,16 +50,21 @@ export const useMeetups = (selectedCategory: string | null) => {
             location: event.location,
             points: event.xp_reward || 3,
             createdBy: event.creator_name || "Anonymous",
-            creatorAvatar: undefined,
+            creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80", // Default avatar
             lobbySize: event.lobby_size || 5,
             category: event.category || "Other",
             attendees: []
           }));
           
-          // Combine sample meetups with database meetups
+          // Combine sample meetups with database meetups for a richer experience
+          // but prioritize database meetups for IDs that might overlap
+          const dbIds = new Set(databaseMeetups.map(m => m.id));
+          const nonDuplicateSampleMeetups = sampleMeetups.filter(m => !dbIds.has(m.id));
+          
+          // Apply category filter to sample meetups if needed
           const filteredSampleMeetups = selectedCategory 
-            ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
-            : sampleMeetups;
+            ? nonDuplicateSampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+            : nonDuplicateSampleMeetups;
           
           setAllMeetups([...databaseMeetups, ...filteredSampleMeetups]);
         } else {
@@ -64,7 +77,19 @@ export const useMeetups = (selectedCategory: string | null) => {
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
-        setAllMeetups(sampleMeetups); // Fallback to sample meetups on error
+        
+        // Fall back to sample meetups on error
+        const filteredSampleMeetups = selectedCategory 
+          ? sampleMeetups.filter(m => m.category?.toLowerCase() === selectedCategory.toLowerCase())
+          : sampleMeetups;
+          
+        setAllMeetups(filteredSampleMeetups);
+        
+        toast({
+          title: "Connection error",
+          description: "Using sample meetups while we try to reconnect",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }

@@ -1,3 +1,4 @@
+
 import { Event } from "@/components/EventCard";
 
 // Mock data for events with updated years and improved location formatting
@@ -9,8 +10,8 @@ export const events: Event[] = [
     image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
     date: "Aug 15, 2025",
     time: "9:00 AM - 5:00 PM",
-    location: "ECSW Courtyard, UTD",
-    category: "Technology"
+    location: "ECSW Building, UTD",
+    category: "Tech"
   },
   {
     id: "2",
@@ -19,7 +20,7 @@ export const events: Event[] = [
     image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=1200&q=80",
     date: "Jul 22-24, 2025",
     time: "7:00 PM - 10:00 PM",
-    location: "Plinth, UTD Campus",
+    location: "Plinth, UTD",
     category: "Music"
   },
   {
@@ -30,7 +31,7 @@ export const events: Event[] = [
     date: "Sep 10, 2025",
     time: "3:00 PM - 9:00 PM",
     location: "Student Union, UTD",
-    category: "Food"
+    category: "Cultural"
   },
   {
     id: "4",
@@ -39,8 +40,8 @@ export const events: Event[] = [
     image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80",
     date: "Oct 5, 2025",
     time: "10:00 AM - 4:00 PM",
-    location: "Blackstone LaunchPad, UTD",
-    category: "Business"
+    location: "JSOM Building, UTD",
+    category: "Career"
   },
   {
     id: "5",
@@ -49,8 +50,8 @@ export const events: Event[] = [
     image: "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1200&q=80",
     date: "Aug 3, 2025",
     time: "7:00 PM - 10:00 PM",
-    location: "SP/N Gallery, UTD",
-    category: "Art"
+    location: "Arts & Humanities Building, UTD",
+    category: "Arts"
   },
   {
     id: "6",
@@ -59,7 +60,7 @@ export const events: Event[] = [
     image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1200&q=80",
     date: "Sep 15, 2025",
     time: "5:00 PM - 7:00 PM",
-    location: "Recreation Center West, UTD",
+    location: "Recreation Center, UTD",
     category: "Wellness"
   }
 ];
