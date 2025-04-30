@@ -85,10 +85,15 @@ export const useUserStore = create<UserState & UserActions>()(
         if (userId) {
           set(state => ({ ...state, isSyncing: true }));
           try {
-            await supabase
+            console.log(`Updating profile for user ${userId} with name=${name}, email=${email}`);
+            const { error } = await supabase
               .from('profiles')
-              .update({ name, email })
+              .update({ name, email, updated_at: new Date().toISOString() })
               .eq('id', userId);
+
+            if (error) {
+              console.error('Error updating profile:', error);
+            }
 
             set(state => ({ 
               ...state, 
@@ -99,6 +104,8 @@ export const useUserStore = create<UserState & UserActions>()(
             console.error('Error updating profile:', error);
             set(state => ({ ...state, isSyncing: false }));
           }
+        } else {
+          console.warn("Cannot update profile: No user ID available");
         }
       },
       updateTags: async (tags: Tag[]) => {
@@ -108,10 +115,15 @@ export const useUserStore = create<UserState & UserActions>()(
         if (userId) {
           set(state => ({ ...state, isSyncing: true }));
           try {
-            await supabase
+            console.log(`Updating tags for user ${userId}:`, tags);
+            const { error } = await supabase
               .from('profiles')
-              .update({ tags })
+              .update({ tags, updated_at: new Date().toISOString() })
               .eq('id', userId);
+
+            if (error) {
+              console.error('Error updating tags:', error);
+            }
 
             set(state => ({ 
               ...state, 
@@ -122,6 +134,8 @@ export const useUserStore = create<UserState & UserActions>()(
             console.error('Error updating tags:', error);
             set(state => ({ ...state, isSyncing: false }));
           }
+        } else {
+          console.warn("Cannot update tags: No user ID available");
         }
       },
       updateAvatar: async (avatarUrl: string) => {
@@ -131,10 +145,15 @@ export const useUserStore = create<UserState & UserActions>()(
         if (userId) {
           set(state => ({ ...state, isSyncing: true }));
           try {
-            await supabase
+            console.log(`Updating avatar for user ${userId}`);
+            const { error } = await supabase
               .from('profiles')
-              .update({ avatar_url: avatarUrl })
+              .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
               .eq('id', userId);
+
+            if (error) {
+              console.error('Error updating avatar:', error);
+            }
 
             set(state => ({ 
               ...state, 
@@ -145,6 +164,8 @@ export const useUserStore = create<UserState & UserActions>()(
             console.error('Error updating avatar:', error);
             set(state => ({ ...state, isSyncing: false }));
           }
+        } else {
+          console.warn("Cannot update avatar: No user ID available");
         }
       },
       setSelectedSticker: async (stickerIndex: number | null) => {
@@ -154,10 +175,15 @@ export const useUserStore = create<UserState & UserActions>()(
         if (userId) {
           set(state => ({ ...state, isSyncing: true }));
           try {
-            await supabase
+            console.log(`Updating selected sticker for user ${userId}:`, stickerIndex);
+            const { error } = await supabase
               .from('profiles')
-              .update({ selected_sticker: stickerIndex })
+              .update({ selected_sticker: stickerIndex, updated_at: new Date().toISOString() })
               .eq('id', userId);
+
+            if (error) {
+              console.error('Error updating selected sticker:', error);
+            }
 
             set(state => ({ 
               ...state, 
@@ -168,6 +194,8 @@ export const useUserStore = create<UserState & UserActions>()(
             console.error('Error updating selected sticker:', error);
             set(state => ({ ...state, isSyncing: false }));
           }
+        } else {
+          console.warn("Cannot update selected sticker: No user ID available");
         }
       },
       joinMeetupLobby: (meetupId: string) => {
@@ -196,9 +224,11 @@ export const useUserStore = create<UserState & UserActions>()(
         }));
       },
       setUserId: async (userId: string) => {
+        console.log("Setting userId:", userId);
         set(state => ({ ...state, userId, isLoading: true }));
         
         try {
+          console.log("Fetching profile for userId:", userId);
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
@@ -212,6 +242,7 @@ export const useUserStore = create<UserState & UserActions>()(
           }
           
           if (profile) {
+            console.log("Profile found:", profile);
             set(state => ({
               ...state,
               name: profile.name || state.name,
@@ -225,8 +256,9 @@ export const useUserStore = create<UserState & UserActions>()(
               isLoading: false
             }));
           } else {
+            console.log("No profile found, creating new profile");
             const currentState = get();
-            await supabase
+            const { error: upsertError } = await supabase
               .from('profiles')
               .upsert({
                 id: userId,
@@ -236,8 +268,16 @@ export const useUserStore = create<UserState & UserActions>()(
                 tags: currentState.tags,
                 points: currentState.points,
                 level: currentState.level,
-                selected_sticker: currentState.selectedSticker
+                selected_sticker: currentState.selectedSticker,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
               });
+              
+            if (upsertError) {
+              console.error('Error creating profile:', upsertError);
+            } else {
+              console.log("Profile created successfully");
+            }
             
             set(state => ({ ...state, isLoading: false, lastSyncTime: Date.now() }));
           }
@@ -248,13 +288,17 @@ export const useUserStore = create<UserState & UserActions>()(
       },
       syncProfile: async () => {
         const { userId } = get();
-        if (!userId) return;
+        if (!userId) {
+          console.warn("Cannot sync profile: No user ID available");
+          return;
+        }
         
+        console.log("Syncing profile for userId:", userId);
         set(state => ({ ...state, isSyncing: true }));
         
         try {
           const currentState = get();
-          await supabase
+          const { error } = await supabase
             .from('profiles')
             .upsert({
               id: userId,
@@ -264,8 +308,15 @@ export const useUserStore = create<UserState & UserActions>()(
               tags: currentState.tags,
               points: currentState.points,
               level: currentState.level,
-              selected_sticker: currentState.selectedSticker
+              selected_sticker: currentState.selectedSticker,
+              updated_at: new Date().toISOString()
             });
+          
+          if (error) {
+            console.error('Error syncing profile:', error);
+          } else {
+            console.log("Profile synced successfully");
+          }
           
           set(state => ({ 
             ...state, 

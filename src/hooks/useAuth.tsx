@@ -19,6 +19,7 @@ export const useAuth = () => {
   
   const { toast } = useToast();
   const setUserId = useUserStore(state => state.setUserId);
+  const syncProfile = useUserStore(state => state.syncProfile);
 
   // Restore session from localStorage on mount and setup auth state listener
   useEffect(() => {
@@ -35,7 +36,8 @@ export const useAuth = () => {
             
             // Update user ID in the store
             if (session.user.id) {
-              setUserId(session.user.id);
+              console.log("Setting user ID in store:", session.user.id);
+              await setUserId(session.user.id);
             }
           }
         }
@@ -63,9 +65,10 @@ export const useAuth = () => {
             setVerifiedEmail(session.user.email || "");
             setIsEmailVerified(true);
             
-            // Update user ID in the store
+            // Update user ID in the store and wait for it to complete
             if (session.user.id) {
-              setUserId(session.user.id);
+              console.log("Setting user ID in store on init:", session.user.id);
+              await setUserId(session.user.id);
             }
           }
         } else {
@@ -316,6 +319,9 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
+    // Make sure to sync profile before logging out
+    await syncProfile();
+    
     setIsLoggedIn(false);
     setIsEmailVerified(false);
     setVerifiedEmail("");
