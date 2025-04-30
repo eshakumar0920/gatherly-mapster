@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ProfileSticker } from "@/components/ProfileStickers";
 import ProfileStickers from "@/components/ProfileStickers";
+import ProfileAvatars from "@/components/ProfileAvatars";
+import { ProfileAvatar } from "@/components/ProfileAvatars";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -151,7 +153,7 @@ const Profile = () => {
 
   const { setShowAvatars } = useLevelUp();
 
-  const openStickerSelector = () => {
+  const openAvatarSelector = () => {
     setShowAvatars(true);
   };
 
@@ -189,25 +191,27 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="relative cursor-pointer" onClick={openStickerSelector}>
-              <Avatar className="h-24 w-24 bg-green-200 mb-4">
+            <div className="relative cursor-pointer mb-4" onClick={openAvatarSelector}>
+              {/* Replace the Avatar with ProfileAvatar component */}
+              <Avatar className="h-24 w-24">
                 <AvatarFallback className="bg-green-200 text-green-600 text-2xl">
                   {name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
+              
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openStickerSelector();
+                  openAvatarSelector();
                 }}
               >
                 <User className="h-4 w-4" />
               </Button>
               
-              {/* Add the level sticker beside the profile picture */}
+              {/* Keep the level sticker beside the profile picture */}
               <ProfileSticker 
                 level={level} 
                 selectedSticker={selectedSticker} 
@@ -329,7 +333,7 @@ const Profile = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={openStickerSelector}
+                onClick={openAvatarSelector}
               >
                 <User className="mr-2 h-4 w-4" />
                 Change Avatar
@@ -474,7 +478,7 @@ const Profile = () => {
         initialSettings={privacySettings}
       />
 
-      <ProfileStickers />
+      <ProfileAvatars />
 
       <Navigation />
     </div>
