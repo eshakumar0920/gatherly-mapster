@@ -16,6 +16,12 @@ const predefinedAvatars = {
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia&gender=female&mouth=smile&skinColor=black&eyes=happy",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella&gender=female&mouth=smile&skinColor=brown&eyes=happy",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe&gender=female&mouth=smile&skinColor=tanned&eyes=happy",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya&gender=female&mouth=smile&skinColor=yellow&eyes=happy",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Ava&gender=female&mouth=smile&skinColor=light&eyes=happy&hairColor=black",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Mia&gender=female&mouth=smile&skinColor=brown&eyes=happy&hairColor=blonde",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Aria&gender=female&mouth=smile&skinColor=dark&eyes=happy&hairColor=auburn",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Layla&gender=female&mouth=smile&skinColor=tanned&eyes=happy&topType=longHairCurly",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Lexi&gender=female&mouth=smile&skinColor=black&eyes=happy&topType=longHairFro"
   ],
   men: [
     // Men with different skin tones and features
@@ -25,6 +31,12 @@ const predefinedAvatars = {
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Liam&gender=male&mouth=smile&skinColor=black&eyes=happy",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=William&gender=male&mouth=smile&skinColor=brown&eyes=happy",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Omar&gender=male&mouth=smile&skinColor=tanned&eyes=happy",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Raj&gender=male&mouth=smile&skinColor=yellow&eyes=happy&topType=turban",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Miguel&gender=male&mouth=smile&skinColor=brown&eyes=happy&facialHairType=beardMajestic",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Chen&gender=male&mouth=smile&skinColor=light&eyes=happy&topType=shortHairShortFlat",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Amir&gender=male&mouth=smile&skinColor=tanned&eyes=happy&facialHairType=moustacheFancy",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jamal&gender=male&mouth=smile&skinColor=dark&eyes=happy&topType=shortHairDreads01",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Kenji&gender=male&mouth=smile&skinColor=yellow&eyes=happy&topType=shortHairSides"
   ],
   nonbinary: [
     // Non-binary/gender neutral options with different skin tones
@@ -34,6 +46,12 @@ const predefinedAvatars = {
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Robin&mouth=smile&skinColor=black&eyes=happy",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Casey&mouth=smile&skinColor=brown&eyes=happy",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Morgan&mouth=smile&skinColor=tanned&eyes=happy",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Avery&mouth=smile&skinColor=yellow&eyes=happy&topType=shortHairFrizzle",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Quinn&mouth=smile&skinColor=light&eyes=happy&clotheType=overall",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Riley&mouth=smile&skinColor=brown&eyes=happy&accessoriesType=roundGlasses",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Blake&mouth=smile&skinColor=dark&eyes=happy&topType=shortHairShaggyMullet",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jamie&mouth=smile&skinColor=tanned&eyes=happy&topType=longhairBob",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Dakota&mouth=smile&skinColor=black&eyes=happy&topType=hatWinter"
   ]
 };
 
