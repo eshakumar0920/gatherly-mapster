@@ -3,7 +3,7 @@ import React from "react";
 import { format, parseISO, isValid } from "date-fns";
 import { Meetup } from "@/types/meetup";
 import { Card } from "@/components/ui/card";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar } from "lucide-react";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -63,7 +63,7 @@ const formatDate = (meetup: Meetup): string => {
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200">
+    <Card className="mb-3 overflow-hidden">
       <div className="p-4">
         <div className="flex justify-between items-start">
           <div>
@@ -83,26 +83,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       </div>
       
       <div className="px-4 pb-4">
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span>{formatDate(meetup)}</span>
-          </div>
-          
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span>{meetup.location}</span>
-          </div>
-          
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Users className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span>{meetup.lobbySize} participants</span>
-          </div>
+        <div className="flex items-center text-sm text-muted-foreground mt-2">
+          <Calendar className="h-4 w-4 mr-1" />
+          {formatDate(meetup)}
         </div>
-        
         <div className="flex items-center justify-between mt-3">
-          <span className="text-xs text-primary font-medium">
-            {meetup.points} XP
+          <span className="text-sm">
+            {meetup.location}
           </span>
           <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
             {meetup.category || "Meetup"}
@@ -115,3 +102,4 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
 
 export default MeetupCard;
 export { formatDate };
+
