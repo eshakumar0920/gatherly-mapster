@@ -112,7 +112,7 @@ const Profile = () => {
         // For seo200002@utdallas.edu specifically assign a full name
         let fullName = "";
         if (currentUser.email === "seo200002@utdallas.edu") {
-          fullName = "Soojin Oh";
+          fullName = "Sophia O'Malley"; // Corrected name
         } else {
           // Extract name from metadata if available
           fullName = currentUser.user_metadata?.name || name || "User";
