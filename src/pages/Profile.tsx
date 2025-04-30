@@ -30,6 +30,7 @@ import { useLevelUp } from "@/contexts/LevelUpContext";
 import { ProfileSticker } from "@/components/ProfileStickers";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
+import AvatarSelector from "@/components/profile/AvatarSelector";
 import { getAvatarForUser } from "@/components/MeetupCard"; // Import the avatar generator function
 
 const availableTags: TagType[] = [
@@ -66,6 +67,7 @@ const Profile = () => {
   const [isProfilePictureDialogOpen, setIsProfilePictureDialogOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
   const [isPrivacySettingsOpen, setIsPrivacySettingsOpen] = useState(false);
+  const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
@@ -218,6 +220,16 @@ const Profile = () => {
       });
       setUploadingAvatar(false);
     }
+  };
+  
+  const handleSelectAvatar = (selectedAvatarUrl: string) => {
+    setAvatarUrl(selectedAvatarUrl);
+    updateAvatar(selectedAvatarUrl);
+    
+    toast({
+      title: "Avatar updated!",
+      description: "Your profile picture has been updated successfully."
+    });
   };
   
   const handleSaveNotificationSettings = (settings: NotificationSettingsType) => {
@@ -404,10 +416,18 @@ const Profile = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start" 
+                onClick={() => setIsAvatarSelectorOpen(true)}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Choose Avatar
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
                 onClick={() => setIsProfilePictureDialogOpen(true)}
               >
                 <Upload className="mr-2 h-4 w-4" />
-                Change Profile Picture
+                Upload Profile Picture
               </Button>
               <Button 
                 variant="outline" 
@@ -577,6 +597,13 @@ const Profile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AvatarSelector
+        open={isAvatarSelectorOpen}
+        onOpenChange={setIsAvatarSelectorOpen}
+        onSelectAvatar={handleSelectAvatar}
+        currentAvatar={avatarUrl}
+      />
 
       <NotificationSettings 
         open={isNotificationSettingsOpen}
