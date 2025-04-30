@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export type Tag = 
   | "Technology" 
@@ -18,6 +19,30 @@ export type Tag =
   | "Travel" 
   | "Academic";
 
+// Add missing MeetupType definition
+export interface MeetupType {
+  id: string;
+  title: string;
+  description: string;
+  dateTime: string;
+  location: string;
+  points: number;
+  createdBy: string;
+  creatorAvatar?: string;
+  lobbySize: number;
+  category?: string;
+}
+
+// Add EventType for compatibility
+export interface EventType {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  category?: string;
+}
+
 export interface UserActions {
   addAttendedMeetup: (meetup: MeetupType) => void;
   addFriend: (friend: Friend) => void;
@@ -25,6 +50,11 @@ export interface UserActions {
   updateProfile: (name: string, email: string) => void;
   updateTags: (tags: Tag[]) => void;
   updateAvatar: (avatarUrl: string) => void;
+  // Add missing actions
+  setSelectedSticker: (stickerIndex: number | null) => void;
+  joinMeetupLobby: (meetupId: string) => void;
+  attendMeetup: (meetupId: string, points: number) => void;
+  setUserId: (userId: string) => void;
 }
 
 export interface Friend {

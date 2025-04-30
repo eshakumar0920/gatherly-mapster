@@ -1,6 +1,7 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { EventType, MeetupType, Tag, Friend, UserActions } from './types';
+import { MeetupType, Tag, Friend, UserActions } from './types';
 
 interface UserState {
   name: string;
@@ -12,6 +13,9 @@ interface UserState {
   tags: Tag[];
   selectedSticker: number | null;
   avatar: string | null;
+  // Add missing state properties
+  userId: string | null;
+  joinedLobbies: string[];
 }
 
 export const useUserStore = create<UserState & UserActions>()(
@@ -26,6 +30,9 @@ export const useUserStore = create<UserState & UserActions>()(
       tags: ["Technology", "Academic", "Gaming"],
       selectedSticker: null,
       avatar: null,
+      // Initialize new state properties
+      userId: null,
+      joinedLobbies: [],
       addAttendedMeetup: (meetup: MeetupType) => {
         set((state) => ({
           ...state,
@@ -69,6 +76,40 @@ export const useUserStore = create<UserState & UserActions>()(
         set((state) => ({
           ...state,
           selectedSticker: stickerIndex
+        }));
+      },
+      // Add new actions
+      joinMeetupLobby: (meetupId: string) => {
+        set((state) => ({
+          ...state,
+          joinedLobbies: [...state.joinedLobbies, meetupId]
+        }));
+      },
+      attendMeetup: (meetupId: string, points: number) => {
+        set((state) => {
+          const meetup: MeetupType = {
+            id: meetupId,
+            title: "Attended Meetup",
+            description: "Attended via check-in",
+            dateTime: new Date().toISOString(),
+            location: "UTD",
+            points: points,
+            createdBy: "System",
+            lobbySize: 0
+          };
+          
+          return {
+            ...state,
+            attendedMeetups: [...state.attendedMeetups, meetup],
+            points: state.points + points,
+            level: Math.floor((state.points + points) / 10)
+          };
+        });
+      },
+      setUserId: (userId: string) => {
+        set((state) => ({
+          ...state,
+          userId
         }));
       },
     }),
