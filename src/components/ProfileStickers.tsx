@@ -59,7 +59,7 @@ export const ProfileSticker: React.FC<ProfileStickerProps> = ({
 
 // This component shows the sticker selection dialog
 const ProfileStickers: React.FC = () => {
-  const { showStickers, setShowStickers, selectedSticker, setSelectedSticker } = useLevelUp();
+  const { showAvatars, setShowAvatars, selectedAvatar, setSelectedAvatar } = useLevelUp();
   const { level } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -67,8 +67,8 @@ const ProfileStickers: React.FC = () => {
   const availableStickers = stickers.filter(sticker => sticker.level <= level);
   
   const handleSelectSticker = (index: number) => {
-    setSelectedSticker(index);
-    setShowStickers(false);
+    setSelectedAvatar(index);
+    setShowAvatars(false);
     
     toast({
       title: "Sticker selected!",
@@ -77,12 +77,12 @@ const ProfileStickers: React.FC = () => {
   };
 
   const goToBadgesPage = () => {
-    setShowStickers(false);
+    setShowAvatars(false);
     navigate('/badges');
   };
   
   return (
-    <Dialog open={showStickers} onOpenChange={setShowStickers}>
+    <Dialog open={showAvatars} onOpenChange={setShowAvatars}>
       <DialogContent className="max-w-md max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Choose Your Profile Sticker</DialogTitle>
@@ -111,7 +111,7 @@ const ProfileStickers: React.FC = () => {
                       ${isUnlocked 
                         ? `${sticker.color} cursor-pointer hover:bg-muted transition-colors` 
                         : 'opacity-40 bg-muted/50 cursor-not-allowed'}
-                      ${selectedSticker === index ? 'ring-2 ring-primary' : ''}
+                      ${selectedAvatar === index ? 'ring-2 ring-primary' : ''}
                     `}
                   >
                     <IconComponent 
@@ -134,7 +134,7 @@ const ProfileStickers: React.FC = () => {
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowStickers(false)}>
+          <Button variant="outline" onClick={() => setShowAvatars(false)}>
             Close
           </Button>
           <Button variant="secondary" onClick={goToBadgesPage}>
