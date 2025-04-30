@@ -111,8 +111,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "jonsson_jazz", // Added a new ID for the Jazz Ensemble location
     title: "Jonsson Performance Hall (Jazz)",
-    lat: 32.988451582173454 + 0.00004,
-    lng: -96.74861335191952 - 0.00004,
+    lat: 32.988451582173454 + 0.0001,
+    lng: -96.74861335191952 - 0.0001,
     description: "Performance venue for jazz ensemble concerts"
   },
   {
