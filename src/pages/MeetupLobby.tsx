@@ -1,137 +1,68 @@
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
+
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Calendar, Clock, MapPin, QrCode, Check } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, Check, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import Navigation from "@/components/Navigation";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useUserStore } from "@/services/meetupService";
-import { useIsMobile } from "@/hooks/use-mobile";
-import QRScanner from "@/components/QRScanner";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useMeetupService } from "@/services/flaskService";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { format, parseISO, isValid } from "date-fns";
+import { Meetup } from "@/types/meetup";
 
-interface Meetup {
-  id: string;
-  title: string;
-  description: string;
-  dateTime: string;
-  location: string;
-  points: number;
-  createdBy: string;
-  creatorAvatar?: string;
-  lobbySize: number;
-  category?: string;
-  attendees?: string[];
-}
-
-interface Attendee {
-  id: string;
-  name: string;
-  avatar?: string;
-  status: "going" | "interested";
-}
+// Sample attendees data
+const sampleAttendees = [
+  {
+    id: "1",
+    name: "Alex Johnson",
+    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=200&h=200&q=80",
+    status: "going" as const
+  },
+  {
+    id: "2",
+    name: "Maria Garcia",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
+    status: "going" as const
+  }
+];
 
 const MeetupLobby = () => {
-  const { meetupId } = useParams();
+  const { meetupId } = useParams<{ meetupId: string }>();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { toast } = useToast();
-  const [meetup, setMeetup] = useState<Meetup | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [isJoinedLobby, setIsJoinedLobby] = useState(false);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
-  const { attendMeetup, joinMeetupLobby: joinLocalLobby, joinedLobbies, attendedMeetups } = useUserStore();
-  const { fetchMeetupById, checkInToMeetup } = useMeetupService();
-  const { user } = useAuth();
+  const { 
+    name: userName, 
+    avatar: userAvatar, 
+    attendMeetup, 
+    joinMeetupLobby, 
+    attendedMeetups,
+    joinedLobbies, 
+    userId
+  } = useUserStore();
   
-  // Generate dynamic attendees based on meetup ID
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [meetup, setMeetup] = useState<Meetup | null>(null);
+  const [attendees, setAttendees] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAttending, setIsAttending] = useState<boolean>(false);
+  const [isJoined, setIsJoined] = useState<boolean>(false);
+  const [checkingIn, setCheckingIn] = useState<boolean>(false);
   
   useEffect(() => {
-    const fetchMeetupData = async () => {
-      setLoading(true);
+    // Check if the meetup is in attended meetups
+    const hasAttended = attendedMeetups.some(m => m.id === meetupId);
+    setIsAttending(hasAttended);
+    
+    // Check if joined the lobby
+    const hasJoined = joinedLobbies?.includes(meetupId || "");
+    setIsJoined(hasJoined);
+    
+    // Fetch meetup details from database or use mock data
+    const fetchMeetupDetails = async () => {
+      setIsLoading(true);
       try {
-        if (!meetupId) {
-          toast({
-            title: "Error",
-            description: "Invalid meetup ID",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        const flaskMeetup = await fetchMeetupById(meetupId);
-        
-        if (flaskMeetup) {
-          setMeetup(flaskMeetup as unknown as Meetup);
-          setIsJoinedLobby(joinedLobbies?.includes(flaskMeetup.id));
-          setIsCheckedIn(attendedMeetups?.includes(flaskMeetup.id));
-          
-          // Generate attendees based on meetup ID
-          const idSum = flaskMeetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
-          
-          const baseAttendees: Attendee[] = [];
-          
-          // Add Jane Cooper for most meetups
-          if (idSum % 2 === 0) {
-            baseAttendees.push({ 
-              id: "1", 
-              name: "Jane Cooper", 
-              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
-              status: "going" 
-            });
-          }
-          
-          // Add Wade Warren for some meetups
-          if (idSum % 3 === 0) {
-            baseAttendees.push({ 
-              id: "2", 
-              name: "Wade Warren", 
-              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
-              status: "going" 
-            });
-          }
-          
-          // Only add Esther Howard for some meetups
-          if (idSum > 2) {
-            baseAttendees.push({ 
-              id: "3", 
-              name: "Esther Howard", 
-              avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
-              status: "interested" 
-            });
-          }
-          
-          // Check if current user is in the lobby
-          if (isJoinedLobby && user) {
-            // Add current user to attendees list
-            const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
-            
-            if (!userAlreadyInList) {
-              baseAttendees.push({
-                id: user.id,
-                name: user.email?.split('@')[0] || "Current User",
-                status: "going"
-              });
-            }
-          }
-          
-          setAttendees(baseAttendees);
-          setLoading(false);
-          return;
-        }
-        
-        try {
+        if (meetupId) {
           const { data, error } = await supabase
             .from('events')
             .select('*')
@@ -139,540 +70,454 @@ const MeetupLobby = () => {
             .single();
             
           if (error) {
-            console.error("Supabase error:", error);
-            const mockMeetup: Meetup = {
-              id: meetupId,
-              title: `Meetup ${meetupId}`,
-              description: "This is a mock meetup since the events table doesn't exist in Supabase yet",
-              dateTime: format(new Date(), "MM/dd/yyyy h:mm a"),
-              location: "UTD Campus",
-              points: 3,
-              createdBy: "Student",
-              creatorAvatar: "",
-              lobbySize: 5,
-              attendees: []
-            };
-
-            setMeetup(mockMeetup);
-            setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
-            setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
-            
-            // Generate attendees based on meetup ID
-            const idSum = meetupId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
-            
-            const baseAttendees: Attendee[] = [];
-            
-            // Add Jane Cooper for most meetups
-            if (idSum % 2 === 0) {
-              baseAttendees.push({ 
-                id: "1", 
-                name: "Jane Cooper", 
-                avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
-                status: "going" 
-              });
-            }
-            
-            // Add Wade Warren for some meetups
-            if (idSum % 3 === 0) {
-              baseAttendees.push({ 
-                id: "2", 
-                name: "Wade Warren", 
-                avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
-                status: "going" 
-              });
-            }
-            
-            // Only add Esther Howard for some meetups
-            if (idSum > 2) {
-              baseAttendees.push({ 
-                id: "3", 
-                name: "Esther Howard", 
-                avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
-                status: "interested" 
-              });
-            }
-            
-            // Check if current user is in the lobby
-            if (isJoinedLobby && user) {
-              // Add current user to attendees list
-              const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
-              
-              if (!userAlreadyInList) {
-                baseAttendees.push({
-                  id: user.id,
-                  name: user.email?.split('@')[0] || "Current User",
-                  status: "going"
-                });
-              }
-            }
-            
-            setAttendees(baseAttendees);
-          } else if (data) {
+            console.error("Error fetching meetup:", error);
+            toast({
+              title: "Error loading meetup",
+              description: "Could not load meetup details",
+              variant: "destructive"
+            });
+            navigate('/meetups');
+            return;
+          }
+          
+          if (data) {
             const meetupData: Meetup = {
               id: data.id.toString(),
               title: data.title,
               description: data.description || "No description available",
-              dateTime: new Date(data.event_date).toLocaleString(),
+              dateTime: data.event_date,
               location: data.location,
               points: data.xp_reward || 3,
               createdBy: data.creator_name || "Anonymous",
-              creatorAvatar: "",
+              creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
               lobbySize: data.lobby_size || 5,
               category: data.category || "Other",
               attendees: []
             };
             
             setMeetup(meetupData);
-            setIsJoinedLobby(joinedLobbies?.includes(meetupData.id));
-            setIsCheckedIn(attendedMeetups?.includes(meetupData.id));
             
-            // Generate attendees based on meetup ID
-            const idSum = meetupData.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
-            
-            const baseAttendees: Attendee[] = [];
-            
-            // Add Jane Cooper for most meetups
-            if (idSum % 2 === 0) {
-              baseAttendees.push({ 
-                id: "1", 
-                name: "Jane Cooper", 
-                avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
-                status: "going" 
-              });
-            }
-            
-            // Add Wade Warren for some meetups
-            if (idSum % 3 === 0) {
-              baseAttendees.push({ 
-                id: "2", 
-                name: "Wade Warren", 
-                avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
-                status: "going" 
-              });
-            }
-            
-            // Only add Esther Howard for some meetups
-            if (idSum > 2) {
-              baseAttendees.push({ 
-                id: "3", 
-                name: "Esther Howard", 
-                avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
-                status: "interested" 
-              });
-            }
-            
-            // Check if current user is in the lobby
-            if (isJoinedLobby && user) {
-              // Add current user to attendees list
-              const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
-              
-              if (!userAlreadyInList) {
-                baseAttendees.push({
-                  id: user.id,
-                  name: user.email?.split('@')[0] || "Current User",
-                  status: "going"
-                });
-              }
-            }
-            
-            setAttendees(baseAttendees);
+            // Now fetch attendees
+            fetchAttendees(meetupId);
           }
-        } catch (supabaseError) {
-          console.error("Supabase error:", supabaseError);
-          const mockMeetup: Meetup = {
-            id: meetupId,
-            title: `Meetup ${meetupId}`,
-            description: "This is a mock meetup since fetching data failed",
-            dateTime: format(new Date(), "MM/dd/yyyy h:mm a"),
-            location: "UTD Campus",
-            points: 3,
-            createdBy: "Student",
-            creatorAvatar: "",
-            lobbySize: 5,
-            attendees: []
-          };
-          
-          setMeetup(mockMeetup);
-          setIsJoinedLobby(joinedLobbies?.includes(mockMeetup.id));
-          setIsCheckedIn(attendedMeetups?.includes(mockMeetup.id));
-          
-          // Generate attendees based on meetup ID
-          const idSum = meetupId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
-          
-          const baseAttendees: Attendee[] = [];
-          
-          // Add Jane Cooper for most meetups
-          if (idSum % 2 === 0) {
-            baseAttendees.push({ 
-              id: "1", 
-              name: "Jane Cooper", 
-              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
-              status: "going" 
-            });
-          }
-          
-          // Add Wade Warren for some meetups
-          if (idSum % 3 === 0) {
-            baseAttendees.push({ 
-              id: "2", 
-              name: "Wade Warren", 
-              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
-              status: "going" 
-            });
-          }
-          
-          // Only add Esther Howard for some meetups
-          if (idSum > 2) {
-            baseAttendees.push({ 
-              id: "3", 
-              name: "Esther Howard", 
-              avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
-              status: "interested" 
-            });
-          }
-          
-          // Check if current user is in the lobby
-          if (isJoinedLobby && user) {
-            // Add current user to attendees list
-            const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
-            
-            if (!userAlreadyInList) {
-              baseAttendees.push({
-                id: user.id,
-                name: user.email?.split('@')[0] || "Current User",
-                status: "going"
-              });
-            }
-          }
-          
-          setAttendees(baseAttendees);
         }
       } catch (error) {
         console.error("Error in fetching meetup:", error);
         toast({
-          title: "Error",
-          description: "Failed to load meetup details",
+          title: "Error loading meetup",
+          description: "An unexpected error occurred",
           variant: "destructive"
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
-    fetchMeetupData();
-  }, [meetupId, joinedLobbies, attendedMeetups, toast, fetchMeetupById, user, isJoinedLobby]);
-
-  const filteredAttendees = attendees.filter(attendee => {
-    if (attendeeView === "all") return true;
-    return attendee.status === attendeeView;
-  });
-
-  const handleJoinLobby = async () => {
-    if (meetup) {
-      joinLocalLobby(meetup.id);
-      setIsJoinedLobby(true);
-      
-      // Add current user to attendees list
-      if (user) {
-        setAttendees(prev => {
-          // Check if user is already in the list
-          if (!prev.some(a => a.id === user.id)) {
-            return [
-              ...prev, 
-              {
-                id: user.id,
-                name: user.email?.split('@')[0] || "Current User",
-                status: "going"
-              }
-            ];
-          }
-          return prev;
-        });
+    
+    fetchMeetupDetails();
+  }, [meetupId, attendedMeetups, joinedLobbies, navigate, toast]);
+  
+  const fetchAttendees = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .select(`
+          user_id,
+          attendance_status,
+          users!inner(
+            id,
+            username,
+            profile_picture
+          )
+        `)
+        .eq('event_id', parseInt(id));
+        
+      if (error) {
+        console.error("Error fetching attendees:", error);
+        setAttendees(sampleAttendees);
+        return;
       }
       
+      if (data && data.length > 0) {
+        const mappedAttendees = data.map(participant => ({
+          id: participant.user_id.toString(),
+          name: participant.users.username || "Anonymous",
+          avatar: participant.users.profile_picture,
+          status: participant.attendance_status === 'attended' ? 'going' : 'interested'
+        }));
+        
+        setAttendees(mappedAttendees);
+      } else {
+        // Use random sample attendees based on meetup ID
+        const idSum = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+        const randomAttendees = [...sampleAttendees];
+        
+        // Randomly select attendees
+        if (idSum % 3 === 0) randomAttendees.pop();
+        if (idSum % 2 === 0 && randomAttendees.length > 1) randomAttendees.shift();
+        
+        setAttendees(randomAttendees);
+      }
+    } catch (error) {
+      console.error("Error fetching attendees:", error);
+      setAttendees(sampleAttendees);
+    }
+  };
+  
+  const handleJoinLobby = async () => {
+    if (!meetupId) return;
+    
+    try {
+      if (!userId) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to join this meetup",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // First check if the lobby is full
+      if (attendees.length >= (meetup?.lobbySize || 5)) {
+        toast({
+          title: "Lobby is full",
+          description: "This meetup has reached its maximum capacity",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Add to database
+      const { error } = await supabase.from('participants').insert({
+        event_id: parseInt(meetupId),
+        user_id: parseInt(userId),
+        joined_at: new Date().toISOString(),
+        attendance_status: 'registered'
+      });
+      
+      if (error) {
+        console.error("Error joining meetup:", error);
+        toast({
+          title: "Error joining meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Update local store
+      joinMeetupLobby(meetupId);
+      
+      // Add current user to attendees
+      setAttendees(prev => [
+        ...prev,
+        {
+          id: userId || "current-user",
+          name: userName || "You",
+          avatar: userAvatar,
+          status: "interested"
+        }
+      ]);
+      
+      setIsJoined(true);
+      
       toast({
-        title: "Joined lobby",
-        description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
+        title: "Joined meetup lobby",
+        description: "You have successfully joined the meetup lobby"
+      });
+      
+    } catch (error) {
+      console.error("Error joining meetup:", error);
+      toast({
+        title: "Error joining meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
       });
     }
   };
   
-  const handleCheckIn = () => {
-    setIsQrScannerOpen(true);
-  };
-  
-  const handleQrScanSuccess = async (data: string) => {
-    if (meetup) {
-      if (data.includes(meetupId as string)) {
-        try {
-          const success = await checkInToMeetup(meetup.id);
-          
-          if (!success) {
-            attendMeetup(meetup.id, meetup.points);
-          }
-          
-          setIsCheckedIn(true);
-          toast({
-            title: "Meetup attendance confirmed!",
-            description: `You've successfully checked in and earned ${meetup.points} points!`,
-            variant: "default",
-          });
-        } catch (error) {
-          console.error("Check-in error:", error);
-          attendMeetup(meetup.id, meetup.points);
-          setIsCheckedIn(true);
-          toast({
-            title: "Meetup attendance confirmed!",
-            description: `You've successfully checked in and earned ${meetup.points} points!`,
-            variant: "default",
-          });
-        }
-      } else {
+  const handleCheckIn = async () => {
+    if (!meetupId || !meetup) return;
+    
+    setCheckingIn(true);
+    try {
+      if (!userId) {
         toast({
-          title: "Invalid QR Code",
-          description: "This QR code doesn't match the current meetup.",
-          variant: "destructive",
+          title: "Authentication required",
+          description: "You must be logged in to check in",
+          variant: "destructive"
         });
+        setCheckingIn(false);
+        return;
       }
+      
+      // Update in database (if needed)
+      const { error } = await supabase
+        .from('participants')
+        .update({ 
+          attendance_status: 'attended',
+          xp_earned: meetup.points || 3
+        })
+        .eq('event_id', parseInt(meetupId))
+        .eq('user_id', parseInt(userId));
+      
+      if (error) {
+        console.error("Error checking in:", error);
+        toast({
+          title: "Error checking in",
+          description: error.message,
+          variant: "destructive"
+        });
+        setCheckingIn(false);
+        return;
+      }
+      
+      // Dispatch action to add to attendedMeetups
+      attendMeetup(meetupId, meetup.points || 3);
+      
+      // Update UI
+      setIsAttending(true);
+      
+      // Update attendee status
+      setAttendees(prev => 
+        prev.map(a => 
+          a.id === userId ? { ...a, status: "going" } : a
+        )
+      );
+      
+      toast({
+        title: "Check-in successful!",
+        description: "You have successfully checked in to the meetup"
+      });
+      
+    } catch (error) {
+      console.error("Error checking in:", error);
+      toast({
+        title: "Error checking in",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setCheckingIn(false);
     }
-    setIsQrScannerOpen(false);
   };
   
-  const handleQrScanCancel = () => {
-    setIsQrScannerOpen(false);
+  const handleScanQrCode = async () => {
+    if (!meetupId || !meetup) return;
+    
+    // This would typically be connected to a QR code scanner
+    // For now, we'll simulate a successful scan
+    try {
+      toast({
+        title: "QR Code scanned successfully!",
+        description: "Processing check-in..."
+      });
+      
+      attendMeetup(meetupId, meetup.points || 3);
+      setIsAttending(true);
+      
+      // Update attendee status
+      setAttendees(prev => 
+        prev.map(a => 
+          a.id === userId ? { ...a, status: "going" } : a
+        )
+      );
+      
+      toast({
+        title: "Check-in confirmed!",
+        description: `You earned ${meetup.points || 3} points`
+      });
+      
+    } catch (error) {
+      console.error("Error scanning QR code:", error);
+      toast({
+        title: "Error scanning QR code",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   };
-
-  function AttendeesList() {
+  
+  // Format date properly
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return "Date unavailable";
+    
+    // For already formatted strings like "Today @3pm", just return as is
+    if (dateStr.includes('@') || 
+        dateStr.toLowerCase().includes('today') || 
+        dateStr.toLowerCase().includes('tomorrow')) {
+      return dateStr;
+    }
+    
+    try {
+      const parsedDate = parseISO(dateStr);
+      if (isValid(parsedDate)) {
+        return format(parsedDate, "EEEE, MMM d, yyyy 'at' h:mm a");
+      }
+      return dateStr;
+    } catch (error) {
+      return dateStr;
+    }
+  };
+  
+  if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex gap-2 mb-4">
-          <Button 
-            variant={attendeeView === "all" ? "yellow" : "outline"} 
-            size="sm" 
-            onClick={() => setAttendeeView("all")}
-          >
-            All ({attendees.length})
-          </Button>
-          <Button 
-            variant={attendeeView === "going" ? "yellow" : "outline"} 
-            size="sm" 
-            onClick={() => setAttendeeView("going")}
-          >
-            Going ({attendees.filter(a => a.status === "going").length})
-          </Button>
-          <Button 
-            variant={attendeeView === "interested" ? "yellow" : "outline"} 
-            size="sm" 
-            onClick={() => setAttendeeView("interested")}
-          >
-            Interested ({attendees.filter(a => a.status === "interested").length})
-          </Button>
-        </div>
-
-        <div className="space-y-3">
-          {filteredAttendees.length > 0 ? (
-            filteredAttendees.map(attendee => (
-              <div key={attendee.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={attendee.avatar} />
-                    <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{attendee.name}</p>
-                    <Badge variant={attendee.status === "going" ? "default" : "outline"} className="text-xs">
-                      {attendee.status === "going" ? "Going" : "Interested"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-muted-foreground text-sm">No attendees found for this filter.</p>
-          )}
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading meetup details...</p>
       </div>
     );
   }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium">
-            <span className="font-bold">i</span>mpulse
-          </h1>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-          <p className="mt-4">Loading meetup details...</p>
-        </div>
-        
-        <Navigation />
-      </div>
-    );
-  }
-
+  
   if (!meetup) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium">
-            <span className="font-bold">i</span>mpulse
-          </h1>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <h2 className="text-xl mb-4">Meetup not found</h2>
-          <Button onClick={() => navigate("/meetups")} className="bg-yellow-500 text-white">
-            Back to Meetups
-          </Button>
-        </div>
-        
-        <Navigation />
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Meetup not found</p>
       </div>
     );
   }
-
+  
   return (
-    <div className="pb-20 min-h-screen bg-background">
-      <div className="p-4 pt-6 flex items-center justify-center">
-        <h1 className="text-2xl font-medium">
-          <span className="font-bold">i</span>mpulse
-        </h1>
-      </div>
-
-      <header className="p-4 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold">Meetup Details</h1>
-      </header>
-
-      <div className="p-4">
-        <div className="flex justify-between items-start">
-          <h2 className="text-2xl font-bold">{meetup?.title}</h2>
-          <Badge className="bg-yellow-500 text-black">+{meetup?.points} pts</Badge>
-        </div>
-        <p className="text-muted-foreground mt-1">{meetup?.description}</p>
-
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center text-sm">
-            <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{meetup?.dateTime}</span>
-          </div>
-          
-          <div className="flex items-center text-sm">
-            <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{meetup?.location}</span>
-          </div>
-          
-          <div className="flex items-center text-sm">
-            <User className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>Hosted by {meetup?.createdBy}</span>
-          </div>
+    <div className="pb-20">
+      <div className="fixed top-0 left-0 right-0 bg-background z-10 border-b">
+        <div className="p-4 flex items-center">
+          <button 
+            onClick={() => navigate('/meetups')} 
+            className="mr-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-semibold">Meetup Details</h1>
         </div>
       </div>
-
-      <Separator />
-
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Attendees</h3>
+      
+      <div className="pt-16 p-4">
+        <div className="space-y-6">
+          <div>
+            <div className="flex justify-between items-start">
+              <h1 className="text-2xl font-bold">{meetup.title}</h1>
+              <div className="bg-yellow-500/10 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">
+                +{meetup.points} pts
+              </div>
+            </div>
+            
+            {meetup.category && (
+              <Badge variant="outline" className="mt-2">
+                {meetup.category}
+              </Badge>
+            )}
+            
+            <p className="text-muted-foreground mt-2">
+              {meetup.description}
+            </p>
           </div>
           
-          {isMobile ? (
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent className="p-4 pt-6">
-                <h3 className="text-lg font-semibold mb-4">Attendees</h3>
-                <AttendeesList />
-              </DrawerContent>
-            </Drawer>
-          ) : (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-[400px] sm:w-[540px]">
-                <SheetHeader>
-                  <SheetTitle>Attendees</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">
-                  <AttendeesList />
-                </div>
-              </SheetContent>
-            </Sheet>
-          )}
-        </div>
-
-        <div className="flex -space-x-2 overflow-hidden">
-          {attendees.length > 0 ? (
-            <>
-              {attendees.slice(0, 5).map((attendee) => (
-                <Avatar key={attendee.id} className="border-2 border-background">
-                  <AvatarImage src={attendee.avatar} />
-                  <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{formatDate(meetup.dateTime)}</span>
+            </div>
+            
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{meetup.location}</span>
+            </div>
+            
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-2 text-muted-foreground" />
+              <div className="flex items-center">
+                <Avatar className="h-5 w-5 mr-1">
+                  <AvatarImage src={meetup.creatorAvatar || ""} />
+                  <AvatarFallback>{meetup.createdBy?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
-              ))}
-              {attendees.length > 5 && (
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted border-2 border-background text-xs font-medium">
-                  +{attendees.length - 5}
-                </div>
+                <span>Organized by {meetup.createdBy}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">Attendees</h2>
+              <div className="text-sm text-muted-foreground">
+                {attendees.length}/{meetup.lobbySize}
+              </div>
+            </div>
+            
+            <div className="bg-muted/50 rounded-md">
+              <Progress 
+                value={(attendees.length / meetup.lobbySize) * 100} 
+                className="h-1 rounded-t-md"
+              />
+              <div className="p-4">
+                {attendees.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-3">
+                    No one has joined this meetup yet. Be the first!
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {attendees.map(attendee => (
+                      <div key={attendee.id} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={attendee.avatar || ""} />
+                            <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span>{attendee.name}</span>
+                        </div>
+                        <Badge variant={attendee.status === "going" ? "default" : "outline"}>
+                          {attendee.status === "going" ? (
+                            <div className="flex items-center">
+                              <Check className="h-3 w-3 mr-1" />
+                              <span>Attending</span>
+                            </div>
+                          ) : "Interested"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
+            <div className="max-w-lg mx-auto flex gap-2">
+              {isAttending ? (
+                <Button className="w-full" disabled variant="default">
+                  <Check className="mr-2 h-4 w-4" />
+                  Checked In
+                </Button>
+              ) : isJoined ? (
+                <Button 
+                  className="w-full" 
+                  onClick={handleCheckIn}
+                  disabled={checkingIn}
+                >
+                  {checkingIn ? "Processing..." : "Check In Now"}
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  onClick={handleJoinLobby}
+                  disabled={attendees.length >= meetup.lobbySize}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  {attendees.length >= meetup.lobbySize ? "Lobby Full" : "Join Lobby"}
+                </Button>
               )}
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">No attendees yet. Be the first!</p>
-          )}
+              
+              {isJoined && !isAttending && (
+                <Button 
+                  variant="outline" 
+                  className="flex-shrink-0" 
+                  onClick={handleScanQrCode}
+                >
+                  <UserCheck className="h-4 w-4" />
+                  <span className="sr-only">Scan QR Code</span>
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-
-      <Separator />
-
-      <div className="p-4 space-y-4">
-        {!isJoinedLobby ? (
-          <Button className="w-full" onClick={handleJoinLobby}>
-            Join Meetup Lobby
-          </Button>
-        ) : !isCheckedIn ? (
-          <Button className="w-full" onClick={handleCheckIn}>
-            <QrCode className="mr-2 h-4 w-4" />
-            Scan QR Code to Check In
-          </Button>
-        ) : (
-          <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-            <Check className="mr-2 h-4 w-4" />
-            Checked In
-          </Button>
-        )}
-      </div>
-
-      <Dialog open={isQrScannerOpen} onOpenChange={setIsQrScannerOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Scan QR Code to Check In</DialogTitle>
-          <DialogDescription>
-            At the actual meetup location, the organizer will display a unique QR code 
-            for this event. Scan it with your camera to check in and earn {meetup?.points} points.
-            This confirms your attendance and prevents earning points without being physically present.
-          </DialogDescription>
-          <QRScanner 
-            onSuccess={handleQrScanSuccess} 
-            onCancel={handleQrScanCancel}
-            meetupId={meetupId}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Navigation />
     </div>
   );
 };
