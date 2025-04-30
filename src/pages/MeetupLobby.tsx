@@ -318,6 +318,64 @@ const MeetupLobby = () => {
     }
   };
   
+  // Define the handleDeleteMeetup function
+  const handleDeleteMeetup = async () => {
+    if (!meetupId || !userId) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete participants first (to avoid foreign key constraints)
+      const { error: participantsError } = await supabase
+        .from('participants')
+        .delete()
+        .eq('event_id', parseInt(meetupId));
+      
+      if (participantsError) {
+        console.error("Error deleting participants:", participantsError);
+        toast({
+          title: "Error deleting meetup",
+          description: "Could not remove participants",
+          variant: "destructive"
+        });
+        setIsDeleting(false);
+        return;
+      }
+      
+      // Delete the meetup
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', parseInt(meetupId));
+      
+      if (error) {
+        console.error("Error deleting meetup:", error);
+        toast({
+          title: "Error deleting meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        setIsDeleting(false);
+        return;
+      }
+      
+      toast({
+        title: "Meetup deleted",
+        description: "The meetup has been successfully deleted"
+      });
+      
+      // Navigate back to meetups page
+      navigate('/meetups');
+    } catch (error) {
+      console.error("Error in meetup deletion:", error);
+      toast({
+        title: "Error deleting meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      setIsDeleting(false);
+    }
+  };
+  
   // Define the handleQRScanSuccess function
   const handleQRScanSuccess = (data: string) => {
     // Close QR scanner dialog
