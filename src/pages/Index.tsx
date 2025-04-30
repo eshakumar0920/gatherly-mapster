@@ -29,7 +29,6 @@ const Index = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [featuredEvents, setFeaturedEvents] = useState<any[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
   const { points, level, setUserId } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -196,154 +195,85 @@ const Index = () => {
         </div>
       )}
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full px-4">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="meetups">Meetups</TabsTrigger>
-        </TabsList>
+      {/* Categories Tabs */}
+      <div className="px-4 pb-4">
+        <Tabs defaultValue="all" value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)} className="w-full">
+          <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
+            <TabsTrigger value="all">All</TabsTrigger>
+            {categories.map(category => (
+              <TabsTrigger key={category.id} value={category.id.toLowerCase()}>
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
 
-        {/* Categories Tabs */}
-        <div className="pb-4">
-          <Tabs defaultValue="all" value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)} className="w-full">
-            <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
-              <TabsTrigger value="all">All</TabsTrigger>
-              {categories.map(category => (
-                <TabsTrigger key={category.id} value={category.id.toLowerCase()}>
-                  {category.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* All Tab */}
-        <TabsContent value="all">
-          {(isMeetupsLoading || isEventsLoading) ? (
-            <ContentLoader message="Loading content..." />
-          ) : (
-            <>
-              {/* Events Section - Now first */}
-              <div className="pb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-lg font-semibold">Featured Events</h2>
-                  <Button variant="link" className="text-sm p-0" onClick={() => navigate('/events')}>
-                    See all
-                  </Button>
+      <div className="px-4">
+        {(isMeetupsLoading || isEventsLoading) ? (
+          <ContentLoader message="Loading content..." />
+        ) : (
+          <>
+            {/* Events Section - Now first */}
+            <div className="pb-6">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">Featured Events</h2>
+                <Button variant="link" className="text-sm p-0" onClick={() => navigate('/events')}>
+                  See all
+                </Button>
+              </div>
+              
+              {featuredEvents.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {featuredEvents.slice(0, 3).map(event => (
+                    <div key={event.id} onClick={() => handleEventClick(event.id)} className="cursor-pointer">
+                      <EventCard event={event} />
+                    </div>
+                  ))}
                 </div>
-                
-                {featuredEvents.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {featuredEvents.slice(0, 3).map(event => (
-                      <div key={event.id} onClick={() => handleEventClick(event.id)} className="cursor-pointer">
-                        <EventCard event={event} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    No events found in this category
-                  </p>
-                )}
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No events found in this category
+                </p>
+              )}
+            </div>
+
+            {/* Meetups Section - Now second */}
+            <div className="pb-6">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">Student Meetups</h2>
+                <Button variant="link" className="text-sm p-0" onClick={() => navigate('/meetups')}>
+                  See all
+                </Button>
               </div>
 
-              {/* Meetups Section - Now second */}
-              <div className="pb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-lg font-semibold">Student Meetups</h2>
-                  <Button variant="link" className="text-sm p-0" onClick={() => navigate('/meetups')}>
-                    See all
-                  </Button>
-                </div>
-
-                <div className="pb-4">
-                  <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" /> Create New Meetup
-                  </Button>
-                </div>
-
-                {filteredMeetups.length > 0 ? (
-                  <div className="space-y-4">
-                    {filteredMeetups.slice(0, 3).map(meetup => (
-                      <div 
-                        key={meetup.id} 
-                        onClick={() => handleMeetupClick(meetup.id)}
-                        className="cursor-pointer"
-                      >
-                        <MeetupCard meetup={meetup} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    No meetups found in this category
-                  </p>
-                )}
+              <div className="pb-4">
+                <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Create New Meetup
+                </Button>
               </div>
-            </>
-          )}
-        </TabsContent>
 
-        {/* Events Tab */}
-        <TabsContent value="events">
-          {isEventsLoading ? (
-            <ContentLoader message="Loading events..." />
-          ) : featuredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {featuredEvents.map(event => (
-                <div key={event.id} onClick={() => handleEventClick(event.id)} className="cursor-pointer">
-                  <EventCard event={event} />
+              {filteredMeetups.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredMeetups.slice(0, 3).map(meetup => (
+                    <div 
+                      key={meetup.id} 
+                      onClick={() => handleMeetupClick(meetup.id)}
+                      className="cursor-pointer"
+                    >
+                      <MeetupCard meetup={meetup} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No meetups found in this category
+                </p>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No events found matching your criteria.</p>
-              <button 
-                onClick={clearFilters}
-                className="mt-4 text-sm text-foreground hover:underline"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Meetups Tab */}
-        <TabsContent value="meetups">
-          <div className="pb-4">
-            <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Create New Meetup
-            </Button>
-          </div>
-
-          {isMeetupsLoading ? (
-            <ContentLoader message="Loading meetups..." />
-          ) : filteredMeetups.length > 0 ? (
-            <div className="space-y-4">
-              {filteredMeetups.map(meetup => (
-                <div 
-                  key={meetup.id} 
-                  onClick={() => handleMeetupClick(meetup.id)}
-                  className="cursor-pointer"
-                >
-                  <MeetupCard meetup={meetup} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No meetups found matching your criteria.</p>
-              <button 
-                onClick={clearFilters}
-                className="mt-4 text-sm text-foreground hover:underline"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </>
+        )}
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
