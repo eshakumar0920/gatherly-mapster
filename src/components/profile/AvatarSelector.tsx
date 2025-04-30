@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Diverse predefined avatar options with corrected DiceBear API format
+// Diverse predefined avatar options with properly formatted URLs
 const predefinedAvatars = {
   women: [
     // Women with different skin tones and features
