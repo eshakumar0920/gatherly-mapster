@@ -30,13 +30,13 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
       if (onCoordinatesChange) {
         const matchedLocation = findLocationByName(value);
         if (matchedLocation) {
-          console.log(`Found location match for "${value}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
+          console.log(`LocationSelector: Found location match for "${value}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
           onCoordinatesChange(matchedLocation.lat, matchedLocation.lng);
         } else {
           // Default to library if no match found
           const defaultLocation = findLocationByName("Library");
           if (defaultLocation) {
-            console.log(`No match found for "${value}", defaulting to Library: (${defaultLocation.lat}, ${defaultLocation.lng})`);
+            console.log(`LocationSelector: No match found for "${value}", defaulting to Library: (${defaultLocation.lat}, ${defaultLocation.lng})`);
             onCoordinatesChange(defaultLocation.lat, defaultLocation.lng);
           }
         }
@@ -66,7 +66,7 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
     
     // If coordinates callback is provided, call it with the location's coordinates
     if (onCoordinatesChange) {
-      console.log(`Selected location with coordinates: ${location.name} (${location.lat}, ${location.lng})`);
+      console.log(`LocationSelector: Selected location with coordinates: ${location.name} (${location.lat}, ${location.lng})`);
       onCoordinatesChange(location.lat, location.lng);
     }
   };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -40,42 +39,17 @@ const getLocationCoordinates = (locationName: string | null) => {
     return { lat: defaultLocation.lat, lng: defaultLocation.lng };
   }
   
-  // Special case for library
-  if (locationName.toLowerCase().includes("library") || 
-      locationName.toLowerCase().includes("mcdermott")) {
-    const library = campusLocations.find(loc => loc.id === "library");
-    if (library) {
-      console.log(`Using library coordinates for "${locationName}": (${library.lat}, ${library.lng})`);
-      return { lat: library.lat, lng: library.lng };
-    }
-  }
-  
-  // Special case for Jazz Ensemble at Jonsson Performance Hall
-  if (locationName.toLowerCase().includes("university theatre") && 
-      (locationName.toLowerCase().includes("jazz") || locationName.toLowerCase().includes("ensemble"))) {
-    const performanceHall = campusLocations.find(loc => loc.id === "jonsson");
-    if (performanceHall) {
-      console.log(`Using Jonsson Performance Hall coordinates for Jazz Ensemble at "${locationName}": (${performanceHall.lat}, ${performanceHall.lng})`);
-      return { lat: performanceHall.lat, lng: performanceHall.lng };
-    }
-  }
-  
-  // Use our new helper function
+  // Use the findLocationByName helper function directly
   const matchedLocation = findLocationByName(locationName);
   if (matchedLocation) {
-    console.log(`Found matched location for "${locationName}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
+    console.log(`Maps: Found matched location for "${locationName}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
     return { lat: matchedLocation.lat, lng: matchedLocation.lng };
   }
   
-  // If no match found, use a random campus location with small offset for distribution
-  console.log(`No location match found for "${locationName}", using fallback`);
-  const randomIndex = Math.floor(Math.random() * campusLocations.length);
-  const randomLocation = campusLocations[randomIndex];
-  
-  return {
-    lat: randomLocation.lat + (Math.random() - 0.5) * 0.0005, // Very small offset
-    lng: randomLocation.lng + (Math.random() - 0.5) * 0.0005
-  };
+  // If no match found, use library as default
+  const defaultLocation = campusLocations.find(loc => loc.id === "library") || campusLocations[0];
+  console.log(`Maps: No location match found for "${locationName}", using library as default: (${defaultLocation.lat}, ${defaultLocation.lng})`);
+  return { lat: defaultLocation.lat, lng: defaultLocation.lng };
 };
 
 const Maps = () => {
@@ -115,21 +89,8 @@ const Maps = () => {
                 coords = { lat: event.latitude, lng: event.longitude };
                 console.log(`Event ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
               } else {
-                // Special case for Jazz Ensemble
-                if (event.title && event.title.toLowerCase().includes("jazz") && 
-                    event.title.toLowerCase().includes("ensemble")) {
-                  const jonsson = campusLocations.find(loc => loc.id === "jonsson");
-                  if (jonsson) {
-                    coords = { lat: jonsson.lat, lng: jonsson.lng };
-                    console.log(`Jazz Ensemble event using Jonsson Hall coordinates: (${coords.lat}, ${coords.lng})`);
-                  } else {
-                    coords = getLocationCoordinates(event.location);
-                  }
-                } else {
-                  // Fall back to location name matching
-                  coords = getLocationCoordinates(event.location);
-                  console.log(`Event ${event.title} using matched coordinates: (${coords.lat}, ${coords.lng})`);
-                }
+                coords = getLocationCoordinates(event.location);
+                console.log(`Event ${event.title} using matched coordinates: (${coords.lat}, ${coords.lng})`);
               }
               
               return {
@@ -171,30 +132,15 @@ const Maps = () => {
               let coords;
               const eventData = event as any; // Type assertion to access latitude/longitude
               
-              // Check if event has coordinates first
+              // IMPROVED: Check if event has valid coordinates first
               if (eventData.latitude && eventData.longitude && 
                   eventData.latitude !== 0 && eventData.longitude !== 0) {
                 coords = { lat: eventData.latitude, lng: eventData.longitude };
-                console.log(`Meetup ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
+                console.log(`Maps: Meetup ${event.title} using stored coordinates: (${coords.lat}, ${coords.lng})`);
               } else {
-                // Special case for library events
-                if (event.location && 
-                   (event.location.toLowerCase().includes("library") || 
-                    event.location.toLowerCase().includes("mcdermott") ||
-                    event.title.toLowerCase().includes("study"))) {
-                  const library = campusLocations.find(loc => loc.id === "library");
-                  if (library) {
-                    coords = { lat: library.lat, lng: library.lng };
-                    console.log(`Using library coordinates for "${event.title}": (${coords.lat}, ${coords.lng})`);
-                  } else {
-                    coords = getLocationCoordinates(event.location);
-                  }
-                } else {
-                  // Fall back to location name matching
-                  coords = getLocationCoordinates(event.location);
-                }
-                
-                console.log(`Meetup ${event.title} using matched coordinates for "${event.location}": (${coords.lat}, ${coords.lng})`);
+                // Find coordinates based on location name
+                coords = getLocationCoordinates(event.location);
+                console.log(`Maps: Meetup ${event.title} using matched coordinates for location "${event.location}": (${coords.lat}, ${coords.lng})`);
               }
               
               return {
@@ -222,22 +168,8 @@ const Maps = () => {
           // Load mock events as a fallback
           const mockEvents = getEvents();
           const mockLocations = mockEvents.map(event => {
-            let coords;
-            
-            // Special case for Jazz Ensemble
-            if (event.title && event.title.toLowerCase().includes("jazz") && 
-                event.title.toLowerCase().includes("ensemble")) {
-              // Use the same coordinates as Symphony Orchestra (Jonsson Hall)
-              const jonsson = campusLocations.find(loc => loc.id === "jonsson");
-              if (jonsson) {
-                coords = { lat: jonsson.lat, lng: jonsson.lng };
-                console.log(`Mock Jazz Ensemble event using Jonsson Hall coordinates: (${coords.lat}, ${coords.lng})`);
-              } else {
-                coords = getLocationCoordinates(event.location);
-              }
-            } else {
-              coords = getLocationCoordinates(event.location);
-            }
+            // Get coordinates based on location
+            const coords = getLocationCoordinates(event.location);
             
             return {
               id: `mock-${event.id}`,
@@ -254,7 +186,17 @@ const Maps = () => {
           allLocations = [...allLocations, ...mockLocations];
         }
         
-        console.log(`Total locations loaded: ${allLocations.length} (${allLocations.filter(l => l.isEvent).length} events, ${allLocations.filter(l => !l.isEvent).length} meetups)`);
+        // Debug: Log all locations to help identify issues
+        console.log("Processing map locations:", allLocations.length);
+        allLocations.forEach(location => {
+          console.log("Processing location:", {
+            id: location.id,
+            title: location.title,
+            coordinates: `${location.lat},${location.lng}`,
+            description: location.description
+          });
+        });
+        
         setMapLocations(allLocations);
         setIsLoading(false);
       } catch (error) {
@@ -268,22 +210,7 @@ const Maps = () => {
         // Use mock data as last resort
         const events = getEvents();
         const locations = events.map(event => {
-          let coords;
-          
-          // Special case for Jazz Ensemble
-          if (event.title && event.title.toLowerCase().includes("jazz") && 
-              event.title.toLowerCase().includes("ensemble")) {
-            // Place it at Jonsson Hall
-            const jonsson = campusLocations.find(loc => loc.id === "jonsson");
-            if (jonsson) {
-              coords = { lat: jonsson.lat, lng: jonsson.lng };
-              console.log(`Last resort: Jazz Ensemble using Jonsson coordinates: (${coords.lat}, ${coords.lng})`);
-            } else {
-              coords = getLocationCoordinates(event.location);
-            }
-          } else {
-            coords = getLocationCoordinates(event.location);
-          }
+          const coords = getLocationCoordinates(event.location);
           
           return {
             id: `mock-${event.id}`,

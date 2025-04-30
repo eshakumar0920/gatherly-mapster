@@ -25,7 +25,7 @@ export const campusLocations: CampusLocation[] = [
     lat: 32.9871928740694,
     lng: -96.74762441537123,
     description: "Main campus library with study spaces and resources",
-    aliases: ["mcdermott", "library", "eugene mcdermott library"]
+    aliases: ["mcdermott", "library", "eugene mcdermott library", "mcdermott library", "study"]
   },
   {
     id: "ecss",
@@ -189,6 +189,9 @@ export function findLocationByName(locationName: string): CampusLocation | undef
   
   const normalizedName = normalizeText(locationName);
   
+  // Debug log to help diagnose matching issues
+  console.log(`Finding location for: "${locationName}" (normalized: "${normalizedName}")`);
+  
   // Try exact match first
   const exactMatch = campusLocations.find(
     loc => normalizeText(loc.name) === normalizedName
@@ -197,6 +200,17 @@ export function findLocationByName(locationName: string): CampusLocation | undef
   if (exactMatch) {
     console.log(`Found exact location match for "${locationName}": ${exactMatch.name} (${exactMatch.lat}, ${exactMatch.lng})`);
     return exactMatch;
+  }
+  
+  // Special case for library references - immediately check for these
+  if (normalizedName.includes("library") || 
+      normalizedName.includes("mcdermott") || 
+      normalizedName.includes("study")) {
+    const library = campusLocations.find(loc => loc.id === "library");
+    if (library) {
+      console.log(`Library special case match for "${locationName}": ${library.name} (${library.lat}, ${library.lng})`);
+      return library;
+    }
   }
   
   // Try alias match
@@ -214,15 +228,6 @@ export function findLocationByName(locationName: string): CampusLocation | undef
   }
   
   // Special case handling for common location types
-  
-  // Check for library references
-  if (normalizedName.includes("library") || normalizedName.includes("study")) {
-    const library = campusLocations.find(loc => loc.id === "library");
-    if (library) {
-      console.log(`Library special case match for "${locationName}": ${library.name} (${library.lat}, ${library.lng})`);
-      return library;
-    }
-  }
   
   // Check for Jazz Ensemble (special case)
   if (normalizedName.includes("jazz") || normalizedName.includes("ensemble") || normalizedName.includes("concert")) {
