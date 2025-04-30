@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -14,6 +15,9 @@ import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parse } from "date-fns";
+import QRScanner from "@/components/QRScanner";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useUserStore } from "@/services/meetupService";
 
 const mockAttendees = [
   { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -30,9 +34,12 @@ const EventLobby = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { attendMeetup } = useUserStore();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [organizer, setOrganizer] = useState<any>(null);
   
   useEffect(() => {
     const events = getEvents();
@@ -67,10 +74,34 @@ const EventLobby = () => {
         time: formattedTime
       };
       setEvent(updatedEvent);
+      
+      // Fetch organizer info if we have creatorId
+      if (foundEvent.creatorId) {
+        fetchOrganizerInfo(foundEvent.creatorId);
+      }
     } else {
       console.log("Event not found for ID:", eventId);
     }
   }, [eventId]);
+
+  const fetchOrganizerInfo = async (creatorId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username, profile_picture')
+        .eq('id', creatorId)
+        .single();
+      
+      if (data && !error) {
+        setOrganizer({
+          name: data.username || "Event Organizer",
+          avatar: data.profile_picture || null
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching organizer info:", error);
+    }
+  };
 
   const filteredAttendees = mockAttendees.filter(attendee => {
     if (attendeeView === "all") return true;
@@ -79,11 +110,26 @@ const EventLobby = () => {
 
   const handleCheckIn = () => {
     setIsCheckedIn(true);
+    
+    // Add to user's attended events
+    if (eventId && event?.points) {
+      attendMeetup(eventId, event.points);
+    }
+    
     toast({
       title: "Check-in successful!",
       description: "You've checked in to this event",
       variant: "default",
     });
+  };
+  
+  const handleQRScan = () => {
+    setIsQRScannerOpen(true);
+  };
+  
+  const handleQRScanSuccess = (data: string) => {
+    setIsQRScannerOpen(false);
+    handleCheckIn();
   };
 
   if (!event) {
@@ -202,6 +248,17 @@ const EventLobby = () => {
             <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
             <span>{event.location}</span>
           </div>
+          
+          <div className="flex items-center text-sm">
+            <User className="h-4 w-4 mr-2 text-muted-foreground" />
+            <div className="flex items-center">
+              <Avatar className="h-5 w-5 mr-2">
+                <AvatarImage src={organizer?.avatar || ""} />
+                <AvatarFallback>{(organizer?.name || event.organizer || "O").charAt(0)}</AvatarFallback>
+              </Avatar>
+              <span>{organizer?.name || event.organizer || "Event Organizer"}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -271,7 +328,7 @@ const EventLobby = () => {
         ) : (
           <Button 
             className="w-full bg-primary text-primary-foreground"
-            onClick={handleCheckIn}
+            onClick={handleQRScan}
           >
             <Check className="mr-2 h-4 w-4" />
             Check In
@@ -281,6 +338,17 @@ const EventLobby = () => {
           Interested
         </Button>
       </div>
+
+      {/* QR Scanner Dialog */}
+      <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <QRScanner 
+            onSuccess={handleQRScanSuccess}
+            onCancel={() => setIsQRScannerOpen(false)}
+            meetupId={eventId}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Navigation />
     </div>

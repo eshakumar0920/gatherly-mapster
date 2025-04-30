@@ -34,6 +34,40 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
+    name: meetup.createdBy || "Anonymous"
+  });
+  
+  // Fetch creator info if not available
+  useEffect(() => {
+    const fetchCreatorInfo = async () => {
+      if (!meetup.creatorAvatar && meetup.createdBy) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('username, profile_picture')
+            .eq('username', meetup.createdBy)
+            .single();
+            
+          if (!error && data) {
+            setCreatorInfo({
+              name: data.username || meetup.createdBy,
+              avatar: data.profile_picture || undefined
+            });
+          }
+        } catch (err) {
+          console.error("Error fetching creator info:", err);
+        }
+      } else {
+        setCreatorInfo({
+          name: meetup.createdBy || "Anonymous",
+          avatar: meetup.creatorAvatar
+        });
+      }
+    };
+    
+    fetchCreatorInfo();
+  }, [meetup.createdBy, meetup.creatorAvatar]);
   
   // Fetch actual attendees from database
   useEffect(() => {
@@ -281,10 +315,10 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             <User className="h-4 w-4 mr-2" />
             <div className="flex items-center">
               <Avatar className="h-5 w-5 mr-1">
-                <AvatarImage src={meetup.creatorAvatar || ""} />
-                <AvatarFallback>{meetup.createdBy.charAt(0)}</AvatarFallback>
+                <AvatarImage src={creatorInfo.avatar || ""} />
+                <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
               </Avatar>
-              <span>{meetup.createdBy}</span>
+              <span>{creatorInfo.name}</span>
             </div>
           </div>
           

@@ -11,6 +11,8 @@ import { useUserStore } from "@/services/meetupService";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isValid } from "date-fns";
 import { Meetup } from "@/types/meetup";
+import QRScanner from "@/components/QRScanner";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Sample attendees data
 const sampleAttendees = [
@@ -48,6 +50,7 @@ const MeetupLobby = () => {
   const [isAttending, setIsAttending] = useState<boolean>(false);
   const [isJoined, setIsJoined] = useState<boolean>(false);
   const [checkingIn, setCheckingIn] = useState<boolean>(false);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState<boolean>(false);
   
   useEffect(() => {
     // Check if the meetup is in attended meetups
@@ -65,7 +68,7 @@ const MeetupLobby = () => {
         if (meetupId) {
           const { data, error } = await supabase
             .from('events')
-            .select('*')
+            .select('*, users(username, profile_picture)')
             .eq('id', parseInt(meetupId))
             .single();
             
@@ -89,7 +92,7 @@ const MeetupLobby = () => {
               location: data.location,
               points: data.xp_reward || 3,
               createdBy: data.creator_name || "Anonymous",
-              creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
+              creatorAvatar: data.users?.profile_picture || null,
               lobbySize: data.lobby_size || 5,
               category: data.category || "Other",
               attendees: []
@@ -301,8 +304,14 @@ const MeetupLobby = () => {
     }
   };
   
-  const handleScanQrCode = async () => {
+  const handleOpenQRScanner = () => {
+    setIsQRScannerOpen(true);
+  };
+  
+  const handleQRScanSuccess = (data: string) => {
     if (!meetupId || !meetup) return;
+    
+    setIsQRScannerOpen(false);
     
     // This would typically be connected to a QR code scanner
     // For now, we'll simulate a successful scan
@@ -508,7 +517,7 @@ const MeetupLobby = () => {
                 <Button 
                   variant="outline" 
                   className="flex-shrink-0" 
-                  onClick={handleScanQrCode}
+                  onClick={handleOpenQRScanner}
                 >
                   <UserCheck className="h-4 w-4" />
                   <span className="sr-only">Scan QR Code</span>
@@ -518,6 +527,17 @@ const MeetupLobby = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner Dialog */}
+      <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <QRScanner 
+            onSuccess={handleQRScanSuccess} 
+            onCancel={() => setIsQRScannerOpen(false)}
+            meetupId={meetupId}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
