@@ -22,13 +22,11 @@ export const useAuth = () => {
   useEffect(() => {
     const token = window.localStorage.getItem("impulse_access_token");
     const email = window.localStorage.getItem("impulse_user_email");
-    const fullName = window.localStorage.getItem("impulse_user_name");
-    
     if (token && email) {
       setIsLoggedIn(true);
       setAccessToken(token);
       setVerifiedEmail(email);
-      setUser({ email, fullName });
+      setUser({ email });
       setIsEmailVerified(true); // No email_confirmed_at in custom backend, assume true after login
     }
     setIsLoading(false);
@@ -136,18 +134,14 @@ export const useAuth = () => {
         if (supabaseError) throw supabaseError;
         
         if (data.user && data.session) {
-          // Get the user's full name from metadata
-          const fullName = data.user.user_metadata?.name || "";
-          
-          // Store access token, email, and full name in localStorage
+          // Store access token and email in localStorage
           window.localStorage.setItem("impulse_access_token", data.session.access_token);
           window.localStorage.setItem("impulse_user_email", data.user.email || "");
-          window.localStorage.setItem("impulse_user_name", fullName);
           
           setIsLoggedIn(true);
           setVerifiedEmail(data.user.email || "");
           setIsEmailVerified(true);
-          setUser({ ...data.user, fullName });
+          setUser(data.user);
           setAccessToken(data.session.access_token);
           
           return { success: true, data };
@@ -165,7 +159,6 @@ export const useAuth = () => {
       setAccessToken(null);
       window.localStorage.removeItem("impulse_access_token");
       window.localStorage.removeItem("impulse_user_email");
-      window.localStorage.removeItem("impulse_user_name");
       return { success: false, error };
     } finally {
       setIsLoading(false);
@@ -235,20 +228,6 @@ export const useAuth = () => {
         
         if (supabaseError) throw supabaseError;
         
-        // If signup is successful, store the user's full name
-        if (data?.user && metadata?.name) {
-          window.localStorage.setItem("impulse_user_name", metadata.name);
-          
-          // Update the user metadata to include the name
-          try {
-            await supabase.auth.updateUser({
-              data: { name: metadata.name }
-            });
-          } catch (updateError) {
-            console.error("Failed to update user metadata:", updateError);
-          }
-        }
-        
         // Sign up successful
         return { success: true, data };
       } catch (supabaseError: any) {
@@ -270,7 +249,6 @@ export const useAuth = () => {
     setAccessToken(null);
     window.localStorage.removeItem("impulse_access_token");
     window.localStorage.removeItem("impulse_user_email");
-    window.localStorage.removeItem("impulse_user_name");
     
     // Always try to logout from Supabase regardless of which auth system was used
     try {
