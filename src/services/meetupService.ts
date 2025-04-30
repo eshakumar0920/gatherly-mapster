@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Meetup } from "@/types/meetup";
+import { Friend, Tag, sampleFriends } from "./types";
 
 // Enhanced mock meetup data with a more professional appearance
 export const meetups: Meetup[] = [
@@ -157,8 +158,18 @@ interface UserStore {
   level: number;
   joinedLobbies: string[];
   attendedMeetups: string[];
+  name: string;
+  email: string;
+  friends: Friend[];
+  tags: Tag[];
+  selectedSticker: number | null;
   attendMeetup: (meetupId: string, pointsEarned: number) => void;
   joinMeetupLobby: (meetupId: string) => void;
+  addFriend: (friend: Friend) => void;
+  removeFriend: (friendId: string) => void;
+  updateTags: (tags: Tag[]) => void;
+  updateProfile: (name: string, email: string) => void;
+  setSelectedSticker: (sticker: number | null) => void;
 }
 
 export const useUserStore = create<UserStore>()(
@@ -168,14 +179,44 @@ export const useUserStore = create<UserStore>()(
       level: 1,
       joinedLobbies: [],
       attendedMeetups: [],
+      name: "Student User",
+      email: "student@university.edu",
+      friends: sampleFriends,
+      tags: ["Technology", "Academic"],
+      selectedSticker: null,
       attendMeetup: (meetupId: string, pointsEarned: number) =>
         set((state) => ({
           points: state.points + pointsEarned,
           attendedMeetups: [...state.attendedMeetups, meetupId],
+          // Level up when points exceed current level * 10
+          level: Math.floor(state.points / 10) + 1 > state.level 
+            ? Math.floor(state.points / 10) + 1 
+            : state.level
         })),
       joinMeetupLobby: (meetupId: string) =>
         set((state) => ({
           joinedLobbies: [...state.joinedLobbies, meetupId],
+        })),
+      addFriend: (friend: Friend) => 
+        set((state) => ({
+          friends: [...state.friends, friend]
+        })),
+      removeFriend: (friendId: string) =>
+        set((state) => ({
+          friends: state.friends.filter(friend => friend.id !== friendId)
+        })),
+      updateTags: (tags: Tag[]) =>
+        set(() => ({
+          tags
+        })),
+      updateProfile: (name: string, email: string) =>
+        set(() => ({
+          name,
+          email
+        })),
+      setSelectedSticker: (sticker: number | null) =>
+        set(() => ({
+          selectedSticker: sticker
         })),
     }),
     {
