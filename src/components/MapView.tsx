@@ -20,8 +20,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "src",
     title: "Student Union",
-    lat: 32.9899,
-    lng: -96.7501,
+    lat: 32.98671581142176,
+    lng: -96.74944890766317,
     description: "Student Union with dining options, study spaces and recreation areas"
   },
   {

@@ -33,7 +33,7 @@ const UTD_LOCATIONS = {
   'ECSN Building': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
   'Engineering and Computer Science North': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
   'Plinth': { lat: 32.98736607080019, lng: -96.74828234522143 }, // Updated Plinth coordinates
-  'Student Union': { lat: 32.98994567890123, lng: -96.75014567890123 }, // Full precision coordinates
+  'Student Union': { lat: 32.98671581142176, lng: -96.74944890766317 }, // Updated Student Union coordinates
   'Blackstone LaunchPad': { lat: 32.98642345678901, lng: -96.74784567890123 }, // Full precision coordinates
   'SP/N Gallery': { lat: 32.98553456789012, lng: -96.75012345678901 }, // Full precision coordinates
   'Recreation Center West': { lat: 32.98742345678901, lng: -96.75254567890123 }, // Full precision coordinates

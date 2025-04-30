@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
@@ -40,7 +41,7 @@ const BUILDING_LOCATIONS = {
   'ECSS Building': { lat: 32.98792345678901, lng: -96.75113456789012 }, // Full precision coordinates
   'Engineering and Computer Science South': { lat: 32.98792345678901, lng: -96.75113456789012 }, // Full precision coordinates
   'Plinth': { lat: 32.98736607080019, lng: -96.74828234522143 }, // Updated with exact Plinth coordinates
-  'Student Union': { lat: 32.98994567890123, lng: -96.75014567890123 }, // Full precision coordinates
+  'Student Union': { lat: 32.98671581142176, lng: -96.74944890766317 }, // Updated Student Union coordinates
   'Blackstone LaunchPad': { lat: 32.98642345678901, lng: -96.74784567890123 }, // Full precision coordinates
   'SP/N Gallery': { lat: 32.98553456789012, lng: -96.75012345678901 }, // Full precision coordinates
   'Recreation Center': { lat: 32.98742345678901, lng: -96.75254567890123 }, // Full precision coordinates
@@ -63,7 +64,7 @@ const BUILDING_LOCATIONS = {
 const EVENT_LOCATION_OVERRIDES = {
   "UTD Hackathon 2025": { lat: 32.98605047033769, lng: -96.75152260357687 }, // Updated ECSW Building exact location with full precision
   "Comet Concert Series": { lat: 32.98736607080019, lng: -96.74828234522143 }, // Updated Plinth exact location
-  "International Food Festival": { lat: 32.98994567890123, lng: -96.75014567890123 }, // Student Union exact location with full precision
+  "International Food Festival": { lat: 32.98671581142176, lng: -96.74944890766317 }, // Updated Student Union coordinates
   "Student Entrepreneur Showcase": { lat: 32.98642345678901, lng: -96.74784567890123 }, // Blackstone LaunchPad with full precision
   "Student Art Showcase": { lat: 32.98553456789012, lng: -96.75012345678901 }, // SP/N Gallery with full precision
   "Wellness Wednesday": { lat: 32.98742345678901, lng: -96.75254567890123 }, // Recreation Center West with full precision
