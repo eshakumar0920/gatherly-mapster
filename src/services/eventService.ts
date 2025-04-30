@@ -1,4 +1,3 @@
-
 import { Event } from "@/components/EventCard";
 
 // Mock data for events with updated years and improved location formatting
@@ -11,7 +10,8 @@ export const events: Event[] = [
     date: "Aug 15, 2025",
     time: "9:00 AM - 5:00 PM",
     location: "ECSW Building, UTD",
-    category: "Tech"
+    category: "Tech",
+    creatorId: "1"
   },
   {
     id: "2",
@@ -21,7 +21,8 @@ export const events: Event[] = [
     date: "Jul 22-24, 2025",
     time: "7:00 PM - 10:00 PM",
     location: "Plinth, UTD",
-    category: "Music"
+    category: "Music",
+    creatorId: "2"
   },
   {
     id: "3",
@@ -31,7 +32,8 @@ export const events: Event[] = [
     date: "Sep 10, 2025",
     time: "3:00 PM - 9:00 PM",
     location: "Student Union, UTD",
-    category: "Cultural"
+    category: "Cultural",
+    creatorId: "3"
   },
   {
     id: "4",
@@ -41,7 +43,8 @@ export const events: Event[] = [
     date: "Oct 5, 2025",
     time: "10:00 AM - 4:00 PM",
     location: "JSOM Building, UTD",
-    category: "Career"
+    category: "Career",
+    creatorId: "4"
   },
   {
     id: "5",
@@ -51,7 +54,8 @@ export const events: Event[] = [
     date: "Aug 3, 2025",
     time: "7:00 PM - 10:00 PM",
     location: "Arts & Humanities Building, UTD",
-    category: "Arts"
+    category: "Arts",
+    creatorId: "5"
   },
   {
     id: "6",
@@ -61,7 +65,8 @@ export const events: Event[] = [
     date: "Sep 15, 2025",
     time: "5:00 PM - 7:00 PM",
     location: "Recreation Center, UTD",
-    category: "Wellness"
+    category: "Wellness",
+    creatorId: "6"
   }
 ];
 

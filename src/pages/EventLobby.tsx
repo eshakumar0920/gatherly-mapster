@@ -89,7 +89,7 @@ const EventLobby = () => {
       const { data, error } = await supabase
         .from('users')
         .select('username, profile_picture')
-        .eq('id', creatorId)
+        .eq('id', parseInt(creatorId)) // Convert string to number for the query
         .single();
       
       if (data && !error) {
