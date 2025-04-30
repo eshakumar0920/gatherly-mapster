@@ -2,8 +2,9 @@
 import { useLeveling } from '@/hooks/useLeveling';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Star, Trophy, Award } from 'lucide-react';
+import { Star, Trophy, Award, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { pointClassifications } from '@/services/types';
 
 export function LevelProgress() {
   const { 
@@ -47,6 +48,26 @@ export function LevelProgress() {
           </span>
         </div>
       )}
+      
+      <div className="border-t pt-2">
+        <h5 className="text-sm font-medium mb-2">Event Points Classification</h5>
+        <div className="space-y-2">
+          {pointClassifications.map(classification => (
+            <div key={classification.type} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Users className="h-3 w-3" />
+                <span className={`px-2 py-0.5 rounded-full ${classification.color}`}>
+                  {classification.label}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>{classification.minSize}-{classification.maxSize} people</span>
+                <span className="font-medium">{classification.basePoints} pts</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

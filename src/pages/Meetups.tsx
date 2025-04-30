@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Star } from "lucide-react";
+import { Search, Plus, Star, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
 import { useMeetups } from "@/hooks/useMeetups";
+import { useLeveling } from "@/hooks/useLeveling";
 import { supabase } from "@/integrations/supabase/client";
 
 const Meetups = () => {
@@ -25,6 +26,7 @@ const Meetups = () => {
   
   // Pass the selectedCategory to the hook for filtering at the database level
   const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
+  const { pointClassifications } = useLeveling();
 
   // Fetch user ID if logged in
   useEffect(() => {
@@ -121,6 +123,7 @@ const Meetups = () => {
           meetups={filteredMeetups}
           isLoading={isLoading}
           onMeetupClick={handleMeetupClick}
+          showPointsClassification={true}
         />
       </div>
 

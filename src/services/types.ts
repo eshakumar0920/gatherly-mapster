@@ -19,6 +19,25 @@ export type Tag =
   | "Travel" 
   | "Academic";
 
+// Event point classification based on lobby size
+export type PointClassification = 'small' | 'medium' | 'large' | 'mega';
+
+export interface PointClassificationDetail {
+  type: PointClassification;
+  minSize: number;
+  maxSize: number;
+  basePoints: number;
+  color: string;
+  label: string;
+}
+
+export const pointClassifications: PointClassificationDetail[] = [
+  { type: 'small', minSize: 1, maxSize: 5, basePoints: 10, color: 'bg-green-100 text-green-800', label: 'Small Group' },
+  { type: 'medium', minSize: 6, maxSize: 15, basePoints: 20, color: 'bg-blue-100 text-blue-800', label: 'Medium Group' },
+  { type: 'large', minSize: 16, maxSize: 30, basePoints: 30, color: 'bg-purple-100 text-purple-800', label: 'Large Group' },
+  { type: 'mega', minSize: 31, maxSize: 100, basePoints: 50, color: 'bg-yellow-100 text-yellow-800', label: 'Mega Event' },
+];
+
 // Add missing MeetupType definition
 export interface MeetupType {
   id: string;
