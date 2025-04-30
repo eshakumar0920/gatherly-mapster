@@ -12,6 +12,7 @@ import { categories } from "@/services/eventService";
 import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
+import { useMeetups } from "@/hooks/useMeetups";
 import { useLeveling } from "@/hooks/useLeveling";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
