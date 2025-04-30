@@ -77,7 +77,7 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
               className="flex items-center px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
               onClick={() => handleSelectLocation(location)}
             >
-              <MapPin className="h-4 w-4 mr-2" />
+              <MapPin className="h-4 w-4 min-w-4 min-h-4 mr-2 flex-shrink-0" />
               <div>
                 <div>{location.name}</div>
                 {location.description && (
