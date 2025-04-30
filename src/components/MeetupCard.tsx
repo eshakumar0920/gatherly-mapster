@@ -12,7 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/useAuth";
 import { useMeetups } from "@/hooks/useMeetups";
 import { supabase } from "@/integrations/supabase/client";
-import { ProfileSticker } from "@/components/ProfileStickers";
+import { ProfileAvatar } from "@/components/ProfileAvatars";
+import { useLevelUp } from "@/contexts/LevelUpContext";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -49,18 +50,20 @@ const getAvatarForUser = (id: string, name?: string) => {
 };
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
-  const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
+  const { joinMeetupLobby, joinedLobbies, userId, selectedSticker } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { joinMeetupLobby: joinMeetupInDb } = useMeetups();
+  const { selectedAvatar } = useLevelUp();
   
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
+  const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string, level?: number}>({
     name: meetup.createdBy || "Anonymous",
-    avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use illustrated avatar
+    avatar: getAvatarForUser(meetup.id, meetup.createdBy), // Use illustrated avatar
+    level: 1
   });
   
   // Fetch creator info if not available
@@ -78,7 +81,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             setCreatorInfo({
               name: data.username || meetup.createdBy,
               // Use illustrated avatar instead of profile picture
-              avatar: getAvatarForUser(meetup.createdBy, data.username)
+              avatar: getAvatarForUser(meetup.createdBy, data.username),
+              level: 1
             });
           }
         } catch (err) {
@@ -87,7 +91,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       } else {
         setCreatorInfo({
           name: meetup.createdBy || "Anonymous",
-          avatar: getAvatarForUser(meetup.id)
+          avatar: getAvatarForUser(meetup.id),
+          level: 1
         });
       }
     };
@@ -345,18 +350,14 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             <User className="h-4 w-4 mr-2" />
             <div className="flex items-center">
               <div className="relative">
-                <Avatar className="h-5 w-5 mr-1">
-                  <AvatarImage src={creatorInfo.avatar || ""} />
-                  <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <ProfileSticker 
-                  level={1} 
-                  selectedSticker={null}
+                {/* Use ProfileAvatar for the creator */}
+                <ProfileAvatar 
+                  level={creatorInfo.level || 1}
+                  selectedAvatar={null}
                   size="sm"
-                  className="-bottom-0.5 -left-0.5"
                 />
               </div>
-              <span>{creatorInfo.name}</span>
+              <span className="ml-1">{creatorInfo.name}</span>
             </div>
           </div>
           
@@ -370,10 +371,14 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                 {attendees.length > 0 && (
                   <div className="flex -space-x-2 ml-2">
                     {attendees.slice(0, 2).map((attendee, index) => (
-                      <Avatar key={`${attendee.id}-${index}`} className="h-5 w-5 border border-background">
-                        <AvatarImage src={attendee.avatar} />
-                        <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
+                      <div key={`${attendee.id}-${index}`} className="relative">
+                        <ProfileAvatar
+                          level={1}
+                          selectedAvatar={null}
+                          size="sm"
+                          showBadge={false}
+                        />
+                      </div>
                     ))}
                     {attendees.length > 2 && (
                       <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-xs">
@@ -391,10 +396,12 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                   attendees.map((attendee, index) => (
                     <div key={`${attendee.id}-${index}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={attendee.avatar} />
-                          <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <ProfileAvatar
+                          level={1}
+                          selectedAvatar={null}
+                          size="sm"
+                          showBadge={false}
+                        />
                         <span className="text-sm">{attendee.name}</span>
                       </div>
                       <Badge 

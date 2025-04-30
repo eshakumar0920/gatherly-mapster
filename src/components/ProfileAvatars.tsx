@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Dialog,
@@ -14,13 +15,13 @@ import { useToast } from '@/hooks/use-toast';
 import { stickers, StickerType } from '@/utils/badgeData';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface ProfileAvatarProps {
   level: number;
   selectedAvatar: number | null;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  showBadge?: boolean;
 }
 
 // This component displays the avatar with sticker
@@ -28,7 +29,8 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
   level, 
   selectedAvatar,
   className = "",
-  size = 'md'
+  size = 'md',
+  showBadge = true
 }) => {
   const stickerIndex = selectedAvatar !== null 
     ? selectedAvatar 
@@ -61,12 +63,14 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
         <IconComponent className="w-full h-full" fill="currentColor" />
       </div>
       
-      {/* Badge positioned to the side of the avatar as it was before */}
-      <div className="absolute -bottom-1 -left-1">
-        <div className={`bg-white rounded-full p-1 shadow-md ${sticker.color}`}>
-          <IconComponent className={stickerSize} fill="currentColor" />
+      {/* Badge positioned at the bottom left of the avatar */}
+      {showBadge && (
+        <div className="absolute -bottom-1 -left-1">
+          <div className={`bg-white rounded-full p-1 shadow-md ${sticker.color}`}>
+            <IconComponent className={stickerSize} fill="currentColor" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -74,7 +78,7 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
 // This component shows the avatar selection dialog
 const ProfileAvatars: React.FC = () => {
   const { showAvatars, setShowAvatars, selectedAvatar, setSelectedAvatar } = useLevelUp();
-  const { level } = useUserStore();
+  const { level, updateAvatar } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -82,6 +86,7 @@ const ProfileAvatars: React.FC = () => {
   
   const handleSelectAvatar = (index: number) => {
     setSelectedAvatar(index);
+    updateAvatar(index);
     setShowAvatars(false);
     
     toast({

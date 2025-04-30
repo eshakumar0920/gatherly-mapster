@@ -15,10 +15,7 @@ import NotificationSettings, { NotificationSettingsType } from "@/components/pro
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ProfileSticker } from "@/components/ProfileStickers";
-import ProfileStickers from "@/components/ProfileStickers";
-import ProfileAvatars from "@/components/ProfileAvatars";
-import { ProfileAvatar } from "@/components/ProfileAvatars";
+import ProfileAvatars, { ProfileAvatar } from "@/components/ProfileAvatars";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -151,7 +148,7 @@ const Profile = () => {
     }
   };
 
-  const { setShowAvatars } = useLevelUp();
+  const { setShowAvatars, selectedAvatar } = useLevelUp();
 
   const openAvatarSelector = () => {
     setShowAvatars(true);
@@ -192,12 +189,12 @@ const Profile = () => {
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
             <div className="relative cursor-pointer mb-4" onClick={openAvatarSelector}>
-              {/* Replace the Avatar with ProfileAvatar component */}
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="bg-green-200 text-green-600 text-2xl">
-                  {name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+              {/* Use the ProfileAvatar component instead of Avatar */}
+              <ProfileAvatar 
+                level={level} 
+                selectedAvatar={selectedAvatar}
+                size="lg"
+              />
               
               <Button 
                 variant="outline" 
@@ -210,13 +207,6 @@ const Profile = () => {
               >
                 <User className="h-4 w-4" />
               </Button>
-              
-              {/* Keep the level sticker beside the profile picture */}
-              <ProfileSticker 
-                level={level} 
-                selectedSticker={selectedSticker} 
-                size="md" 
-              />
             </div>
             <h2 className="text-xl font-semibold">{name}</h2>
             <p className="text-muted-foreground">{email}</p>
@@ -286,12 +276,13 @@ const Profile = () => {
                 friends.map(friend => (
                   <div key={friend.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
                     <div className="flex items-center gap-2">
-                      {/* We'll show a default avatar instead of the profile picture */}
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary/20 text-primary">
-                          {friend.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
+                      {/* Use ProfileAvatar for friends too */}
+                      <ProfileAvatar 
+                        level={1} 
+                        selectedAvatar={null} 
+                        size="sm"
+                        showBadge={false}
+                      />
                       <div>
                         <p className="text-sm font-medium">{friend.name}</p>
                         <div className="flex gap-1">
