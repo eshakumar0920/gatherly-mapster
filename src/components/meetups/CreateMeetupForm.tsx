@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,14 +17,15 @@ import { useMeetups } from "@/hooks/useMeetups";
 import { useUserStore } from "@/services/meetupService";
 import { useState } from "react";
 import LocationSelector from "./LocationSelector";
-import { campusLocations } from "@/utils/campusLocations";
+import { campusLocations, findLocationByName } from "@/utils/campusLocations";
 
+// Improved validation for location to ensure it's an exact match from the predefined locations
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
   location: z.string().min(3, "Location is required").refine(
-    (val) => campusLocations.some(loc => loc.name === val || normalizeLocationName(val, loc.name)),
+    (val) => campusLocations.some(loc => loc.name === val),
     { message: "Please select a valid campus location from the dropdown" }
   ),
   category: z.string().min(1, "Category is required"),
@@ -33,14 +35,7 @@ const formSchema = z.object({
   ),
 });
 
-// Helper function to normalize and compare location names
-const normalizeLocationName = (input: string, reference: string): boolean => {
-  const normalize = (text: string) => text.trim().toLowerCase().replace(/building|hall|center/gi, "").replace(/\s+/g, " ").trim();
-  const normalizedInput = normalize(input);
-  const normalizedRef = normalize(reference);
-  return normalizedInput.includes(normalizedRef) || normalizedRef.includes(normalizedInput);
-};
-
+// Removing the normalizeLocationName helper as we want exact matches only
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
@@ -68,7 +63,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
     },
   });
 
+  // Updated to ensure we're getting exact coordinates from the selected location
   const handleLocationCoordinatesChange = (lat: number, lng: number) => {
+    console.log(`Location coordinates selected: (${lat}, ${lng})`);
     setLocationCoordinates({ lat, lng });
   };
 
@@ -144,19 +141,27 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      // Find or get coordinates for the selected location
+      // Get exact coordinates for the selected location - improved to ensure accuracy
       let lat = locationCoordinates.lat;
       let lng = locationCoordinates.lng;
       
-      // If coordinates are still 0, find the location in campusLocations
+      // If coordinates weren't selected directly, find the exact location from campusLocations
       if (lat === 0 && lng === 0) {
-        const locationMatch = campusLocations.find(loc => 
-          loc.name === values.location || normalizeLocationName(values.location, loc.name)
-        );
+        // Find exact match by name
+        const exactLocationMatch = campusLocations.find(loc => loc.name === values.location);
         
-        if (locationMatch) {
-          lat = locationMatch.lat;
-          lng = locationMatch.lng;
+        if (exactLocationMatch) {
+          lat = exactLocationMatch.lat;
+          lng = exactLocationMatch.lng;
+          console.log(`Using exact coordinates for "${values.location}": (${lat}, ${lng})`);
+        } else {
+          // Fallback to library if no match (this shouldn't happen with our validation)
+          const defaultLocation = campusLocations.find(loc => loc.id === "library");
+          if (defaultLocation) {
+            lat = defaultLocation.lat;
+            lng = defaultLocation.lng;
+            console.log(`No match found for "${values.location}", using library coordinates: (${lat}, ${lng})`);
+          }
         }
       }
       
@@ -167,6 +172,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         longitude: lng
       };
       
+      console.log(`Creating meetup at location "${values.location}" with coordinates: (${lat}, ${lng})`);
       const newMeetup = await createMeetup(meetupData, currentUserId, userData.username);
       
       if (newMeetup) {

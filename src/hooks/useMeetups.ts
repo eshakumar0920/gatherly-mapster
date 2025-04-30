@@ -111,48 +111,6 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
-  // Modified findCampusLocation with better matching using our new utility
-  const findCampusLocation = (locationName: string) => {
-    // Use the new helper function from campusLocations.ts
-    const matchedLocation = findLocationByName(locationName);
-    
-    if (matchedLocation) {
-      return { lat: matchedLocation.lat, lng: matchedLocation.lng };
-    }
-    
-    // If no match found using the helper, try normalized matching
-    const normalize = (text: string) => {
-      return text.trim().toLowerCase()
-        .replace(/building|hall|center/gi, "")
-        .replace(/\s+/g, " ").trim();
-    };
-    
-    const normalizedInput = normalize(locationName);
-    
-    for (const location of campusLocations) {
-      const normalizedName = normalize(location.name);
-      if (normalizedInput.includes(normalizedName) || normalizedName.includes(normalizedInput)) {
-        return { lat: location.lat, lng: location.lng };
-      }
-    }
-    
-    // Special case for library
-    if (normalizedInput.includes("library") || normalizedInput.includes("mcdermott")) {
-      const library = campusLocations.find(loc => loc.id === "library");
-      if (library) {
-        return { lat: library.lat, lng: library.lng };
-      }
-    }
-    
-    // If no match, use a random campus location with a more obvious offset 
-    // to show it's an approximation
-    const randomIndex = Math.floor(Math.random() * campusLocations.length);
-    return { 
-      lat: campusLocations[randomIndex].lat + (Math.random() - 0.5) * 0.002, 
-      lng: campusLocations[randomIndex].lng + (Math.random() - 0.5) * 0.002 
-    };
-  };
-
   const createMeetup = async (meetupData: Partial<Meetup>, userId: string, userName: string): Promise<Meetup | null> => {
     try {
       const lobbySize = meetupData.lobbySize || 5;
@@ -162,25 +120,23 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       let latitude = meetupData.latitude;
       let longitude = meetupData.longitude;
       
-      // If coordinates are not provided or are zero, try to find them from the location name
+      // If coordinates are not provided or are zero, use exact location match
       if ((!latitude || !longitude || latitude === 0 || longitude === 0) && meetupData.location) {
-        // Special case for McDermott Library
-        if (meetupData.location.toLowerCase().includes("library") || 
-            meetupData.location.toLowerCase().includes("mcdermott")) {
-          const libraryLoc = campusLocations.find(loc => loc.id === "library");
-          if (libraryLoc) {
-            latitude = libraryLoc.lat;
-            longitude = libraryLoc.lng;
-          } else {
-            // Fall back to better matching
-            const locationCoords = findCampusLocation(meetupData.location);
-            latitude = locationCoords.lat;
-            longitude = locationCoords.lng;
-          }
+        // Find exact match by name
+        const exactLocationMatch = campusLocations.find(loc => loc.name === meetupData.location);
+        
+        if (exactLocationMatch) {
+          latitude = exactLocationMatch.lat;
+          longitude = exactLocationMatch.lng;
+          console.log(`Using exact coordinates for meetup at "${meetupData.location}": (${latitude}, ${longitude})`);
         } else {
-          const locationCoords = findCampusLocation(meetupData.location);
-          latitude = locationCoords.lat;
-          longitude = locationCoords.lng;
+          // Fallback to library as default location
+          const defaultLocation = campusLocations.find(loc => loc.id === "library");
+          if (defaultLocation) {
+            latitude = defaultLocation.lat;
+            longitude = defaultLocation.lng;
+            console.log(`No exact match found for "${meetupData.location}", using library coordinates: (${latitude}, ${longitude})`);
+          }
         }
       }
       
