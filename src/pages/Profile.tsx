@@ -581,6 +581,8 @@ const Profile = () => {
         initialSettings={privacySettings}
       />
 
+      <ProfileStickers />
+
       <Navigation />
     </div>
   );

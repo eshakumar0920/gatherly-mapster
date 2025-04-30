@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -13,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/useAuth";
 import { useMeetups } from "@/hooks/useMeetups";
 import { supabase } from "@/integrations/supabase/client";
+import { ProfileSticker } from "@/components/ProfileStickers";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -344,10 +344,18 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           <div className="flex items-center text-sm text-muted-foreground">
             <User className="h-4 w-4 mr-2" />
             <div className="flex items-center">
-              <Avatar className="h-5 w-5 mr-1">
-                <AvatarImage src={creatorInfo.avatar || ""} />
-                <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-5 w-5 mr-1">
+                  <AvatarImage src={creatorInfo.avatar || ""} />
+                  <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <ProfileSticker 
+                  level={1} 
+                  selectedSticker={null}
+                  size="sm"
+                  className="-bottom-0.5 -left-0.5"
+                />
+              </div>
               <span>{creatorInfo.name}</span>
             </div>
           </div>

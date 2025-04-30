@@ -1,71 +1,52 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useUserStore } from '@/services/meetupService';
-import LootBoxPopup from '@/components/LootBoxPopup';
 
-interface LevelUpContextType {
+interface LevelUpContextProps {
+  showLevelUp: boolean;
+  setShowLevelUp: (show: boolean) => void;
+  newLevel: number | null;
+  setNewLevel: (level: number | null) => void;
   showStickers: boolean;
   setShowStickers: (show: boolean) => void;
   selectedSticker: number | null;
-  setSelectedSticker: (sticker: number | null) => void;
+  setSelectedSticker: (index: number | null) => void;
 }
 
-const LevelUpContext = createContext<LevelUpContextType | undefined>(undefined);
+const LevelUpContext = createContext<LevelUpContextProps | undefined>(undefined);
 
-export const LevelUpProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { level, selectedSticker: userSelectedSticker, setSelectedSticker: updateSelectedSticker } = useUserStore();
-  const [previousLevel, setPreviousLevel] = useState(0);
-  const [isLootBoxOpen, setIsLootBoxOpen] = useState(false);
+export function LevelUpProvider({ children }: { children: ReactNode }) {
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [newLevel, setNewLevel] = useState<number | null>(null);
   const [showStickers, setShowStickers] = useState(false);
-  
-  // Initialize previousLevel after first render
-  useEffect(() => {
-    if (previousLevel === 0) {
-      setPreviousLevel(level);
-    }
-  }, []);
-  
-  // Check for level up across any page
-  useEffect(() => {
-    console.log("Level context check:", level, "Previous:", previousLevel);
-    console.log("Current selected sticker:", userSelectedSticker);
-    
-    if (previousLevel > 0 && level > previousLevel) {
-      console.log("Level up detected globally! Opening loot box.");
-      setIsLootBoxOpen(true);
-    }
-    
-    if (previousLevel !== level && previousLevel !== 0) {
-      setPreviousLevel(level);
-    }
-  }, [level, previousLevel]);
-  
+  const { selectedSticker, setSelectedSticker: updateSelectedSticker } = useUserStore();
+
+  const setSelectedSticker = (index: number | null) => {
+    updateSelectedSticker(index);
+  };
+
   return (
-    <LevelUpContext.Provider 
-      value={{ 
-        showStickers, 
-        setShowStickers, 
-        selectedSticker: userSelectedSticker, 
-        setSelectedSticker: updateSelectedSticker 
+    <LevelUpContext.Provider
+      value={{
+        showLevelUp,
+        setShowLevelUp,
+        newLevel,
+        setNewLevel,
+        showStickers,
+        setShowStickers,
+        selectedSticker,
+        setSelectedSticker,
       }}
     >
       {children}
-      <LootBoxPopup 
-        level={level}
-        isOpen={isLootBoxOpen}
-        onClose={() => {
-          setIsLootBoxOpen(false);
-          setShowStickers(true);
-        }}
-      />
     </LevelUpContext.Provider>
   );
-};
+}
 
-export const useLevelUp = () => {
+export function useLevelUp() {
   const context = useContext(LevelUpContext);
   if (context === undefined) {
     throw new Error('useLevelUp must be used within a LevelUpProvider');
   }
   return context;
-};
+}
