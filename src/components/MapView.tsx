@@ -34,8 +34,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "ecss",
     title: "ECSS Building",
-    lat: 32.9879,
-    lng: -96.7511,
+    lat: 32.986311087083465,
+    lng: -96.75045526156833,
     description: "Engineering and Computer Science South building with classrooms and labs"
   },
   {

@@ -27,8 +27,8 @@ const UTD_LOCATIONS = {
   'ECSW Courtyard': { lat: 32.98605047033769, lng: -96.75152260357687 }, // Full precision coordinates
   'Engineering and Computer Science West': { lat: 32.98662987654321, lng: -96.75114987654321 }, // Full precision coordinates
   'ECSS Building': { lat: 32.98792345678901, lng: -96.75113456789012 }, // Full precision coordinates
-  'ECSS': { lat: 32.98792345678901, lng: -96.75113456789012 }, // Full precision coordinates
-  'Engineering and Computer Science South': { lat: 32.98792345678901, lng: -96.75113456789012 }, // Full precision coordinates
+  'ECSS': { lat: 32.986311087083465, lng: -96.75045526156833 }, // Full precision coordinates
+  'Engineering and Computer Science South': { lat: 32.986311087083465, lng: -96.75045526156833 }, // Full precision coordinates
   'ECSN': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
   'ECSN Building': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
   'Engineering and Computer Science North': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
