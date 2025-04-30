@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -56,7 +57,11 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
       "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily", 
       "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver"
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver",
+      // Brown woman avatar with different styles
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Amara&skinColor=ae8b70&hairColor=2c1b18&accessoriesChance=0&accessories=prescription02",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya&skinColor=ae8b70&hairColor=2c1b18&accessoriesChance=0",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Kira&skinColor=ae8b70&topChance=100&hairColor=2c1b18"
     ];
     return avatars[charSum % avatars.length];
   };

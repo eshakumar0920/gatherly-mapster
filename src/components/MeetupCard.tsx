@@ -35,6 +35,10 @@ const illustratedAvatars = [
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Milo",
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver",
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella",
+  // Brown woman avatar with different styles
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Amara&skinColor=ae8b70&hairColor=2c1b18&accessoriesChance=0&accessories=prescription02",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya&skinColor=ae8b70&hairColor=2c1b18&accessoriesChance=0",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Kira&skinColor=ae8b70&topChance=100&hairColor=2c1b18"
 ];
 
 // Helper to get a consistent avatar for a specific user ID or name
