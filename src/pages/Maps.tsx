@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,6 @@ import { getEvents } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import { EventSearchParams, eventsApi } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
-import { campusLocations } from "@/utils/campusLocations";
 
 interface MapLocation {
   id: string;
@@ -63,27 +63,11 @@ const normalizeText = (text: string): string => {
     .trim();
 };
 
-// Improved helper function to get location coordinates based on venue with better matching
+// Helper function to get location coordinates based on venue with improved matching
 const getLocationCoordinates = (locationName: string) => {
   if (!locationName) return UTD_LOCATIONS.default;
   
-  // First try to match with our campusLocations from the utility file
-  const campusLocation = campusLocations.find(location => 
-    location.name.toLowerCase() === locationName.toLowerCase() ||
-    normalizeText(location.name) === normalizeText(locationName)
-  );
-  
-  if (campusLocation) {
-    return { lat: campusLocation.lat, lng: campusLocation.lng };
-  }
-  
-  // If we have explicit coordinates from the database, use those
-  if (typeof locationName === 'object' && 'latitude' in locationName && 'longitude' in locationName) {
-    // @ts-ignore - We're checking for existence dynamically
-    return { lat: locationName.latitude, lng: locationName.longitude };
-  }
-  
-  // Continue with existing special case handling
+  // Special handling for common locations
   if (locationName.toLowerCase().includes('ecsw') || 
       locationName.toLowerCase().includes('engineering') && locationName.toLowerCase().includes('west')) {
     return UTD_LOCATIONS['ECSW Building'];
@@ -125,18 +109,8 @@ const getLocationCoordinates = (locationName: string) => {
     return UTD_LOCATIONS[locationName as keyof typeof UTD_LOCATIONS];
   }
   
-  // Normalized text matching with improved fuzzy matching
+  // Normalized text matching
   const normalizedLocation = normalizeText(locationName);
-  
-  // Check for partial matches in campus locations first
-  for (const location of campusLocations) {
-    const normalizedCampusName = normalizeText(location.name);
-    if (normalizedLocation.includes(normalizedCampusName) || 
-        normalizedCampusName.includes(normalizedLocation)) {
-      return { lat: location.lat, lng: location.lng };
-    }
-  }
-  
   for (const [key, value] of Object.entries(UTD_LOCATIONS)) {
     if (key === 'default') continue;
     
@@ -148,25 +122,8 @@ const getLocationCoordinates = (locationName: string) => {
     }
   }
   
-  // Word matching for partial matches with improved matching
+  // Word matching for partial matches
   const locationWords = normalizedLocation.split(' ');
-  
-  // First check campus locations for word matches
-  for (const location of campusLocations) {
-    const campusNameWords = normalizeText(location.name).split(' ');
-    const matches = campusNameWords.some(keyWord => 
-      locationWords.some(locWord => 
-        (keyWord.length > 2 && locWord.includes(keyWord)) || 
-        (locWord.length > 2 && keyWord.includes(locWord))
-      )
-    );
-    
-    if (matches) {
-      return { lat: location.lat, lng: location.lng };
-    }
-  }
-  
-  // Then check UTD_LOCATIONS
   for (const [key, value] of Object.entries(UTD_LOCATIONS)) {
     if (key === 'default') continue;
     
@@ -234,7 +191,7 @@ const Maps = () => {
           console.log("Failed to get API events, using mock data");
         }
         
-        // Try Supabase if API fails - first get meetups
+        // Try Supabase if API fails
         try {
           const { data: supabaseEvents, error } = await supabase
             .from('events')
@@ -243,10 +200,7 @@ const Maps = () => {
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
             const supabaseLocations = supabaseEvents.map(event => {
-              // Check for explicit lat/lng in the event data first
-              const coords = event.latitude && event.longitude 
-                ? { lat: event.latitude, lng: event.longitude }
-                : getLocationCoordinates(event.location);
+              const coords = getLocationCoordinates(event.location);
               
               return {
                 id: String(event.id),
@@ -344,7 +298,7 @@ const Maps = () => {
       </header>
 
       <div className="px-4 pb-4">
-        <form onSubmit={(e) => { e.preventDefault(); }}>
+        <form onSubmit={handleSearch}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input 
@@ -364,7 +318,7 @@ const Maps = () => {
           </div>
         ) : (
           <div className="w-full h-full min-h-[400px]">
-            <GoogleMapView locations={mapLocations} />
+            <GoogleMapView locations={filteredLocations} />
           </div>
         )}
       </div>
@@ -375,3 +329,4 @@ const Maps = () => {
 };
 
 export default Maps;
+
