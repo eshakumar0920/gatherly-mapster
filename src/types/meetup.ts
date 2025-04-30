@@ -12,6 +12,8 @@ export interface Meetup {
   lobbySize: number;
   category?: string; // Added category property as optional
   attendees?: string[];
+  latitude?: number;  // Added latitude property as optional
+  longitude?: number; // Added longitude property as optional
 }
 
 // Event data as it comes from Supabase
@@ -29,4 +31,6 @@ export interface EventRow {
   xp_reward: number | null;
   category?: string;
   lobby_size: number | null;  // Added to match the new database column
+  latitude?: number;  // Added latitude property as optional
+  longitude?: number; // Added longitude property as optional
 }
