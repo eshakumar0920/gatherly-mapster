@@ -1,21 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, QrCode } from "lucide-react";
+import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parse } from "date-fns";
-import QRScanner from "@/components/QRScanner";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useUserStore } from "@/services/meetupService";
 
 const mockAttendees = [
@@ -36,7 +33,6 @@ const EventLobby = () => {
   const { attendMeetup } = useUserStore();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [organizer, setOrganizer] = useState<any>(null);
   
   useEffect(() => {
@@ -290,43 +286,6 @@ const EventLobby = () => {
           )}
         </div>
       </div>
-
-      <Separator />
-
-      <div className="p-4">
-        <Button 
-          variant="default" 
-          className="w-full bg-primary text-primary-foreground"
-          onClick={() => setIsQRScannerOpen(true)}
-        >
-          <QrCode className="mr-2 h-4 w-4" />
-          View Event QR Code
-        </Button>
-      </div>
-
-      {/* QR Scanner Dialog */}
-      <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
-        <DialogContent className="p-0 sm:max-w-md">
-          <QRScanner 
-            onSuccess={(data) => {
-              setIsQRScannerOpen(false);
-              toast({
-                title: "QR Code Scanned",
-                description: `You earned ${event.points || 5} points!`,
-                variant: "default",
-              });
-              
-              // Award points to the user
-              if (eventId && event?.points) {
-                attendMeetup(eventId, event.points);
-              }
-            }}
-            onCancel={() => setIsQRScannerOpen(false)}
-            meetupId={eventId}
-            mode="display"
-          />
-        </DialogContent>
-      </Dialog>
 
       <Navigation />
     </div>

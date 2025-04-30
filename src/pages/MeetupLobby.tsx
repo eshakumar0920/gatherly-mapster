@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MapPin, Clock, User, Check, UserCheck, QrCode } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, ScanQRCode, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -50,8 +50,6 @@ const MeetupLobby = () => {
   const [isJoined, setIsJoined] = useState<boolean>(false);
   const [checkingIn, setCheckingIn] = useState<boolean>(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState<boolean>(false);
-  const [isQRCodeOpen, setIsQRCodeOpen] = useState<boolean>(false);
-  const [qrMode, setQrMode] = useState<"scan" | "display">("scan");
   
   useEffect(() => {
     // Check if the meetup is in attended meetups
@@ -248,44 +246,46 @@ const MeetupLobby = () => {
       }
       
       // Update in database (if needed)
-      const { error } = await supabase
+      supabase
         .from('participants')
         .update({ 
           attendance_status: 'attended',
           xp_earned: meetup.points || 3
         })
         .eq('event_id', parseInt(meetupId))
-        .eq('user_id', parseInt(userId));
-      
-      if (error) {
-        console.error("Error checking in:", error);
-        toast({
-          title: "Error checking in",
-          description: error.message,
-          variant: "destructive"
+        .eq('user_id', parseInt(userId))
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error checking in:", error);
+            toast({
+              title: "Error checking in",
+              description: error.message,
+              variant: "destructive"
+            });
+            setCheckingIn(false);
+            return;
+          }
+          
+          // Dispatch action to add to attendedMeetups
+          attendMeetup(meetupId, meetup.points || 3);
+          
+          // Update UI
+          setIsAttending(true);
+          
+          // Update attendee status
+          setAttendees(prev => 
+            prev.map(a => 
+              a.id === userId ? { ...a, status: "going" } : a
+            )
+          );
+          
+          toast({
+            title: "Check-in successful!",
+            description: `You earned ${meetup.points || 3} points!`
+          });
+          
+          setCheckingIn(false);
         });
-        setCheckingIn(false);
-        return;
-      }
-      
-      // Dispatch action to add to attendedMeetups
-      attendMeetup(meetupId, meetup.points || 3);
-      
-      // Update UI
-      setIsAttending(true);
-      
-      // Update attendee status
-      setAttendees(prev => 
-        prev.map(a => 
-          a.id === userId ? { ...a, status: "going" } : a
-        )
-      );
-      
-      toast({
-        title: "Check-in successful!",
-        description: "You have successfully checked in to the meetup"
-      });
-      
     } catch (error) {
       console.error("Error checking in:", error);
       toast({
@@ -295,54 +295,6 @@ const MeetupLobby = () => {
       });
     } finally {
       setCheckingIn(false);
-    }
-  };
-  
-  const handleOpenQRScanner = () => {
-    setQrMode("scan");
-    setIsQRScannerOpen(true);
-  };
-  
-  const handleShowQRCode = () => {
-    setQrMode("display");
-    setIsQRCodeOpen(true);
-  };
-  
-  const handleQRScanSuccess = (data: string) => {
-    if (!meetupId || !meetup) return;
-    
-    setIsQRScannerOpen(false);
-    
-    // This would typically be connected to a QR code scanner
-    // For now, we'll simulate a successful scan
-    try {
-      toast({
-        title: "QR Code scanned successfully!",
-        description: "Processing check-in..."
-      });
-      
-      attendMeetup(meetupId, meetup.points || 3);
-      setIsAttending(true);
-      
-      // Update attendee status
-      setAttendees(prev => 
-        prev.map(a => 
-          a.id === userId ? { ...a, status: "going" } : a
-        )
-      );
-      
-      toast({
-        title: "Check-in confirmed!",
-        description: `You earned ${meetup.points || 3} points`
-      });
-      
-    } catch (error) {
-      console.error("Error scanning QR code:", error);
-      toast({
-        title: "Error scanning QR code",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
     }
   };
   
@@ -490,9 +442,9 @@ const MeetupLobby = () => {
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
             <div className="max-w-lg mx-auto flex gap-2">
               {isAttending ? (
-                <Button className="w-full" variant="default" onClick={handleShowQRCode}>
-                  <QrCode className="mr-2 h-4 w-4" />
-                  Show QR Code
+                <Button className="w-full" variant="default" disabled>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Checked In
                 </Button>
               ) : isJoined ? (
                 <Button 
@@ -500,7 +452,8 @@ const MeetupLobby = () => {
                   onClick={handleCheckIn}
                   disabled={checkingIn}
                 >
-                  {checkingIn ? "Processing..." : "Check In Now"}
+                  <ScanQRCode className="mr-2 h-4 w-4" />
+                  {checkingIn ? "Processing..." : "Scan QR Code to Check In"}
                 </Button>
               ) : (
                 <Button 
@@ -510,17 +463,6 @@ const MeetupLobby = () => {
                 >
                   <Users className="mr-2 h-4 w-4" />
                   {attendees.length >= meetup.lobbySize ? "Lobby Full" : "Join Lobby"}
-                </Button>
-              )}
-              
-              {isJoined && !isAttending && (
-                <Button 
-                  variant="outline" 
-                  className="flex-shrink-0" 
-                  onClick={handleOpenQRScanner}
-                >
-                  <UserCheck className="h-4 w-4" />
-                  <span className="sr-only">Scan QR Code</span>
                 </Button>
               )}
             </div>
@@ -536,18 +478,6 @@ const MeetupLobby = () => {
             onCancel={() => setIsQRScannerOpen(false)}
             meetupId={meetupId}
             mode="scan"
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* QR Code Display Dialog */}
-      <Dialog open={isQRCodeOpen} onOpenChange={setIsQRCodeOpen}>
-        <DialogContent className="p-0 sm:max-w-md">
-          <QRScanner 
-            onSuccess={() => {}} 
-            onCancel={() => setIsQRCodeOpen(false)}
-            meetupId={meetupId}
-            mode="display"
           />
         </DialogContent>
       </Dialog>

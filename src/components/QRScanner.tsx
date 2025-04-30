@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Camera, Ban, Check, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
