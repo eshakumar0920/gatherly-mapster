@@ -44,7 +44,8 @@ export interface EventType {
 }
 
 export interface UserActions {
-  addAttendedMeetup: (meetup: MeetupType) => void;
+  // Modified to accept either a MeetupType object or a string meetupId
+  addAttendedMeetup: (meetup: MeetupType | string) => void;
   addFriend: (friend: Friend) => void;
   removeFriend: (friendId: string) => void;
   updateProfile: (name: string, email: string) => void;

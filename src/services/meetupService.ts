@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MeetupType, Tag, Friend, UserActions } from './types';
@@ -33,13 +32,35 @@ export const useUserStore = create<UserState & UserActions>()(
       // Initialize new state properties
       userId: null,
       joinedLobbies: [],
-      addAttendedMeetup: (meetup: MeetupType) => {
-        set((state) => ({
-          ...state,
-          attendedMeetups: [...state.attendedMeetups, meetup],
-          points: state.points + 5,
-          level: Math.floor((state.points + 5) / 10)
-        }));
+      addAttendedMeetup: (meetup: MeetupType | string) => {
+        set((state) => {
+          // Handle both MeetupType objects and string IDs
+          if (typeof meetup === 'string') {
+            const meetupObject: MeetupType = {
+              id: meetup,
+              title: "Attended Meetup",
+              description: "Attended via check-in",
+              dateTime: new Date().toISOString(),
+              location: "UTD",
+              points: 5, // Default points
+              createdBy: "System",
+              lobbySize: 0
+            };
+            return {
+              ...state,
+              attendedMeetups: [...state.attendedMeetups, meetupObject],
+              points: state.points + 5,
+              level: Math.floor((state.points + 5) / 10)
+            };
+          } else {
+            return {
+              ...state,
+              attendedMeetups: [...state.attendedMeetups, meetup],
+              points: state.points + (meetup.points || 5),
+              level: Math.floor((state.points + (meetup.points || 5)) / 10)
+            };
+          }
+        });
       },
       addFriend: (friend: Friend) => {
         set((state) => ({
