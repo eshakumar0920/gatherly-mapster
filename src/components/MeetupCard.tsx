@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -250,7 +251,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               email: user.email,
               username: username,
               join_date: new Date().toISOString(),
-              profile_picture: avatar // Store the user's selected avatar
+              profile_picture: avatar
             })
             .select('id')
             .single();
@@ -265,10 +266,10 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             return;
           }
           
-          // Fixed: Convert newUser.id to string before passing it to joinMeetupInDb
-          await joinMeetupInDb(meetup.id, String(newUser.id));
+          // Convert string ID to number for the database function
+          const newUserId = String(newUser.id);
+          await joinMeetupInDb(meetup.id, newUserId);
           joinMeetupLobby(meetup.id);
-          
         } else {
           // Update the user's avatar if they have one selected
           if (avatar) {
@@ -278,8 +279,9 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               .eq('id', userData.id);
           }
           
-          // Fixed: Convert userData.id to string before passing it to joinMeetupInDb
-          await joinMeetupInDb(meetup.id, String(userData.id));
+          // Convert string ID to number for the database function
+          const userIdStr = String(userData.id);
+          await joinMeetupInDb(meetup.id, userIdStr);
           joinMeetupLobby(meetup.id);
         }
       } else {
@@ -291,7 +293,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             .eq('id', userId);
         }
         
-        // This is the line causing the error - convert userId to number before passing
+        // Use the string userId directly - the function now expects a string
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }

@@ -318,7 +318,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         return true;
       }
       
-      // Insert participant
+      // Insert participant - convert string IDs to numbers for the database
       const { error } = await supabase.from('participants').insert({
         event_id: parseInt(meetupId),
         user_id: parseInt(userId),
