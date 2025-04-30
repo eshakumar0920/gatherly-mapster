@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -50,7 +49,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               profile_picture
             )
           `)
-          .eq('event_id', meetup.id);
+          .eq('event_id', parseInt(meetup.id)); // Convert string to number
           
         if (error) {
           console.error("Error fetching attendees:", error);
@@ -143,8 +142,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             dateObj = fallbackDate;
           }
         }
-      } else if (meetup.dateTime instanceof Date) {
-        dateObj = meetup.dateTime;
       }
 
       if (dateObj && isValid(dateObj)) {

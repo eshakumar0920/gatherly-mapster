@@ -114,7 +114,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('username')
-        .eq('id', currentUserId)
+        .eq('id', parseInt(currentUserId)) // Convert string to number
         .single();
         
       if (userError || !userData) {

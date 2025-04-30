@@ -207,7 +207,7 @@ export const useUserStore = create<UserStore>()(
                 total_xp_earned: newPoints,
                 current_level: newLevel
               })
-              .eq('id', state.userId)
+              .eq('id', parseInt(state.userId)) // Convert string to number
               .then(({ error }) => {
                 if (error) {
                   console.error("Failed to update user XP in database:", error);
