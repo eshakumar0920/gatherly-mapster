@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -10,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Meetup } from "@/types/meetup";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
+import { useMeetups } from "@/hooks/useMeetups";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -23,68 +26,93 @@ interface Attendee {
 }
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
-  const { joinMeetupLobby, joinedLobbies } = useUserStore();
+  const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { joinMeetupLobby: joinMeetupInDb } = useMeetups();
   
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Initialize meetup-specific attendees based on meetup ID
+  // Fetch actual attendees from database
   useEffect(() => {
-    // Get some variation based on meetup ID
-    const idSum = meetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
-    
-    // Create a unique set of attendees based on the meetup ID
-    const baseAttendees: Attendee[] = [];
-    
-    // Add Jane Cooper for most meetups
-    if (idSum % 2 === 0) {
-      baseAttendees.push({ 
-        id: "1", 
-        name: "Jane Cooper", 
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
-        status: "going" 
-      });
-    }
-    
-    // Add Wade Warren for some meetups
-    if (idSum % 3 === 0) {
-      baseAttendees.push({ 
-        id: "2", 
-        name: "Wade Warren", 
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
-        status: "going" 
-      });
-    }
-    
-    // Only add Esther Howard for some meetups
-    if (idSum > 2) {
-      baseAttendees.push({ 
-        id: "3", 
-        name: "Esther Howard", 
-        avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=200&h=200&auto=format&fit=crop", 
-        status: "interested" 
-      });
-    }
-    
-    // Check if current user is in the lobby
-    if (isJoinedLobby && user) {
-      // Add current user to attendees list
-      const userAlreadyInList = baseAttendees.some(a => a.id === user.id);
-      
-      if (!userAlreadyInList) {
-        baseAttendees.push({
-          id: user.id,
-          name: user.email?.split('@')[0] || "Current User",
-          status: "going"
-        });
+    const fetchAttendees = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('participants')
+          .select(`
+            user_id,
+            attendance_status,
+            users!inner(
+              username,
+              profile_picture
+            )
+          `)
+          .eq('event_id', meetup.id);
+          
+        if (error) {
+          console.error("Error fetching attendees:", error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const mappedAttendees: Attendee[] = data.map(participant => ({
+            id: participant.user_id.toString(),
+            name: participant.users.username || "Anonymous",
+            avatar: participant.users.profile_picture || undefined,
+            status: participant.attendance_status === 'attended' ? 'going' : 'interested'
+          }));
+          
+          setAttendees(mappedAttendees);
+        } else {
+          // Initialize with sample data if no real attendees
+          const idSum = meetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+          
+          const baseAttendees: Attendee[] = [];
+          
+          if (idSum % 2 === 0) {
+            baseAttendees.push({ 
+              id: "1", 
+              name: "Jane Cooper", 
+              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+              status: "going" 
+            });
+          }
+          
+          if (idSum % 3 === 0) {
+            baseAttendees.push({ 
+              id: "2", 
+              name: "Wade Warren", 
+              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+              status: "going" 
+            });
+          }
+          
+          setAttendees(baseAttendees);
+        }
+      } catch (err) {
+        console.error("Error in fetchAttendees:", err);
       }
-    }
+    };
     
-    setAttendees(baseAttendees);
-  }, [meetup.id, isJoinedLobby, user]);
+    fetchAttendees();
+  }, [meetup.id]);
+  
+  // Check if user is in attendees list
+  useEffect(() => {
+    if (isJoinedLobby && user && !attendees.some(a => a.id === userId)) {
+      setAttendees(prev => [
+        ...prev,
+        {
+          id: userId || "current-user",
+          name: user.email?.split('@')[0] || "Current User",
+          status: "interested"
+        }
+      ]);
+    }
+  }, [isJoinedLobby, user, userId, attendees]);
   
   const formattedDateTime = (() => {
     if (meetup.dateTime == null) {
@@ -126,49 +154,90 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       // If we couldn't parse it, just return the original string
       return typeof meetup.dateTime === 'string' ? meetup.dateTime : "Date unavailable";
     } catch (error) {
-      console.error("Error formatting date:", error, "Date value:", meetup.dateTime);
+      console.error("Error formatting date:", error);
       return typeof meetup.dateTime === 'string' ? meetup.dateTime : "Date unavailable";
     }
   })();
 
-  const handleJoinMeetup = (e: React.MouseEvent) => {
+  const handleJoinMeetup = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (attendees.length >= meetup.lobbySize) {
-      toast({
-        title: "Lobby is full",
-        description: `This meetup has reached its maximum capacity of ${meetup.lobbySize} attendees.`,
-        variant: "destructive",
-      });
-      return;
-    }
+    if (isLoading) return;
+    setIsLoading(true);
     
-    joinMeetupLobby(meetup.id);
-    
-    // Update attendees list to include the current user
-    if (user) {
-      setAttendees(prev => {
-        // Check if user is already in the list
-        if (!prev.some(a => a.id === user.id)) {
-          return [
-            ...prev, 
-            {
-              id: user.id,
-              name: user.email?.split('@')[0] || "Current User",
-              status: "going"
-            }
-          ];
+    try {
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to join a meetup",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (attendees.length >= meetup.lobbySize) {
+        toast({
+          title: "Lobby is full",
+          description: `This meetup has reached its maximum capacity of ${meetup.lobbySize} attendees.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Get user ID if not already in store
+      if (!userId) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+          
+        if (userError) {
+          // Create user record if not found
+          const username = user.email.split('@')[0];
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+              email: user.email,
+              username: username,
+              join_date: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+            
+          if (createError) {
+            console.error("Error creating user record:", createError);
+            toast({
+              title: "Error joining meetup",
+              description: "Could not create user record in database",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          await joinMeetupInDb(meetup.id, newUser.id.toString());
+          joinMeetupLobby(meetup.id);
+          
+        } else {
+          await joinMeetupInDb(meetup.id, userData.id.toString());
+          joinMeetupLobby(meetup.id);
         }
-        return prev;
+      } else {
+        await joinMeetupInDb(meetup.id, userId);
+        joinMeetupLobby(meetup.id);
+      }
+      
+      navigate(`/meetups/${meetup.id}`);
+    } catch (error) {
+      console.error("Error joining meetup:", error);
+      toast({
+        title: "Error joining meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    toast({
-      title: "Joined lobby",
-      description: "You've joined the meetup lobby. Don't forget to scan the QR code at the meetup to check in and earn points!",
-    });
-    
-    navigate(`/meetups/${meetup.id}`);
   };
 
   const handleViewDetails = () => {
@@ -179,7 +248,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const isLobbyFull = attendees.length >= meetup.lobbySize;
   
   return (
-    <div className="border rounded-lg p-4 bg-card animate-fade-in" onClick={handleViewDetails}>
+    <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow" onClick={handleViewDetails}>
       <div className="flex justify-between items-start">
         <div>
           <div className="flex items-center gap-2">
@@ -280,10 +349,12 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         <Button 
           className="w-full flex items-center justify-center" 
           onClick={handleJoinMeetup} 
-          variant={isJoinedLobby ? "outline" : "yellow"}
-          disabled={isJoinedLobby || isLobbyFull}
+          variant={isJoinedLobby ? "outline" : "default"}
+          disabled={isJoinedLobby || isLobbyFull || isLoading}
         >
-          {isJoinedLobby ? (
+          {isLoading ? (
+            "Loading..."
+          ) : isJoinedLobby ? (
             "In Lobby"
           ) : isLobbyFull ? (
             "Lobby Full"

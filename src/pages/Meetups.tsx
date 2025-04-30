@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,17 +13,37 @@ import { useAuth } from "@/hooks/useAuth";
 import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import MeetupsList from "@/components/meetups/MeetupsList";
 import { useMeetups } from "@/hooks/useMeetups";
+import { supabase } from "@/integrations/supabase/client";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { points, level } = useUserStore();
+  const { points, level, setUserId } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
   
   // Pass the selectedCategory to the hook for filtering at the database level
   const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
+
+  // Fetch user ID if logged in
+  useEffect(() => {
+    const fetchUserId = async () => {
+      if (user?.email) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, current_xp, current_level')
+          .eq('email', user.email)
+          .single();
+          
+        if (!error && data) {
+          setUserId(data.id.toString());
+        }
+      }
+    };
+    
+    fetchUserId();
+  }, [user, setUserId]);
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value === "all" ? null : value);

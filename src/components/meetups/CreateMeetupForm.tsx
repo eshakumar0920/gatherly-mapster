@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { Meetup, EventRow } from "@/types/meetup";
+import { Meetup } from "@/types/meetup";
+import { useMeetups } from "@/hooks/useMeetups";
+import { useUserStore } from "@/services/meetupService";
+import { useState } from "react";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -28,13 +32,16 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
-  onSuccess: (meetups: Meetup[]) => void;
+  onSuccess: (meetups: Meetup | Meetup[]) => void;
   onClose: () => void;
 }
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
   const { user, isLoggedIn } = useAuth();
+  const { createMeetup } = useMeetups();
+  const { userId, setUserId } = useUserStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -49,7 +56,11 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
+      
       if (!isLoggedIn || !user || !user.email) {
         toast({
           title: "Authentication required",
@@ -59,68 +70,75 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      console.log("Auth state:", { isLoggedIn, user });
-      
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, username')
-        .eq('email', user.email)
-        .single();
-      
-      if (usersError || !usersData) {
-        console.log("User not found in users table, creating a new record");
-        
-        const username = user.email.split('@')[0];
-        const { data: newUser, error: createError } = await supabase
+      // If we don't have userId in store yet, fetch it
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data: userData, error: userError } = await supabase
           .from('users')
-          .insert({
-            email: user.email,
-            username: username,
-            join_date: new Date().toISOString()
-          })
-          .select('id, username')
+          .select('id')
+          .eq('email', user.email)
           .single();
-        
-        if (createError) {
-          console.error("Error creating user record:", createError);
-          toast({
-            title: "Error creating meetup",
-            description: "Could not create user record in database",
-            variant: "destructive"
-          });
-          return;
+          
+        if (userError || !userData) {
+          // Create new user record if not found
+          const username = user.email.split('@')[0];
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+              email: user.email,
+              username: username,
+              join_date: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+            
+          if (createError) {
+            console.error("Error creating user record:", createError);
+            toast({
+              title: "Error creating meetup",
+              description: "Could not create user record in database",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          currentUserId = newUser.id.toString();
+          setUserId(currentUserId);
+        } else {
+          currentUserId = userData.id.toString();
+          setUserId(currentUserId);
         }
-        
-        await createMeetup(values, values.dateTime, newUser.id, username);
-      } else {
-        await createMeetup(values, values.dateTime, usersData.id, usersData.username);
       }
       
-      const { data: updatedRawData } = await supabase.from('events').select('*');
-      if (updatedRawData) {
-        const supabaseMeetups = updatedRawData.map((event) => {
-          const typedEvent = event as EventRow;
-          const meetup: Meetup = {
-            id: typedEvent.id.toString(),
-            title: typedEvent.title,
-            description: typedEvent.description || "No description available",
-            dateTime: new Date(typedEvent.event_date).toLocaleString(),
-            location: typedEvent.location,
-            points: typedEvent.xp_reward || 3,
-            createdBy: typedEvent.creator_name || "Student",
-            creatorAvatar: undefined,
-            lobbySize: typedEvent.lobby_size || 5,
-            category: typedEvent.category || "Other",
-            attendees: []
-          };
-          return meetup;
+      // Get username
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', currentUserId)
+        .single();
+        
+      if (userError || !userData) {
+        console.error("Error fetching username:", userError);
+        toast({
+          title: "Error creating meetup",
+          description: "Could not fetch user information",
+          variant: "destructive"
         });
-        
-        onSuccess(supabaseMeetups);
+        return;
       }
       
-      onClose();
-      form.reset();
+      const meetupData = {
+        ...values,
+        points: 3 // Default points
+      };
+      
+      const newMeetup = await createMeetup(meetupData, currentUserId, userData.username);
+      
+      if (newMeetup) {
+        onSuccess(newMeetup);
+        onClose();
+        form.reset();
+      }
     } catch (error) {
       console.error("Error in meetup creation:", error);
       toast({
@@ -128,39 +146,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const createMeetup = async (values: FormValues, eventDate: string, userId: number, creatorName: string) => {
-    const { error } = await supabase.from('events').insert({
-      title: values.title,
-      description: values.description,
-      location: values.location,
-      event_date: eventDate,
-      creator_id: userId,
-      creator_name: creatorName,
-      created_at: new Date().toISOString(),
-      semester: "Spring 2025",
-      xp_reward: 3,
-      organizer_xp_reward: 5,
-      category: values.category,
-      lobby_size: values.lobbySize
-    });
-    
-    if (error) {
-      console.error("Error creating meetup:", error);
-      toast({
-        title: "Error creating meetup",
-        description: error.message,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    toast({
-      title: "Meetup created!",
-      description: "Your meetup has been successfully created.",
-    });
   };
 
   return (
@@ -274,7 +262,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         />
         
         <DialogFooter>
-          <Button type="submit" className="w-full">Create Meetup</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Meetup"}
+          </Button>
         </DialogFooter>
       </form>
     </Form>

@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Meetup } from "@/types/meetup";
 import { Friend, Tag, sampleFriends } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 // Enhanced mock meetup data with a more professional appearance
 export const meetups: Meetup[] = [
@@ -163,6 +164,7 @@ interface UserStore {
   friends: Friend[];
   tags: Tag[];
   selectedSticker: number | null;
+  userId: string | null;
   attendMeetup: (meetupId: string, pointsEarned: number) => void;
   joinMeetupLobby: (meetupId: string) => void;
   addFriend: (friend: Friend) => void;
@@ -170,6 +172,7 @@ interface UserStore {
   updateTags: (tags: Tag[]) => void;
   updateProfile: (name: string, email: string) => void;
   setSelectedSticker: (sticker: number | null) => void;
+  setUserId: (userId: string | null) => void;
 }
 
 export const useUserStore = create<UserStore>()(
@@ -184,15 +187,40 @@ export const useUserStore = create<UserStore>()(
       friends: sampleFriends,
       tags: ["Technology", "Academic"],
       selectedSticker: null,
+      userId: null,
       attendMeetup: (meetupId: string, pointsEarned: number) =>
-        set((state) => ({
-          points: state.points + pointsEarned,
-          attendedMeetups: [...state.attendedMeetups, meetupId],
-          // Level up when points exceed current level * 10
-          level: Math.floor(state.points / 10) + 1 > state.level 
-            ? Math.floor(state.points / 10) + 1 
-            : state.level
-        })),
+        set((state) => {
+          // Only add the meetup if it's not already in the list
+          if (state.attendedMeetups.includes(meetupId)) {
+            return state;
+          }
+          
+          const newPoints = state.points + pointsEarned;
+          const newLevel = Math.floor(newPoints / 10) + 1;
+          
+          // Try to update points in Supabase if userId is available
+          if (state.userId) {
+            supabase
+              .from('users')
+              .update({ 
+                current_xp: newPoints, 
+                total_xp_earned: newPoints,
+                current_level: newLevel
+              })
+              .eq('id', state.userId)
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Failed to update user XP in database:", error);
+                }
+              });
+          }
+          
+          return {
+            points: newPoints,
+            attendedMeetups: [...state.attendedMeetups, meetupId],
+            level: newLevel > state.level ? newLevel : state.level
+          };
+        }),
       joinMeetupLobby: (meetupId: string) =>
         set((state) => ({
           joinedLobbies: [...state.joinedLobbies, meetupId],
@@ -217,6 +245,10 @@ export const useUserStore = create<UserStore>()(
       setSelectedSticker: (sticker: number | null) =>
         set(() => ({
           selectedSticker: sticker
+        })),
+      setUserId: (userId: string | null) =>
+        set(() => ({
+          userId
         })),
     }),
     {
