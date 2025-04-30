@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MapPin, Clock, User, Scan, UserCheck, Check } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, Scan, UserCheck, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,6 +12,17 @@ import { format, parseISO, isValid } from "date-fns";
 import { Meetup } from "@/types/meetup";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 // Sample attendees data
 const sampleAttendees = [
@@ -33,6 +44,7 @@ const MeetupLobby = () => {
   const { meetupId } = useParams<{ meetupId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { 
     name: userName, 
     avatar: userAvatar, 
@@ -50,6 +62,9 @@ const MeetupLobby = () => {
   const [isJoined, setIsJoined] = useState<boolean>(false);
   const [checkingIn, setCheckingIn] = useState<boolean>(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [isCreator, setIsCreator] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   
   useEffect(() => {
     // Check if the meetup is in attended meetups
@@ -99,6 +114,11 @@ const MeetupLobby = () => {
             
             setMeetup(meetupData);
             
+            // Check if current user is the creator
+            if (user && data.creator_id && data.creator_id.toString() === userId) {
+              setIsCreator(true);
+            }
+            
             // Now fetch attendees
             fetchAttendees(meetupId);
           }
@@ -116,7 +136,7 @@ const MeetupLobby = () => {
     };
     
     fetchMeetupDetails();
-  }, [meetupId, attendedMeetups, joinedLobbies, navigate, toast]);
+  }, [meetupId, attendedMeetups, joinedLobbies, navigate, toast, user, userId]);
   
   const fetchAttendees = async (id: string) => {
     try {
@@ -348,14 +368,27 @@ const MeetupLobby = () => {
   return (
     <div className="pb-20">
       <div className="fixed top-0 left-0 right-0 bg-background z-10 border-b">
-        <div className="p-4 flex items-center">
-          <button 
-            onClick={() => navigate('/meetups')} 
-            className="mr-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-semibold">Meetup Details</h1>
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <button 
+              onClick={() => navigate('/meetups')} 
+              className="mr-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-lg font-semibold">Meetup Details</h1>
+          </div>
+          
+          {isCreator && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-red-500 hover:text-red-700 hover:bg-red-100"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
       
@@ -490,6 +523,28 @@ const MeetupLobby = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Meetup</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this meetup? This action cannot be undone and all participants will be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteMeetup} 
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

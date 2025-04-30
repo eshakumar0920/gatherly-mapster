@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -234,6 +233,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       
       console.log("Creating meetup with coordinates:", { latitude, longitude, location: meetupData.location });
       
+      // Insert the meetup into the database
       const { data, error } = await supabase.from('events').insert({
         title: meetupData.title,
         description: meetupData.description,
@@ -300,6 +300,22 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         title: "Meetup created!",
         description: "Your meetup has been successfully created.",
       });
+      
+      // Automatically add creator to the lobby
+      const numericMeetupId = eventRow.id;
+      const numericUserId = parseInt(userId);
+      
+      // Add to participants table
+      await supabase.from('participants').insert({
+        event_id: numericMeetupId,
+        user_id: numericUserId,
+        joined_at: new Date().toISOString(),
+        attendance_status: 'registered'
+      });
+      
+      // Update local state via the user store
+      const { joinMeetupLobby } = useUserStore.getState();
+      joinMeetupLobby(eventRow.id.toString());
       
       return newMeetup;
     } catch (error) {
