@@ -301,21 +301,23 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         description: "Your meetup has been successfully created.",
       });
       
-      // Automatically add creator to the lobby
+      // Automatically add creator to the lobby as "attended" (not just "registered")
       const numericMeetupId = eventRow.id;
       const numericUserId = parseInt(userId);
       
-      // Add to participants table
+      // Add to participants table with "attended" status
       await supabase.from('participants').insert({
         event_id: numericMeetupId,
         user_id: numericUserId,
         joined_at: new Date().toISOString(),
-        attendance_status: 'registered'
+        attendance_status: 'attended', // Mark as attended immediately
+        xp_earned: points // Award points immediately
       });
       
       // Update local state via the user store
-      const { joinMeetupLobby } = useUserStore.getState();
+      const { joinMeetupLobby, attendMeetup } = useUserStore.getState();
       joinMeetupLobby(eventRow.id.toString());
+      attendMeetup(eventRow.id.toString(), points); // Also mark as attended in the store
       
       return newMeetup;
     } catch (error) {

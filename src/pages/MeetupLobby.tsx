@@ -118,6 +118,25 @@ const MeetupLobby = () => {
             // Check if current user is the creator
             if (user && data.creator_id && data.creator_id.toString() === userId) {
               setIsCreator(true);
+              
+              // Automatically mark the creator as attending if they're not already
+              if (!hasAttended) {
+                // Update the attendance status in the database
+                const { error: attendError } = await supabase
+                  .from('participants')
+                  .update({ 
+                    attendance_status: 'attended',
+                    xp_earned: meetupData.points || 3
+                  })
+                  .eq('event_id', parseInt(meetupId))
+                  .eq('user_id', parseInt(userId));
+                
+                if (!attendError) {
+                  // Add to attended meetups in the store
+                  attendMeetup(meetupId, meetupData.points || 3);
+                  setIsAttending(true);
+                }
+              }
             }
             
             // Now fetch attendees
@@ -558,17 +577,24 @@ const MeetupLobby = () => {
               {isAttending ? (
                 <Button className="w-full" variant="default" disabled>
                   <UserCheck className="mr-2 h-4 w-4" />
-                  Checked In
+                  {isCreator ? "Host" : "Checked In"}
                 </Button>
               ) : isJoined ? (
-                <Button 
-                  className="w-full" 
-                  onClick={() => setIsQRScannerOpen(true)}
-                  disabled={checkingIn}
-                >
-                  <Scan className="mr-2 h-4 w-4" />
-                  {checkingIn ? "Processing..." : "Scan QR Code to Check In"}
-                </Button>
+                isCreator ? (
+                  <Button className="w-full" variant="default" disabled>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Host
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    onClick={() => setIsQRScannerOpen(true)}
+                    disabled={checkingIn}
+                  >
+                    <Scan className="mr-2 h-4 w-4" />
+                    {checkingIn ? "Processing..." : "Scan QR Code to Check In"}
+                  </Button>
+                )
               ) : (
                 <Button 
                   className="w-full" 
