@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import LevelProgress from "@/components/LevelProgress";
+import { LevelProgress } from "@/components/LevelProgress";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { useUserStore } from "@/services/meetupService";
