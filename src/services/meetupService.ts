@@ -51,14 +51,14 @@ export const useUserStore = create<UserState & UserActions>()(
             createdBy: "System",
             lobbySize: 0
           };
-          set(state => ({
+          set((state) => ({
             ...state,
             attendedMeetups: [...state.attendedMeetups, meetupObject],
             points: state.points + 5,
             level: Math.floor((state.points + 5) / 10)
           }));
         } else {
-          set(state => ({
+          set((state) => ({
             ...state,
             attendedMeetups: [...state.attendedMeetups, meetup],
             points: state.points + (meetup.points || 5),
@@ -216,7 +216,7 @@ export const useUserStore = create<UserState & UserActions>()(
           lobbySize: 0
         };
         
-        set(state => ({
+        set((state) => ({
           ...state,
           attendedMeetups: [...state.attendedMeetups, meetup],
           points: state.points + points,

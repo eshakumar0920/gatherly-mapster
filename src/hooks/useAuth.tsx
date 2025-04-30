@@ -16,6 +16,7 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const { toast } = useToast();
   const setUserId = useUserStore(state => state.setUserId);
@@ -23,9 +24,16 @@ export const useAuth = () => {
 
   // Restore session from localStorage on mount and setup auth state listener
   useEffect(() => {
+    let isMounted = true;
+    setAuthError(null);
+    
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
+        console.log("Auth state changed:", event);
+        
         if (event === 'SIGNED_IN' && session) {
           setIsLoggedIn(true);
           setUser(session.user);
@@ -37,17 +45,22 @@ export const useAuth = () => {
             // Update user ID in the store
             if (session.user.id) {
               console.log("Setting user ID in store:", session.user.id);
-              await setUserId(session.user.id);
+              try {
+                await setUserId(session.user.id);
+              } catch (error) {
+                console.error("Error setting user ID:", error);
+                setAuthError("Failed to load user profile");
+              }
             }
           }
-        }
-        
-        if (event === 'SIGNED_OUT') {
+          setIsLoading(false);
+        } else if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
           setUser(null);
           setAccessToken(null);
           setVerifiedEmail("");
           setIsEmailVerified(false);
+          setIsLoading(false);
         }
       }
     );
@@ -55,7 +68,14 @@ export const useAuth = () => {
     // Check current session
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session error:", error);
+          setAuthError(error.message);
+          setIsLoading(false);
+          return;
+        }
         
         if (session) {
           setIsLoggedIn(true);
@@ -68,7 +88,12 @@ export const useAuth = () => {
             // Update user ID in the store and wait for it to complete
             if (session.user.id) {
               console.log("Setting user ID in store on init:", session.user.id);
-              await setUserId(session.user.id);
+              try {
+                await setUserId(session.user.id);
+              } catch (error) {
+                console.error("Error setting user ID:", error);
+                setAuthError("Failed to load user profile");
+              }
             }
           }
         } else {
@@ -87,6 +112,7 @@ export const useAuth = () => {
         setIsLoading(false);
       } catch (error) {
         console.error("Error checking session:", error);
+        setAuthError("Failed to check authentication status");
         setIsLoading(false);
       }
     };
@@ -95,6 +121,7 @@ export const useAuth = () => {
     
     // Cleanup
     return () => {
+      isMounted = false;
       authListener?.subscription.unsubscribe();
     };
   }, [setUserId]);
@@ -343,6 +370,7 @@ export const useAuth = () => {
     isEmailVerified,
     verifiedEmail,
     isLoading,
+    authError,
     user,
     accessToken,
     login,

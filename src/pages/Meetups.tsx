@@ -15,37 +15,75 @@ import MeetupsList from "@/components/meetups/MeetupsList";
 import { useMeetups } from "@/hooks/useMeetups";
 import { useLeveling } from "@/hooks/useLeveling";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [localPoints, setLocalPoints] = useState(0);
+  const [localLevel, setLocalLevel] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const { points, level, setUserId } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
   
+  // Use local state for UI to prevent flickering
+  useEffect(() => {
+    setLocalPoints(points || 0);
+    setLocalLevel(level || 1);
+  }, [points, level]);
+  
   // Pass the selectedCategory to the hook for filtering at the database level
-  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
+  const { 
+    allMeetups, 
+    isLoading: isMeetupsLoading, 
+    setAllMeetups,
+    error: meetupsError
+  } = useMeetups(selectedCategory);
+  
   const { pointClassifications } = useLeveling();
 
-  // Fetch user ID if logged in
+  // Fetch user ID if logged in - with error handling
   useEffect(() => {
     const fetchUserId = async () => {
-      if (user?.email) {
+      if (!user?.email) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        console.log("Fetching user ID for email:", user.email);
+        
         const { data, error } = await supabase
           .from('users')
           .select('id, current_xp, current_level')
           .eq('email', user.email)
           .single();
           
-        if (!error && data) {
+        if (error) {
+          console.error("Error fetching user ID:", error);
+          toast({
+            title: "Error loading profile",
+            description: "Please try refreshing the page",
+            variant: "destructive"
+          });
+        } else if (data) {
+          console.log("Found user data:", data);
           setUserId(data.id.toString());
+        } else {
+          console.log("No user found for email:", user.email);
         }
+      } catch (err) {
+        console.error("Exception fetching user ID:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchUserId();
-  }, [user, setUserId]);
+  }, [user, setUserId, toast]);
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value === "all" ? null : value);
@@ -68,6 +106,17 @@ const Meetups = () => {
     navigate("/maps");
   };
 
+  // Handle error display
+  if (meetupsError) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-500 mb-4">Error loading meetups</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
+        <Navigation />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-20">
       <div className="p-4 pt-6 flex items-center justify-center">
@@ -84,10 +133,10 @@ const Meetups = () => {
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full">
             <Star className="h-4 w-4 text-yellow-500 mr-1" />
-            <span className="font-medium">{points} pts</span>
+            <span className="font-medium">{localPoints} pts</span>
           </div>
           <div className="px-2 py-1 bg-yellow-500/20 rounded-full">
-            <span className="font-medium">Level {level}</span>
+            <span className="font-medium">Level {localLevel}</span>
           </div>
         </div>
       </header>
@@ -130,7 +179,7 @@ const Meetups = () => {
       <div className="px-4">
         <MeetupsList 
           meetups={filteredMeetups}
-          isLoading={isLoading}
+          isLoading={isLoading || isMeetupsLoading}
           onMeetupClick={handleMeetupClick}
           showPointsClassification={true}
         />
