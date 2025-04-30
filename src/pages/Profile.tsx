@@ -30,6 +30,7 @@ import { useLevelUp } from "@/contexts/LevelUpContext";
 import { ProfileSticker } from "@/components/ProfileStickers";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
+import ProfileStickers from "@/components/ProfileStickers";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
