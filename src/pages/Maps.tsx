@@ -83,16 +83,18 @@ const Maps = () => {
         
         // Array to collect all locations
         let allLocations: MapLocation[] = [];
+        let apiEventsLoaded = false;
         
         // First try to get events from API
         try {
+          console.log("Attempting to fetch events from API...");
           const params: EventSearchParams = {
             query: searchQuery || undefined
           };
           
           const response = await eventsApi.searchEvents(params);
           
-          if (!response.error && response.data && response.data.length > 0) {
+          if (!response.error && response.data && Array.isArray(response.data) && response.data.length > 0) {
             // Successfully got events from API
             const apiLocations = response.data.map(event => {
               let coords;
@@ -119,8 +121,11 @@ const Maps = () => {
               };
             });
             
-            console.log("API returned events:", apiLocations.length);
+            console.log(`API returned ${apiLocations.length} events:`, apiLocations);
             allLocations = [...allLocations, ...apiLocations];
+            apiEventsLoaded = true;
+          } else {
+            console.log("API did not return valid events data:", response);
           }
         } catch (apiError) {
           console.error("Error fetching events from API, falling back to Supabase:", apiError);
@@ -138,7 +143,7 @@ const Maps = () => {
           const { data: supabaseEvents, error } = await query;
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
-            console.log("Supabase returned meetups:", supabaseEvents.length);
+            console.log(`Supabase returned ${supabaseEvents.length} meetups:`, supabaseEvents);
             
             const meetupLocations = supabaseEvents.map(event => {
               let coords;
@@ -189,9 +194,10 @@ const Maps = () => {
           console.error("Error fetching from Supabase, falling back to mock data:", supabaseError);
         }
         
-        // If no locations were found from API or Supabase, use mock data
-        if (allLocations.length === 0) {
-          // Fall back to mock data if both API and Supabase fail
+        // If no events loaded from API and no locations at all, try mock data
+        if ((!apiEventsLoaded || allLocations.length === 0)) {
+          console.log("No events found from API or Supabase, loading mock events data...");
+          // Load mock events as a fallback
           const mockEvents = getEvents();
           const mockLocations = mockEvents.map(event => {
             const coords = getLocationCoordinates(event.location);
@@ -207,6 +213,7 @@ const Maps = () => {
             };
           });
           
+          console.log(`Added ${mockLocations.length} mock events`);
           allLocations = [...allLocations, ...mockLocations];
         }
         
