@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
+import { LogOut, Award, Star, UserPlus, X, Tag, User, Camera, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
@@ -10,7 +10,7 @@ import { Friend, Tag as TagType } from "@/services/types";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -49,15 +49,18 @@ const Profile = () => {
     friends, 
     tags, 
     selectedSticker,
+    profileImage,
     addFriend, 
     removeFriend, 
     updateTags,
     updateProfile,
+    updateProfileImage,
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -70,6 +73,8 @@ const Profile = () => {
   });
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const pointsToNextLevel = level * 10;
   const progress = (points % 10) * 10;
@@ -147,6 +152,59 @@ const Profile = () => {
   const triggerStickers = () => {
     setShowStickers(true);
   };
+
+  const handleProfileImageClick = () => {
+    setIsUploadDialogOpen(true);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    const maxSizeInMB = 5;
+    const fileSize = file.size / (1024 * 1024); // Convert to MB
+    
+    if (fileSize > maxSizeInMB) {
+      toast({
+        title: "File too large",
+        description: `Image must be smaller than ${maxSizeInMB}MB.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setUploadingImage(true);
+      
+      // Convert file to base64 string for storage
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          const base64String = event.target.result.toString();
+          
+          // Update profile image in store
+          updateProfileImage(base64String);
+          
+          toast({
+            title: "Profile picture updated!",
+            description: "Your profile picture has been updated successfully."
+          });
+          
+          setIsUploadDialogOpen(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Upload failed",
+        description: "There was a problem uploading your image.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
   
   return (
     <div className="pb-20">
@@ -164,9 +222,24 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
-                <span className="text-4xl">👤</span>
+            <div className="relative group">
+              <div
+                className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4 overflow-hidden cursor-pointer group-hover:opacity-90 transition-opacity"
+                onClick={handleProfileImageClick}
+              >
+                {profileImage ? (
+                  <img 
+                    src={profileImage} 
+                    alt="Profile" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-4xl">👤</span>
+                )}
+                
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="h-8 w-8 text-white" />
+                </div>
               </div>
               {level > 0 && (
                 <ProfileSticker 
@@ -318,6 +391,64 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Upload Profile Picture Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Profile Picture</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="relative w-32 h-32 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                {profileImage ? (
+                  <img 
+                    src={profileImage} 
+                    alt="Profile" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-6xl">👤</span>
+                )}
+              </div>
+              
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+              />
+              
+              <Button 
+                variant="outline" 
+                disabled={uploadingImage}
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadingImage ? "Uploading..." : "Select Image"}
+              </Button>
+              
+              <p className="text-xs text-muted-foreground text-center">
+                Supported formats: JPG, PNG, GIF<br />
+                Maximum size: 5MB
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="ghost"
+              onClick={() => setIsUploadDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Friend Dialog */}
       <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -352,6 +483,7 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Profile Dialog */}
       <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -386,6 +518,7 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Tags Dialog */}
       <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
         <DialogContent>
           <DialogHeader>
