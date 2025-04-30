@@ -107,6 +107,13 @@ const utdLocations: MapLocation[] = [
     lat: 32.988451582173454,
     lng: -96.74861335191952,
     description: "Performance venue for concerts and orchestral events"
+  },
+  {
+    id: "plinth",
+    title: "The Plinth",
+    lat: 32.98736607080019,
+    lng: -96.74828234522143,
+    description: "Central outdoor gathering space for campus events"
   }
 ];
 

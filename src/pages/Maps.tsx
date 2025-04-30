@@ -32,7 +32,7 @@ const UTD_LOCATIONS = {
   'ECSN': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
   'ECSN Building': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
   'Engineering and Computer Science North': { lat: 32.98841234567890, lng: -96.75174567890123 }, // Full precision coordinates
-  'Plinth': { lat: 32.98762345678901, lng: -96.74854567890123 }, // Full precision coordinates
+  'Plinth': { lat: 32.98736607080019, lng: -96.74828234522143 }, // Updated Plinth coordinates
   'Student Union': { lat: 32.98994567890123, lng: -96.75014567890123 }, // Full precision coordinates
   'Blackstone LaunchPad': { lat: 32.98642345678901, lng: -96.74784567890123 }, // Full precision coordinates
   'SP/N Gallery': { lat: 32.98553456789012, lng: -96.75012345678901 }, // Full precision coordinates
@@ -93,8 +93,15 @@ const getLocationCoordinates = (locationName: string) => {
   if (locationName.toLowerCase().includes('jonsson') || 
       locationName.toLowerCase().includes('performance hall') ||
       locationName.toLowerCase().includes('symphony') ||
-      locationName.toLowerCase().includes('orchestra')) {
+      locationName.toLowerCase().includes('orchestra') ||
+      locationName.toLowerCase().includes('jazz ensemble')) {
     return UTD_LOCATIONS['Jonsson Performance Hall'];
+  }
+  
+  // Special handling for Plinth
+  if (locationName.toLowerCase().includes('plinth') ||
+      locationName.toLowerCase().includes('central plaza')) {
+    return UTD_LOCATIONS['Plinth'];
   }
   
   // Exact match first
