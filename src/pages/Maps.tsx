@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { getEvents } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import { EventSearchParams, eventsApi } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
-import { campusLocations } from "@/utils/campusLocations";
+import { campusLocations, findLocationByName } from "@/utils/campusLocations";
 
 interface MapLocation {
   id: string;
@@ -40,24 +39,18 @@ const getLocationCoordinates = (locationName: string | null) => {
     return { lat: defaultLocation.lat, lng: defaultLocation.lng };
   }
   
-  // Try to find an exact match first in campus locations
-  const exactMatch = campusLocations.find(
-    loc => loc.name.toLowerCase() === locationName.toLowerCase()
-  );
-  
-  if (exactMatch) {
-    return { lat: exactMatch.lat, lng: exactMatch.lng };
+  // Use our new helper function
+  const matchedLocation = findLocationByName(locationName);
+  if (matchedLocation) {
+    return { lat: matchedLocation.lat, lng: matchedLocation.lng };
   }
   
-  // Try to find a partial match
-  const normalizedLocation = normalizeText(locationName);
-  
-  // Check for matches in name
-  for (const location of campusLocations) {
-    const normalizedCampusLoc = normalizeText(location.name);
-    if (normalizedLocation.includes(normalizedCampusLoc) || 
-        normalizedCampusLoc.includes(normalizedLocation)) {
-      return { lat: location.lat, lng: location.lng };
+  // Special case for library
+  if (locationName.toLowerCase().includes("library") || 
+      locationName.toLowerCase().includes("mcdermott")) {
+    const library = campusLocations.find(loc => loc.id === "library");
+    if (library) {
+      return { lat: library.lat, lng: library.lng };
     }
   }
   
@@ -115,6 +108,7 @@ const Maps = () => {
               };
             });
             
+            console.log("API locations:", apiLocations);
             setMapLocations(apiLocations);
             return;
           }
@@ -130,6 +124,7 @@ const Maps = () => {
             .ilike(searchQuery ? 'title' : 'id', searchQuery ? `%${searchQuery}%` : '%');
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
+            console.log("Supabase events:", supabaseEvents);
             const supabaseLocations = supabaseEvents.map(event => {
               let coords;
               const eventData = event as any; // Type assertion to access latitude/longitude
@@ -137,9 +132,11 @@ const Maps = () => {
               // Check if event has coordinates first
               if (eventData.latitude && eventData.longitude) {
                 coords = { lat: eventData.latitude, lng: eventData.longitude };
+                console.log(`Event ${event.title} has coordinates:`, coords);
               } else {
                 // Fall back to location name matching
                 coords = getLocationCoordinates(event.location);
+                console.log(`Event ${event.title} using matched coordinates for ${event.location}:`, coords);
               }
               
               return {
@@ -148,13 +145,15 @@ const Maps = () => {
                 lat: coords.lat,
                 lng: coords.lng,
                 description: `${event.description || ''} - Location: ${event.location}`,
-                category: event.category || null,
+                category: event.category || "Other",
                 isEvent: true
               };
             });
             
             setMapLocations(supabaseLocations);
             return;
+          } else {
+            console.log("No events from Supabase or error:", error);
           }
         } catch (supabaseError) {
           console.error("Error fetching from Supabase, falling back to mock data:", supabaseError);

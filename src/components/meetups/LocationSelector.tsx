@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { CampusLocation, searchLocations } from "@/utils/campusLocations";
+import { CampusLocation, searchLocations, findLocationByName } from "@/utils/campusLocations";
 
 interface LocationSelectorProps {
   value: string;
@@ -20,6 +20,21 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
   useEffect(() => {
     setFilteredLocations(searchLocations(searchQuery));
   }, [searchQuery]);
+  
+  // When value prop changes, try to match it to a known location
+  useEffect(() => {
+    if (value && value !== searchQuery) {
+      setSearchQuery(value);
+      
+      // If coordinates callback is provided and value is a known location, call it with coordinates
+      if (onCoordinatesChange) {
+        const matchedLocation = findLocationByName(value);
+        if (matchedLocation) {
+          onCoordinatesChange(matchedLocation.lat, matchedLocation.lng);
+        }
+      }
+    }
+  }, [value, onCoordinatesChange]);
   
   // Handle clicking outside the dropdown to close it
   useEffect(() => {

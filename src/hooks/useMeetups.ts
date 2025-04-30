@@ -4,7 +4,7 @@ import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { pointClassifications } from "@/services/types";
-import { campusLocations } from "@/utils/campusLocations";
+import { campusLocations, findLocationByName } from "@/utils/campusLocations";
 
 export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
@@ -111,18 +111,16 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
-  // Find matching campus location or assign random one
+  // Modified findCampusLocation with better matching using our new utility
   const findCampusLocation = (locationName: string) => {
-    // Try to find an exact match first
-    const exactMatch = campusLocations.find(loc => 
-      loc.name.toLowerCase() === locationName.toLowerCase()
-    );
+    // Use the new helper function from campusLocations.ts
+    const matchedLocation = findLocationByName(locationName);
     
-    if (exactMatch) {
-      return { lat: exactMatch.lat, lng: exactMatch.lng };
+    if (matchedLocation) {
+      return { lat: matchedLocation.lat, lng: matchedLocation.lng };
     }
     
-    // Try normalized matching
+    // If no match found using the helper, try normalized matching
     const normalize = (text: string) => {
       return text.trim().toLowerCase()
         .replace(/building|hall|center/gi, "")
@@ -138,11 +136,20 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       }
     }
     
-    // If no match, use a random campus location
+    // Special case for library
+    if (normalizedInput.includes("library") || normalizedInput.includes("mcdermott")) {
+      const library = campusLocations.find(loc => loc.id === "library");
+      if (library) {
+        return { lat: library.lat, lng: library.lng };
+      }
+    }
+    
+    // If no match, use a random campus location with a more obvious offset 
+    // to show it's an approximation
     const randomIndex = Math.floor(Math.random() * campusLocations.length);
     return { 
-      lat: campusLocations[randomIndex].lat, 
-      lng: campusLocations[randomIndex].lng 
+      lat: campusLocations[randomIndex].lat + (Math.random() - 0.5) * 0.002, 
+      lng: campusLocations[randomIndex].lng + (Math.random() - 0.5) * 0.002 
     };
   };
 
@@ -156,11 +163,28 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       let longitude = meetupData.longitude;
       
       // If coordinates are not provided or are zero, try to find them from the location name
-      if ((!latitude || !longitude) && meetupData.location) {
-        const locationCoords = findCampusLocation(meetupData.location);
-        latitude = locationCoords.lat;
-        longitude = locationCoords.lng;
+      if ((!latitude || !longitude || latitude === 0 || longitude === 0) && meetupData.location) {
+        // Special case for McDermott Library
+        if (meetupData.location.toLowerCase().includes("library") || 
+            meetupData.location.toLowerCase().includes("mcdermott")) {
+          const libraryLoc = campusLocations.find(loc => loc.id === "library");
+          if (libraryLoc) {
+            latitude = libraryLoc.lat;
+            longitude = libraryLoc.lng;
+          } else {
+            // Fall back to better matching
+            const locationCoords = findCampusLocation(meetupData.location);
+            latitude = locationCoords.lat;
+            longitude = locationCoords.lng;
+          }
+        } else {
+          const locationCoords = findCampusLocation(meetupData.location);
+          latitude = locationCoords.lat;
+          longitude = locationCoords.lng;
+        }
       }
+      
+      console.log("Creating meetup with coordinates:", { latitude, longitude, location: meetupData.location });
       
       const { data, error } = await supabase.from('events').insert({
         title: meetupData.title,
