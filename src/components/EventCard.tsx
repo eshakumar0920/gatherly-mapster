@@ -1,4 +1,6 @@
+
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 export interface Event {
   id: string;
@@ -10,7 +12,7 @@ export interface Event {
   image?: string;
   category?: string;
   points?: number;
-  creatorId?: string; // Add creatorId property
+  creatorId?: string;
   organizer?: string;
 }
 
@@ -20,9 +22,19 @@ export interface EventCardProps {
 }
 
 const EventCard = ({ event, onClick }: EventCardProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/events/${event.id}`);
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className="bg-card text-card-foreground rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105 cursor-pointer"
       style={{ height: "400px" }}
     >
