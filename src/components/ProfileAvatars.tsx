@@ -86,7 +86,8 @@ const ProfileAvatars: React.FC = () => {
   
   const handleSelectAvatar = (index: number) => {
     setSelectedAvatar(index);
-    updateAvatar(index);
+    // Fix: Convert the number to string before passing it to updateAvatar
+    updateAvatar(index.toString());
     setShowAvatars(false);
     
     toast({
