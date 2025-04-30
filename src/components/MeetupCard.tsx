@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -24,6 +25,25 @@ interface Attendee {
   status: "going" | "interested";
 }
 
+// Array of illustrated avatars to use instead of real photos
+const illustratedAvatars = [
+  "/placeholder.svg", // Default placeholder SVG
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Fluffy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Milo",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella",
+];
+
+// Helper to get a consistent avatar for a specific user ID or name
+const getAvatarForUser = (id: string, name?: string) => {
+  // Convert the id or name to a number to use as index
+  const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return illustratedAvatars[charSum % illustratedAvatars.length];
+};
+
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
   const { toast } = useToast();
@@ -35,13 +55,14 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
-    name: meetup.createdBy || "Anonymous"
+    name: meetup.createdBy || "Anonymous",
+    avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use illustrated avatar
   });
   
   // Fetch creator info if not available
   useEffect(() => {
     const fetchCreatorInfo = async () => {
-      if (!meetup.creatorAvatar && meetup.createdBy) {
+      if (meetup.createdBy) {
         try {
           const { data, error } = await supabase
             .from('users')
@@ -52,7 +73,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           if (!error && data) {
             setCreatorInfo({
               name: data.username || meetup.createdBy,
-              avatar: data.profile_picture || undefined
+              // Use illustrated avatar instead of profile picture
+              avatar: getAvatarForUser(meetup.createdBy, data.username)
             });
           }
         } catch (err) {
@@ -61,7 +83,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       } else {
         setCreatorInfo({
           name: meetup.createdBy || "Anonymous",
-          avatar: meetup.creatorAvatar
+          avatar: getAvatarForUser(meetup.id)
         });
       }
     };
@@ -94,7 +116,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           const mappedAttendees: Attendee[] = data.map(participant => ({
             id: participant.user_id.toString(),
             name: participant.users.username || "Anonymous",
-            avatar: participant.users.profile_picture || undefined,
+            // Use illustrated avatar instead of profile picture
+            avatar: getAvatarForUser(participant.user_id.toString(), participant.users.username),
             status: participant.attendance_status === 'attended' ? 'going' : 'interested'
           }));
           
@@ -105,11 +128,12 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           
           const baseAttendees: Attendee[] = [];
           
+          // Create mock attendees with illustrated avatars
           if (idSum % 2 === 0) {
             baseAttendees.push({ 
               id: "1", 
               name: "Jane Cooper", 
-              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", 
+              avatar: getAvatarForUser("1", "Jane Cooper"), 
               status: "going" 
             });
           }
@@ -118,7 +142,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             baseAttendees.push({ 
               id: "2", 
               name: "Wade Warren", 
-              avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&auto=format&fit=crop", 
+              avatar: getAvatarForUser("2", "Wade Warren"), 
               status: "going" 
             });
           }
@@ -141,6 +165,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         {
           id: userId || "current-user",
           name: user.email?.split('@')[0] || "Current User",
+          // Use illustrated avatar for current user
+          avatar: getAvatarForUser(userId || "current-user", user.email?.split('@')[0]),
           status: "interested"
         }
       ]);

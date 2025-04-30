@@ -48,6 +48,19 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
+  // Helper function to get an illustrated avatar for a user
+  const getIllustratedAvatar = (id: string, name?: string) => {
+    const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const avatars = [
+      "/placeholder.svg",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily", 
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver"
+    ];
+    return avatars[charSum % avatars.length];
+  };
+
   useEffect(() => {
     const fetchMeetups = async () => {
       try {
@@ -87,6 +100,9 @@ export const useMeetups = (selectedCategory: string | null = null) => {
               console.log(`UseMeetups: Using matched coordinates for "${event.location}": (${latitude}, ${longitude})`);
             }
             
+            // Use illustrated avatar instead of real photo
+            const creatorAvatar = getIllustratedAvatar(event.id.toString(), event.creator_name);
+            
             return {
               id: event.id.toString(),
               title: event.title,
@@ -95,7 +111,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
               location: event.location,
               points: getPointsForLobbySize(lobbySize),
               createdBy: event.creator_name || "Anonymous",
-              creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
+              creatorAvatar: creatorAvatar,
               lobbySize: lobbySize,
               category: event.category || "Other",
               attendees: [],
@@ -229,6 +245,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       }
       
       const eventRow = data as unknown as EventRow;
+      
+      // Use illustrated avatar for the new meetup creator
+      const creatorAvatar = getIllustratedAvatar(eventRow.id.toString(), userName);
+      
       const newMeetup: Meetup = {
         id: eventRow.id.toString(),
         title: eventRow.title,
@@ -237,7 +257,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         location: eventRow.location,
         points: points,
         createdBy: eventRow.creator_name || userName,
-        creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
+        creatorAvatar: creatorAvatar,
         lobbySize: eventRow.lobby_size || 5,
         category: eventRow.category || "Other",
         attendees: [],
