@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MapPin, Clock, User, ScanQRCode, UserCheck } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, ScanQrCode, UserCheck, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -298,6 +298,15 @@ const MeetupLobby = () => {
     }
   };
   
+  // Define the missing handleQRScanSuccess function
+  const handleQRScanSuccess = (data: string) => {
+    // Close QR scanner dialog
+    setIsQRScannerOpen(false);
+    
+    // Process check-in
+    handleCheckIn();
+  };
+  
   // Format date properly
   const formatDate = (dateStr: string | undefined) => {
     if (!dateStr) return "Date unavailable";
@@ -449,10 +458,10 @@ const MeetupLobby = () => {
               ) : isJoined ? (
                 <Button 
                   className="w-full" 
-                  onClick={handleCheckIn}
+                  onClick={() => setIsQRScannerOpen(true)}
                   disabled={checkingIn}
                 >
-                  <ScanQRCode className="mr-2 h-4 w-4" />
+                  <ScanQrCode className="mr-2 h-4 w-4" />
                   {checkingIn ? "Processing..." : "Scan QR Code to Check In"}
                 </Button>
               ) : (
