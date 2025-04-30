@@ -102,22 +102,12 @@ const Profile = () => {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(avatar || null);
   
-  // When component mounts, update the userId from auth and trigger a sync
+  // When component mounts, update the userId from auth
   useEffect(() => {
     if (user?.id && user.id !== userId) {
-      console.log("User ID from auth:", user.id);
-      console.log("User ID in store:", userId);
       setUserId(user.id);
     }
   }, [user, userId, setUserId]);
-
-  // Trigger a manual sync when the profile component mounts to ensure latest data
-  useEffect(() => {
-    if (userId && !isLoading) {
-      console.log("Triggering initial profile sync");
-      syncProfile();
-    }
-  }, [userId, isLoading, syncProfile]);
 
   // Update local form state when profile data changes
   useEffect(() => {
@@ -183,8 +173,8 @@ const Profile = () => {
     });
   };
   
-  const handleUpdateProfile = async () => {
-    await updateProfile(profileForm.name, profileForm.email);
+  const handleUpdateProfile = () => {
+    updateProfile(profileForm.name, profileForm.email);
     setIsEditProfileDialogOpen(false);
     
     toast({
@@ -272,7 +262,6 @@ const Profile = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-        <p className="ml-2 text-sm text-muted-foreground">Loading profile...</p>
       </div>
     );
   }

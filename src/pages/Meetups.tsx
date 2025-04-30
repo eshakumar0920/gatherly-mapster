@@ -15,99 +15,37 @@ import MeetupsList from "@/components/meetups/MeetupsList";
 import { useMeetups } from "@/hooks/useMeetups";
 import { useLeveling } from "@/hooks/useLeveling";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [localPoints, setLocalPoints] = useState(0);
-  const [localLevel, setLocalLevel] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const { points, level, setUserId, userId } = useUserStore();
+  const { points, level, setUserId } = useUserStore();
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
-  
-  // Use local state for UI to prevent flickering
-  useEffect(() => {
-    if (points !== undefined) setLocalPoints(points);
-    if (level !== undefined) setLocalLevel(level);
-  }, [points, level]);
+  const { user } = useAuth();
   
   // Pass the selectedCategory to the hook for filtering at the database level
-  const { 
-    allMeetups, 
-    isLoading: isMeetupsLoading, 
-    setAllMeetups,
-    error: meetupsError
-  } = useMeetups(selectedCategory);
-  
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
   const { pointClassifications } = useLeveling();
 
-  // Fetch user ID if logged in - with error handling
+  // Fetch user ID if logged in
   useEffect(() => {
-    let isMounted = true;
-    
     const fetchUserId = async () => {
-      // If userId is already set, no need to fetch again
-      if (userId) {
-        setIsLoading(false);
-        return;
-      }
-
-      if (!user?.email) {
-        setIsLoading(false);
-        return;
-      }
-      
-      try {
-        console.log("Fetching user ID for email:", user.email);
-        
+      if (user?.email) {
         const { data, error } = await supabase
           .from('users')
           .select('id, current_xp, current_level')
           .eq('email', user.email)
           .single();
           
-        if (error && isMounted) {
-          console.error("Error fetching user ID:", error);
-          toast({
-            title: "Error loading profile",
-            description: "Please try refreshing the page",
-            variant: "destructive"
-          });
-          
-          // Still proceed, even with error
-          setIsLoading(false);
-        } else if (data && isMounted) {
-          console.log("Found user data:", data);
-          if (data.id) {
-            await setUserId(data.id.toString());
-          }
-        } else if (isMounted) {
-          console.log("No user found for email:", user.email);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error("Exception fetching user ID:", err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
+        if (!error && data) {
+          setUserId(data.id.toString());
         }
       }
     };
     
-    if (isLoggedIn) {
-      fetchUserId();
-    } else {
-      setIsLoading(false);
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user, setUserId, userId, isLoggedIn, toast]);
+    fetchUserId();
+  }, [user, setUserId]);
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value === "all" ? null : value);
@@ -130,32 +68,6 @@ const Meetups = () => {
     navigate("/maps");
   };
 
-  // If the loading takes too long (more than 5 seconds), show a retry button
-  const [showRetry, setShowRetry] = useState(false);
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setShowRetry(true);
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [isLoading]);
-
-  // Handle error display or excessive loading time
-  if (meetupsError || (showRetry && isLoading)) {
-    return (
-      <div className="p-4 text-center">
-        <p className="text-red-500 mb-4">
-          {meetupsError ? "Error loading meetups" : "Loading is taking longer than expected"}
-        </p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
-        <Navigation />
-      </div>
-    );
-  }
-
   return (
     <div className="pb-20">
       <div className="p-4 pt-6 flex items-center justify-center">
@@ -172,10 +84,10 @@ const Meetups = () => {
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full">
             <Star className="h-4 w-4 text-yellow-500 mr-1" />
-            <span className="font-medium">{localPoints} pts</span>
+            <span className="font-medium">{points} pts</span>
           </div>
           <div className="px-2 py-1 bg-yellow-500/20 rounded-full">
-            <span className="font-medium">Level {localLevel}</span>
+            <span className="font-medium">Level {level}</span>
           </div>
         </div>
       </header>
@@ -218,7 +130,7 @@ const Meetups = () => {
       <div className="px-4">
         <MeetupsList 
           meetups={filteredMeetups}
-          isLoading={isLoading || isMeetupsLoading}
+          isLoading={isLoading}
           onMeetupClick={handleMeetupClick}
           showPointsClassification={true}
         />

@@ -10,7 +10,6 @@ import { campusLocations, findLocationByName } from "@/utils/campusLocations";
 export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
 
   // Helper function to calculate points based on lobby size
@@ -43,19 +42,16 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     const fetchMeetups = async () => {
       try {
         setIsLoading(true);
-        setError(null);
-        
         let query = supabase.from('events').select('*');
         
         if (selectedCategory) {
           query = query.eq('category', selectedCategory);
         }
         
-        const { data, error: supabaseError } = await query;
+        const { data, error } = await query;
         
-        if (supabaseError) {
-          console.error("Error fetching meetups:", supabaseError);
-          setError(new Error(supabaseError.message));
+        if (error) {
+          console.error("Error fetching meetups:", error);
           toast({
             title: "Error fetching meetups",
             description: "Could not load meetups from the database.",
@@ -108,7 +104,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         }
       } catch (error) {
         console.error("Error in fetching meetups:", error);
-        setError(error as Error);
+        
         setAllMeetups([]);
         
         toast({
@@ -353,7 +349,6 @@ export const useMeetups = (selectedCategory: string | null = null) => {
   return { 
     allMeetups, 
     isLoading, 
-    error,
     setAllMeetups,
     createMeetup,
     joinMeetupLobby,

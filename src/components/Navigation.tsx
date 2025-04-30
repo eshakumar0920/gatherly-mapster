@@ -3,17 +3,10 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Calendar, Users, User, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/services/meetupService";
-import { useEffect, useState } from "react";
 
 const Navigation = () => {
   const location = useLocation();
-  const userState = useUserStore();
-  const [level, setLevel] = useState(1);
-  
-  // Use local state to prevent rendering issues with Zustand and provide fallback
-  useEffect(() => {
-    setLevel(userState.level !== undefined ? userState.level : 1);
-  }, [userState.level]);
+  const { points, level } = useUserStore();
   
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
