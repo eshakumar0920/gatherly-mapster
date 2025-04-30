@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, Star } from "lucide-react"; // Added Star import
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,8 @@ const Index = () => {
         // searchEvents endpoint returns { data: Event[] } or throws
         const response = await eventsApi.searchEvents({ 
           query: searchQuery,
-          category: selectedCategory || undefined 
+          // Fix: Only add category if it's not null
+          ...(selectedCategory ? { category: selectedCategory } : {})
         });
         
         // if your API returns { data: [...] }
