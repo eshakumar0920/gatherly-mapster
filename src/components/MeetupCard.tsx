@@ -39,8 +39,12 @@ const formatDate = (meetup: Meetup): string => {
           dateObj = fallbackDate;
         }
       }
-    } else if (meetup.dateTime instanceof Date) {
-      dateObj = meetup.dateTime;
+    } else if (meetup.dateTime && typeof meetup.dateTime === 'object') {
+      // Instead of instanceof Date, check if it's an object
+      const dateCheck = new Date(meetup.dateTime.toString());
+      if (isValid(dateCheck)) {
+        dateObj = dateCheck;
+      }
     }
 
     if (dateObj && isValid(dateObj)) {
