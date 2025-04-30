@@ -1,4 +1,3 @@
-
 import { Event } from "@/components/EventCard";
 
 // Mock data for events with updated years and improved location formatting
@@ -85,12 +84,21 @@ export const getFeaturedEvents = () => {
   return events.slice(0, 3);
 };
 
-// Mock data for event categories
+// Update the categories array
 export const categories = [
-  { id: "technology", name: "Technology" },
+  { id: "academic", name: "Academic" },
+  { id: "social", name: "Social" },
+  { id: "sports", name: "Sports" },
+  { id: "tech", name: "Tech" },
+  { id: "arts", name: "Arts" },
   { id: "music", name: "Music" },
-  { id: "food", name: "Food" },
-  { id: "business", name: "Business" },
-  { id: "art", name: "Art" },
-  { id: "wellness", name: "Wellness" },
+  { id: "cultural", name: "Cultural" },
+  { id: "community", name: "Community" },
+  { id: "gaming", name: "Gaming" },
+  { id: "career", name: "Career" },
+  { id: "workshop", name: "Workshop" },
+  { id: "competition", name: "Competition" },
+  { id: "fundraising", name: "Fundraising" },
+  { id: "volunteering", name: "Volunteering" },
+  { id: "entertainment", name: "Entertainment" }
 ];
