@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -12,8 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/useAuth";
 import { useMeetups } from "@/hooks/useMeetups";
 import { supabase } from "@/integrations/supabase/client";
-import { ProfileAvatar } from "@/components/ProfileAvatars";
-import { useLevelUp } from "@/contexts/LevelUpContext";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -36,10 +35,6 @@ const illustratedAvatars = [
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Milo",
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver",
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella",
-  // Brown woman avatar with different styles
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Amara&skinColor=ae8b70&hairColor=2c1b18&accessoriesChance=0&accessories=prescription02",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya&skinColor=ae8b70&hairColor=2c1b18&accessoriesChance=0",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Kira&skinColor=ae8b70&topChance=100&hairColor=2c1b18"
 ];
 
 // Helper to get a consistent avatar for a specific user ID or name
@@ -50,20 +45,18 @@ const getAvatarForUser = (id: string, name?: string) => {
 };
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
-  const { joinMeetupLobby, joinedLobbies, userId, selectedSticker } = useUserStore();
+  const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { joinMeetupLobby: joinMeetupInDb } = useMeetups();
-  const { selectedAvatar } = useLevelUp();
   
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string, level?: number}>({
+  const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
     name: meetup.createdBy || "Anonymous",
-    avatar: getAvatarForUser(meetup.id, meetup.createdBy), // Use illustrated avatar
-    level: 1
+    avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use illustrated avatar
   });
   
   // Fetch creator info if not available
@@ -81,8 +74,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             setCreatorInfo({
               name: data.username || meetup.createdBy,
               // Use illustrated avatar instead of profile picture
-              avatar: getAvatarForUser(meetup.createdBy, data.username),
-              level: 1
+              avatar: getAvatarForUser(meetup.createdBy, data.username)
             });
           }
         } catch (err) {
@@ -91,8 +83,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       } else {
         setCreatorInfo({
           name: meetup.createdBy || "Anonymous",
-          avatar: getAvatarForUser(meetup.id),
-          level: 1
+          avatar: getAvatarForUser(meetup.id)
         });
       }
     };
@@ -349,15 +340,11 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           <div className="flex items-center text-sm text-muted-foreground">
             <User className="h-4 w-4 mr-2" />
             <div className="flex items-center">
-              <div className="relative">
-                {/* Use ProfileAvatar with xs size for the creator */}
-                <ProfileAvatar 
-                  level={creatorInfo.level || 1}
-                  selectedAvatar={null}
-                  size="xs"
-                />
-              </div>
-              <span className="ml-1">{creatorInfo.name}</span>
+              <Avatar className="h-5 w-5 mr-1">
+                <AvatarImage src={creatorInfo.avatar || ""} />
+                <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <span>{creatorInfo.name}</span>
             </div>
           </div>
           
@@ -367,21 +354,17 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                 <Users className="h-4 w-4 mr-1" />
                 <span>{attendees.length}/{meetup.lobbySize}</span>
                 
-                {/* Show mini avatars for attendees with xs size */}
+                {/* Show mini avatars for attendees */}
                 {attendees.length > 0 && (
                   <div className="flex -space-x-2 ml-2">
                     {attendees.slice(0, 2).map((attendee, index) => (
-                      <div key={`${attendee.id}-${index}`} className="relative">
-                        <ProfileAvatar
-                          level={1}
-                          selectedAvatar={null}
-                          size="xs"
-                          showBadge={false}
-                        />
-                      </div>
+                      <Avatar key={`${attendee.id}-${index}`} className="h-5 w-5 border border-background">
+                        <AvatarImage src={attendee.avatar} />
+                        <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
                     ))}
                     {attendees.length > 2 && (
-                      <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-xs">
+                      <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-xs">
                         +{attendees.length - 2}
                       </div>
                     )}
@@ -396,12 +379,10 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                   attendees.map((attendee, index) => (
                     <div key={`${attendee.id}-${index}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <ProfileAvatar
-                          level={1}
-                          selectedAvatar={null}
-                          size="xs"
-                          showBadge={false}
-                        />
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={attendee.avatar} />
+                          <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
                         <span className="text-sm">{attendee.name}</span>
                       </div>
                       <Badge 

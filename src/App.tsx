@@ -1,72 +1,110 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Index from '@/pages/Index';
-import Events from '@/pages/Events';
-import Profile from '@/pages/Profile';
-import Maps from '@/pages/Maps';
-import EventLobby from '@/pages/EventLobby';
-import Meetups from '@/pages/Meetups';
-import MeetupLobby from '@/pages/MeetupLobby';
-import NotFound from '@/pages/NotFound';
-import AuthPage from '@/pages/AuthPage';
-import BadgesPage from '@/pages/BadgesPage';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { LevelUpProvider } from '@/contexts/LevelUpContext';
-import LootBoxPopup from '@/components/LootBoxPopup';
-import { useUserStore } from '@/services/meetupService';
-import { useLevelUp } from '@/contexts/LevelUpContext';
-import { Toaster } from '@/components/ui/toaster';
-import './App.css';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import AuthPage from "./pages/AuthPage";
+import Index from "./pages/Index";
+import Events from "./pages/Events";
+import Meetups from "./pages/Meetups";
+import Profile from "./pages/Profile";
+import Maps from "./pages/Maps";
+import EventLobby from "./pages/EventLobby";
+import MeetupLobby from "./pages/MeetupLobby";
+import NotFound from "./pages/NotFound";
+import BadgesPage from "./pages/BadgesPage";
+import { LevelUpProvider } from "./contexts/LevelUpContext";
+import ProfileStickers from "./components/ProfileStickers";
 
-// Create a client
 const queryClient = new QueryClient();
 
-function AppContent() {
-  const { level } = useUserStore();
-  const { showLevelUp, setShowLevelUp, newLevel } = useLevelUp();
-  
-  return (
-    <div className="overflow-x-hidden">
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/events/:eventId" element={<EventLobby />} />
-        <Route path="/maps" element={<Maps />} />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/meetups" element={<Meetups />} />
-        <Route path="/meetups/:meetupId" element={<MeetupLobby />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/badges" element={<BadgesPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <LootBoxPopup 
-        level={newLevel || level} 
-        isOpen={showLevelUp} 
-        onClose={() => setShowLevelUp(false)} 
-      />
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
       <Toaster />
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <LevelUpProvider>
-          <AppContent />
-        </LevelUpProvider>
-      </Router>
-    </QueryClientProvider>
-  );
-}
+      <Sonner />
+      <LevelUpProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/auth" element={<AuthPage />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/events" 
+              element={
+                <ProtectedRoute>
+                  <Events />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/meetups" 
+              element={
+                <ProtectedRoute>
+                  <Meetups />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/events/:eventId" 
+              element={
+                <ProtectedRoute>
+                  <EventLobby />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/meetups/:meetupId" 
+              element={
+                <ProtectedRoute>
+                  <MeetupLobby />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/maps" 
+              element={
+                <ProtectedRoute>
+                  <Maps />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/badges" 
+              element={
+                <ProtectedRoute>
+                  <BadgesPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Catch all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <ProfileStickers />
+        </BrowserRouter>
+      </LevelUpProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
