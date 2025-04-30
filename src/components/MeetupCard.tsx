@@ -1,8 +1,15 @@
 
-// This file fixes the error in the MeetupCard component
-// The key part is to fix the instanceof Date check for the dateTime property
+import React from "react";
+import { format, parseISO, isValid } from "date-fns";
+import { Meetup } from "@/types/meetup";
+import { Card } from "@/components/ui/card";
+import { Calendar } from "lucide-react";
 
-// Import only the part with the bug to fix
+interface MeetupCardProps {
+  meetup: Meetup;
+}
+
+// Format date function for the meetup card
 const formatDate = (meetup: Meetup): string => {
   if (!meetup.dateTime) {
     return "Date unavailable";
@@ -48,5 +55,44 @@ const formatDate = (meetup: Meetup): string => {
   }
 };
 
-// Only export the function to be used for fixing the file externally
+const MeetupCard = ({ meetup }: MeetupCardProps) => {
+  return (
+    <Card className="mb-3 overflow-hidden">
+      <div className="p-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-lg font-semibold">{meetup.title}</h2>
+            <p className="text-muted-foreground text-sm line-clamp-2">{meetup.description}</p>
+          </div>
+          {meetup.creatorAvatar && (
+            <div className="h-10 w-10 rounded-full overflow-hidden">
+              <img 
+                src={meetup.creatorAvatar} 
+                alt={`${meetup.createdBy}'s avatar`}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="px-4 pb-4">
+        <div className="flex items-center text-sm text-muted-foreground mt-2">
+          <Calendar className="h-4 w-4 mr-1" />
+          {formatDate(meetup)}
+        </div>
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-sm">
+            {meetup.location}
+          </span>
+          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+            {meetup.category || "Meetup"}
+          </span>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export default MeetupCard;
 export { formatDate };
