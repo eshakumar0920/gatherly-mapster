@@ -163,7 +163,6 @@ interface UserStore {
   friends: Friend[];
   tags: Tag[];
   selectedSticker: number | null;
-  profileImage: string | null;
   attendMeetup: (meetupId: string, pointsEarned: number) => void;
   joinMeetupLobby: (meetupId: string) => void;
   addFriend: (friend: Friend) => void;
@@ -171,7 +170,6 @@ interface UserStore {
   updateTags: (tags: Tag[]) => void;
   updateProfile: (name: string, email: string) => void;
   setSelectedSticker: (sticker: number | null) => void;
-  updateProfileImage: (imageUrl: string) => void;
 }
 
 export const useUserStore = create<UserStore>()(
@@ -186,7 +184,6 @@ export const useUserStore = create<UserStore>()(
       friends: sampleFriends,
       tags: ["Technology", "Academic"],
       selectedSticker: null,
-      profileImage: null,
       attendMeetup: (meetupId: string, pointsEarned: number) =>
         set((state) => ({
           points: state.points + pointsEarned,
@@ -220,10 +217,6 @@ export const useUserStore = create<UserStore>()(
       setSelectedSticker: (sticker: number | null) =>
         set(() => ({
           selectedSticker: sticker
-        })),
-      updateProfileImage: (imageUrl: string) =>
-        set(() => ({
-          profileImage: imageUrl
         })),
     }),
     {
