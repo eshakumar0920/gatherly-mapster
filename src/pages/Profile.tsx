@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
@@ -29,6 +28,8 @@ import {
 import LootBoxPopup from "@/components/LootBoxPopup";
 import { useLevelUp } from "@/contexts/LevelUpContext";
 import { ProfileSticker } from "@/components/ProfileStickers";
+import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
+import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -61,6 +62,8 @@ const Profile = () => {
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
   const [isProfilePictureDialogOpen, setIsProfilePictureDialogOpen] = useState(false);
+  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
+  const [isPrivacySettingsOpen, setIsPrivacySettingsOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
@@ -71,6 +74,22 @@ const Profile = () => {
   const [profileForm, setProfileForm] = useState({
     name,
     email
+  });
+
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettingsType>({
+    emailNotifications: true,
+    pushNotifications: true,
+    eventReminders: true,
+    friendRequests: true,
+    meetupUpdates: true,
+  });
+
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettingsType>({
+    profileVisibility: "public",
+    locationSharing: true,
+    activityStatus: true,
+    allowTagging: true,
+    dataUsageConsent: true,
   });
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
@@ -190,6 +209,24 @@ const Profile = () => {
       });
       setUploadingAvatar(false);
     }
+  };
+  
+  const handleSaveNotificationSettings = (settings: NotificationSettingsType) => {
+    setNotificationSettings(settings);
+    // Here you would typically save to a backend or localStorage
+    toast({
+      title: "Notification settings updated",
+      description: "Your notification preferences have been saved."
+    });
+  };
+
+  const handleSavePrivacySettings = (settings: PrivacySettingsType) => {
+    setPrivacySettings(settings);
+    // Here you would typically save to a backend or localStorage
+    toast({
+      title: "Privacy settings updated",
+      description: "Your privacy preferences have been saved."
+    });
   };
   
   return (
@@ -361,10 +398,18 @@ const Profile = () => {
                 <Upload className="mr-2 h-4 w-4" />
                 Change Profile Picture
               </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                onClick={() => setIsNotificationSettingsOpen(true)}
+              >
                 Notification Settings
               </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => setIsPrivacySettingsOpen(true)}
+              >
                 Privacy Settings
               </Button>
             </div>
@@ -521,6 +566,20 @@ const Profile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NotificationSettings 
+        open={isNotificationSettingsOpen}
+        onOpenChange={setIsNotificationSettingsOpen}
+        onSave={handleSaveNotificationSettings}
+        initialSettings={notificationSettings}
+      />
+
+      <PrivacySettings 
+        open={isPrivacySettingsOpen}
+        onOpenChange={setIsPrivacySettingsOpen}
+        onSave={handleSavePrivacySettings}
+        initialSettings={privacySettings}
+      />
 
       <Navigation />
     </div>
