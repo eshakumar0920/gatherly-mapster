@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
 import { meetups as sampleMeetups } from "@/services/meetupService";
+import { format } from "date-fns";
 
 export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
@@ -45,7 +46,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toISOString(),
+            dateTime: formatEventDate(event.event_date),
             location: event.location,
             points: event.xp_reward || 3,
             createdBy: event.creator_name || "Anonymous",
@@ -95,6 +96,28 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     
     fetchMeetups();
   }, [selectedCategory, toast]);
+
+  // Helper function to handle date formatting safely
+  const formatEventDate = (dateString: string): string => {
+    try {
+      // Check if it's already a formatted date string
+      if (dateString.includes('@') || dateString.includes('/')) {
+        return dateString;
+      }
+      
+      // Try to parse as ISO date
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return format(date, "MMM d, yyyy h:mm a");
+      }
+      
+      // Return the original if we can't parse it
+      return dateString;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
 
   return { allMeetups, isLoading, setAllMeetups };
 };

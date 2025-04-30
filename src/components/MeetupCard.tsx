@@ -91,31 +91,36 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       return "Date unavailable";
     }
 
+    // For already formatted strings like "Today @3pm", just return as is
+    if (typeof meetup.dateTime === 'string' && 
+        (meetup.dateTime.includes('@') || 
+         meetup.dateTime.toLowerCase().includes('today') || 
+         meetup.dateTime.toLowerCase().includes('tomorrow'))) {
+      return meetup.dateTime;
+    }
+
+    // Try to parse as a date for other cases
     try {
       let dateObj: Date | null = null;
 
       if (typeof meetup.dateTime === 'string') {
+        // First try ISO format
         const parsedDate = parseISO(meetup.dateTime);
         if (isValid(parsedDate)) {
           dateObj = parsedDate;
         } else {
-          // Try with a more lenient approach to parse the date string
-          try {
-            const fallbackDate = new Date(meetup.dateTime);
-            if (isValid(fallbackDate)) {
-              dateObj = fallbackDate;
-            }
-          } catch (innerError) {
-            console.error("Inner parsing error:", innerError);
-            // If this also fails, we'll return the unparsed string later
+          // Try with a more lenient approach
+          const fallbackDate = new Date(meetup.dateTime);
+          if (isValid(fallbackDate)) {
+            dateObj = fallbackDate;
           }
         }
-      } else if (typeof meetup.dateTime === 'object' && meetup.dateTime !== null && 'getTime' in meetup.dateTime) {
-        dateObj = meetup.dateTime as Date;
+      } else if (meetup.dateTime instanceof Date) {
+        dateObj = meetup.dateTime;
       }
 
       if (dateObj && isValid(dateObj)) {
-        return format(dateObj, "MM/dd/yyyy h:mm a");
+        return format(dateObj, "MMM d, yyyy h:mm a");
       }
 
       // If we couldn't parse it, just return the original string

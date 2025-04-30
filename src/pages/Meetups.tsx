@@ -21,10 +21,16 @@ const Meetups = () => {
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Pass the selectedCategory to the hook for filtering at the database level
   const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
 
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value === "all" ? null : value);
+  };
+
+  // Further filter by search term client-side
   const filteredMeetups = allMeetups.filter(meetup => {
-    // If we have a search query, filter by title
     if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -72,7 +78,7 @@ const Meetups = () => {
       </div>
 
       <div className="px-4 pb-4">
-        <Tabs defaultValue="all" onValueChange={setSelectedCategory} className="w-full">
+        <Tabs defaultValue="all" onValueChange={handleCategoryChange} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
             <TabsTrigger value="all">All</TabsTrigger>
             {categories.map(category => (
