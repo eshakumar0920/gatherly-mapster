@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MeetupType, Tag, Friend, UserActions } from './types';
@@ -29,7 +30,7 @@ export const useUserStore = create<UserState & UserActions>()(
       level: 2,
       attendedMeetups: [],
       friends: [],
-      tags: ["Technology", "Academic", "Gaming"],
+      tags: ["Technology", "Academic", "Gaming"] as Tag[],
       selectedSticker: null,
       avatar: null,
       userId: null,
@@ -50,19 +51,19 @@ export const useUserStore = create<UserState & UserActions>()(
             createdBy: "System",
             lobbySize: 0
           };
-          return {
+          set(state => ({
             ...state,
             attendedMeetups: [...state.attendedMeetups, meetupObject],
             points: state.points + 5,
             level: Math.floor((state.points + 5) / 10)
-          };
+          }));
         } else {
-          return {
+          set(state => ({
             ...state,
             attendedMeetups: [...state.attendedMeetups, meetup],
             points: state.points + (meetup.points || 5),
             level: Math.floor((state.points + (meetup.points || 5)) / 10)
-          };
+          }));
         }
       },
       addFriend: (friend: Friend) => {
@@ -187,12 +188,12 @@ export const useUserStore = create<UserState & UserActions>()(
           lobbySize: 0
         };
         
-        return {
+        set(state => ({
           ...state,
           attendedMeetups: [...state.attendedMeetups, meetup],
           points: state.points + points,
           level: Math.floor((state.points + points) / 10)
-        };
+        }));
       },
       setUserId: async (userId: string) => {
         set(state => ({ ...state, userId, isLoading: true }));
@@ -216,7 +217,7 @@ export const useUserStore = create<UserState & UserActions>()(
               name: profile.name || state.name,
               email: profile.email || state.email,
               avatar: profile.avatar_url || state.avatar,
-              tags: profile.tags || state.tags,
+              tags: profile.tags as Tag[] || state.tags,
               points: profile.points || state.points,
               level: profile.level || state.level,
               selectedSticker: profile.selected_sticker !== null ? profile.selected_sticker : state.selectedSticker,

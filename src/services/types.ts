@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export type Tag = 
   | "Technology" 
@@ -70,7 +69,6 @@ export interface UserActions {
   updateProfile: (name: string, email: string) => void;
   updateTags: (tags: Tag[]) => void;
   updateAvatar: (avatarUrl: string) => void;
-  // Add missing actions
   setSelectedSticker: (stickerIndex: number | null) => void;
   joinMeetupLobby: (meetupId: string) => void;
   attendMeetup: (meetupId: string, points: number) => void;
