@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, MapPin, Clock, User, Check, UserCheck } from "lucide-react";
@@ -136,7 +135,7 @@ const MeetupLobby = () => {
         
       if (error) {
         console.error("Error fetching attendees:", error);
-        setAttendees(sampleAttendees);
+        setAttendees([]);
         return;
       }
       
@@ -150,19 +149,12 @@ const MeetupLobby = () => {
         
         setAttendees(mappedAttendees);
       } else {
-        // Use random sample attendees based on meetup ID
-        const idSum = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-        const randomAttendees = [...sampleAttendees];
-        
-        // Randomly select attendees
-        if (idSum % 3 === 0) randomAttendees.pop();
-        if (idSum % 2 === 0 && randomAttendees.length > 1) randomAttendees.shift();
-        
-        setAttendees(randomAttendees);
+        // No mock data fallback, just use empty array
+        setAttendees([]);
       }
     } catch (error) {
       console.error("Error fetching attendees:", error);
-      setAttendees(sampleAttendees);
+      setAttendees([]);
     }
   };
   

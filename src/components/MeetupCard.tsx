@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -91,7 +90,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     fetchCreatorInfo();
   }, [meetup.createdBy, meetup.creatorAvatar]);
   
-  // Fetch actual attendees from database
+  // Fetch actual attendees from database - removing mock data
   useEffect(() => {
     const fetchAttendees = async () => {
       try {
@@ -109,6 +108,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           
         if (error) {
           console.error("Error fetching attendees:", error);
+          setAttendees([]);
           return;
         }
         
@@ -123,34 +123,12 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           
           setAttendees(mappedAttendees);
         } else {
-          // Initialize with sample data if no real attendees
-          const idSum = meetup.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
-          
-          const baseAttendees: Attendee[] = [];
-          
-          // Create mock attendees with illustrated avatars
-          if (idSum % 2 === 0) {
-            baseAttendees.push({ 
-              id: "1", 
-              name: "Jane Cooper", 
-              avatar: getAvatarForUser("1", "Jane Cooper"), 
-              status: "going" 
-            });
-          }
-          
-          if (idSum % 3 === 0) {
-            baseAttendees.push({ 
-              id: "2", 
-              name: "Wade Warren", 
-              avatar: getAvatarForUser("2", "Wade Warren"), 
-              status: "going" 
-            });
-          }
-          
-          setAttendees(baseAttendees);
+          // No mock data, just set empty array if no real attendees
+          setAttendees([]);
         }
       } catch (err) {
         console.error("Error in fetchAttendees:", err);
+        setAttendees([]);
       }
     };
     
