@@ -1,21 +1,24 @@
 
 import { useNavigate } from "react-router-dom";
-import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Tag } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import { useUserStore } from "@/services/meetupService";
 import { Friend, Tag as TagType } from "@/services/types";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLevelUp } from "@/contexts/LevelUpContext";
-import { ProfileAvatar } from "@/components/ProfileAvatars";
+import ProfileAvatars from "@/components/ProfileAvatars";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
-import ProfileAvatars from "@/components/ProfileAvatars";
+
+// Import our newly created components
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import FriendsSection from "@/components/profile/FriendsSection";
+import AccountSettings from "@/components/profile/AccountSettings";
+import AddFriendDialog from "@/components/profile/AddFriendDialog";
+import EditProfileDialog from "@/components/profile/EditProfileDialog";
+import TagsDialog from "@/components/profile/TagsDialog";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -75,9 +78,6 @@ const Profile = () => {
   });
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
-
-  const pointsToNextLevel = level * 10;
-  const progress = (points % 10) * 10;
   
   const handleLogout = () => {
     logout();
@@ -155,7 +155,6 @@ const Profile = () => {
 
   const handleSaveNotificationSettings = (settings: NotificationSettingsType) => {
     setNotificationSettings(settings);
-    // Here you would typically save to a backend or localStorage
     toast({
       title: "Notification settings updated",
       description: "Your notification preferences have been saved."
@@ -164,7 +163,6 @@ const Profile = () => {
 
   const handleSavePrivacySettings = (settings: PrivacySettingsType) => {
     setPrivacySettings(settings);
-    // Here you would typically save to a backend or localStorage
     toast({
       title: "Privacy settings updated",
       description: "Your privacy preferences have been saved."
@@ -186,269 +184,62 @@ const Profile = () => {
 
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
-          <div className="flex flex-col items-center">
-            <div className="relative cursor-pointer" onClick={openAvatarSelector}>
-              <ProfileAvatar 
-                level={level} 
-                selectedAvatar={selectedAvatar} 
-                size="lg"
-                className="mb-4"
-              />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openAvatarSelector();
-                }}
-              >
-                <User className="h-4 w-4" />
-              </Button>
-            </div>
-            <h2 className="text-xl font-semibold">{name}</h2>
-            <p className="text-muted-foreground">{email}</p>
-            
-            <div className="flex flex-wrap gap-1 mt-2 justify-center">
-              {tags.map(tag => (
-                <span key={tag} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                  {tag}
-                </span>
-              ))}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full h-6 text-xs"
-                onClick={() => setIsTagDialogOpen(true)}
-              >
-                <Tag className="h-3 w-3 mr-1" />
-                Edit
-              </Button>
-            </div>
-          </div>
+          {/* Profile Header Section */}
+          <ProfileHeader 
+            name={name}
+            email={email}
+            level={level}
+            points={points}
+            attendedMeetups={attendedMeetups}
+            tags={tags}
+            selectedAvatar={selectedAvatar}
+            openAvatarSelector={openAvatarSelector}
+            openTagDialog={() => setIsTagDialogOpen(true)}
+          />
           
-          <div className="bg-primary/5 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center">
-                <Award className="h-5 w-5 text-primary mr-2" />
-                <span className="font-semibold">Level {level}</span>
-              </div>
-              <div className="flex items-center">
-                <Star className="h-4 w-4 text-primary mr-1" />
-                <span>{points} points</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span>Progress to Level {level + 1}</span>
-                <span>{points % 10}/10 points</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              <span>Attended {attendedMeetups.length} meetups</span>
-            </div>
-          </div>
+          {/* Friends Section */}
+          <FriendsSection 
+            friends={friends}
+            openAddFriendDialog={() => setIsAddFriendDialogOpen(true)}
+            onRemoveFriend={handleRemoveFriend}
+          />
           
-          {/* Friends section */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Friends</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => setIsAddFriendDialogOpen(true)}
-              >
-                <UserPlus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
-            
-            <div className="space-y-2">
-              {friends.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-4">
-                  No friends added yet. Add your first friend!
-                </p>
-              ) : (
-                friends.map(friend => (
-                  <div key={friend.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                    <div className="flex items-center gap-2">
-                      {/* We'll show a default avatar instead of the profile picture */}
-                      <div className="h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{friend.name}</p>
-                        <div className="flex gap-1">
-                          {friend.tags?.map(tag => (
-                            <span key={tag} className="text-xs text-muted-foreground">
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => handleRemoveFriend(friend.id, friend.name)}
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-          
-          {/* Account settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Account Settings</h3>
-            <div className="space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => setIsEditProfileDialogOpen(true)}
-              >
-                <User className="mr-2 h-4 w-4" />
-                Edit Profile
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={openAvatarSelector}
-              >
-                <User className="mr-2 h-4 w-4" />
-                Change Avatar
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start" 
-                onClick={() => setIsNotificationSettingsOpen(true)}
-              >
-                Notification Settings
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => setIsPrivacySettingsOpen(true)}
-              >
-                Privacy Settings
-              </Button>
-            </div>
-          </div>
-          
-          <Button 
-            variant="destructive"
-            className="w-full"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" /> Logout
-          </Button>
+          {/* Account Settings Section */}
+          <AccountSettings 
+            onEditProfile={() => setIsEditProfileDialogOpen(true)}
+            onChangeAvatar={openAvatarSelector}
+            onNotificationSettings={() => setIsNotificationSettingsOpen(true)}
+            onPrivacySettings={() => setIsPrivacySettingsOpen(true)}
+            onLogout={handleLogout}
+          />
         </div>
       </div>
 
-      {/* Dialog modals */}
-      <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add a Friend</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label htmlFor="friendName" className="text-sm font-medium">Friend's Name</label>
-              <Input 
-                id="friendName"
-                placeholder="Enter friend's name"
-                value={newFriend.name || ''}
-                onChange={e => setNewFriend({...newFriend, name: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="friendTags" className="text-sm font-medium">Tags (optional)</label>
-              <Input 
-                id="friendTags"
-                placeholder="Technology, Gaming, etc."
-                value={newFriend.tags?.join(', ') || ''}
-                onChange={e => setNewFriend({...newFriend, tags: e.target.value.split(',').map(tag => tag.trim() as TagType).filter(Boolean)})}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={handleAddFriend}>Add Friend</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialogs */}
+      <AddFriendDialog 
+        open={isAddFriendDialogOpen}
+        onOpenChange={setIsAddFriendDialogOpen}
+        newFriend={newFriend}
+        onNewFriendChange={setNewFriend}
+        onAddFriend={handleAddFriend}
+      />
 
-      <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label htmlFor="profileName" className="text-sm font-medium">Name</label>
-              <Input 
-                id="profileName"
-                placeholder="Your name"
-                value={profileForm.name}
-                onChange={e => setProfileForm({...profileForm, name: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="profileEmail" className="text-sm font-medium">Email</label>
-              <Input 
-                id="profileEmail"
-                placeholder="Your email"
-                value={profileForm.email}
-                onChange={e => setProfileForm({...profileForm, email: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={handleUpdateProfile}>Update Profile</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditProfileDialog 
+        open={isEditProfileDialogOpen}
+        onOpenChange={setIsEditProfileDialogOpen}
+        profileForm={profileForm}
+        onProfileFormChange={setProfileForm}
+        onUpdateProfile={handleUpdateProfile}
+      />
 
-      <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Your Interests</DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-2">
-            <div className="flex flex-wrap gap-2">
-              {availableTags.map(tag => (
-                <button
-                  key={tag}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    selectedTags.includes(tag) 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-muted hover:bg-muted/80'
-                  }`}
-                  onClick={() => toggleTag(tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={handleUpdateTags}>Save Interests</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TagsDialog 
+        open={isTagDialogOpen}
+        onOpenChange={setIsTagDialogOpen}
+        availableTags={availableTags}
+        selectedTags={selectedTags}
+        onToggleTag={toggleTag}
+        onUpdateTags={handleUpdateTags}
+      />
 
       <NotificationSettings 
         open={isNotificationSettingsOpen}
