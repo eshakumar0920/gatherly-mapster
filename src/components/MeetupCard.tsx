@@ -350,11 +350,11 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             <User className="h-4 w-4 mr-2" />
             <div className="flex items-center">
               <div className="relative">
-                {/* Use ProfileAvatar for the creator */}
+                {/* Use ProfileAvatar with xs size for the creator */}
                 <ProfileAvatar 
                   level={creatorInfo.level || 1}
                   selectedAvatar={null}
-                  size="sm"
+                  size="xs"
                 />
               </div>
               <span className="ml-1">{creatorInfo.name}</span>
@@ -367,7 +367,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                 <Users className="h-4 w-4 mr-1" />
                 <span>{attendees.length}/{meetup.lobbySize}</span>
                 
-                {/* Show mini avatars for attendees */}
+                {/* Show mini avatars for attendees with xs size */}
                 {attendees.length > 0 && (
                   <div className="flex -space-x-2 ml-2">
                     {attendees.slice(0, 2).map((attendee, index) => (
@@ -375,13 +375,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                         <ProfileAvatar
                           level={1}
                           selectedAvatar={null}
-                          size="sm"
+                          size="xs"
                           showBadge={false}
                         />
                       </div>
                     ))}
                     {attendees.length > 2 && (
-                      <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-xs">
+                      <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-xs">
                         +{attendees.length - 2}
                       </div>
                     )}
@@ -399,7 +399,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                         <ProfileAvatar
                           level={1}
                           selectedAvatar={null}
-                          size="sm"
+                          size="xs"
                           showBadge={false}
                         />
                         <span className="text-sm">{attendee.name}</span>
