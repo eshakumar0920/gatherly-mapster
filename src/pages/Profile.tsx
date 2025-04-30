@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,8 @@ import NotificationSettings, { NotificationSettingsType } from "@/components/pro
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ProfileSticker } from "@/components/ProfileStickers";
+import ProfileStickers from "@/components/ProfileStickers";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -40,6 +41,7 @@ const Profile = () => {
     removeFriend, 
     updateTags,
     updateProfile,
+    selectedSticker,
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
@@ -149,6 +151,10 @@ const Profile = () => {
 
   const { setShowAvatars } = useLevelUp();
 
+  const openStickerSelector = () => {
+    setShowAvatars(true);
+  };
+
   const handleSaveNotificationSettings = (settings: NotificationSettingsType) => {
     setNotificationSettings(settings);
     // Here you would typically save to a backend or localStorage
@@ -183,7 +189,7 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="relative cursor-pointer">
+            <div className="relative cursor-pointer" onClick={openStickerSelector}>
               <Avatar className="h-24 w-24 bg-green-200 mb-4">
                 <AvatarFallback className="bg-green-200 text-green-600 text-2xl">
                   {name.charAt(0)}
@@ -193,14 +199,20 @@ const Profile = () => {
                 variant="outline" 
                 size="sm" 
                 className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openStickerSelector();
+                }}
               >
                 <User className="h-4 w-4" />
               </Button>
-              <div className="absolute -bottom-1 -left-1">
-                <Badge variant="outline" className="bg-primary text-primary-foreground px-2 py-0.5 text-xs">
-                  Level {level}
-                </Badge>
-              </div>
+              
+              {/* Add the level sticker beside the profile picture */}
+              <ProfileSticker 
+                level={level} 
+                selectedSticker={selectedSticker} 
+                size="md" 
+              />
             </div>
             <h2 className="text-xl font-semibold">{name}</h2>
             <p className="text-muted-foreground">{email}</p>
@@ -317,6 +329,7 @@ const Profile = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
+                onClick={openStickerSelector}
               >
                 <User className="mr-2 h-4 w-4" />
                 Change Avatar
@@ -460,6 +473,8 @@ const Profile = () => {
         onSave={handleSavePrivacySettings}
         initialSettings={privacySettings}
       />
+
+      <ProfileStickers />
 
       <Navigation />
     </div>
