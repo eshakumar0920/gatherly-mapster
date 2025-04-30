@@ -28,11 +28,17 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
       
       // If coordinates callback is provided and value is a known location, call it with coordinates
       if (onCoordinatesChange) {
-        // First try exact match
-        const exactMatch = findLocationByName(value);
-        if (exactMatch) {
-          console.log(`Found exact location match for "${value}": ${exactMatch.name} (${exactMatch.lat}, ${exactMatch.lng})`);
-          onCoordinatesChange(exactMatch.lat, exactMatch.lng);
+        const matchedLocation = findLocationByName(value);
+        if (matchedLocation) {
+          console.log(`Found location match for "${value}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
+          onCoordinatesChange(matchedLocation.lat, matchedLocation.lng);
+        } else {
+          // Default to library if no match found
+          const defaultLocation = findLocationByName("Library");
+          if (defaultLocation) {
+            console.log(`No match found for "${value}", defaulting to Library: (${defaultLocation.lat}, ${defaultLocation.lng})`);
+            onCoordinatesChange(defaultLocation.lat, defaultLocation.lng);
+          }
         }
       }
     }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -17,6 +18,24 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       c => lobbySize >= c.minSize && lobbySize <= c.maxSize
     );
     return classification ? classification.basePoints : pointClassifications[0].basePoints;
+  };
+
+  // Helper function to get accurate coordinates for a location
+  const getLocationCoordinates = (locationName: string) => {
+    const matchedLocation = findLocationByName(locationName);
+    if (matchedLocation) {
+      console.log(`Found coordinates for "${locationName}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
+      return { lat: matchedLocation.lat, lng: matchedLocation.lng };
+    }
+    
+    // Default to library if no match found
+    const defaultLocation = campusLocations.find(loc => loc.id === "library");
+    if (defaultLocation) {
+      console.log(`No match found for "${locationName}", defaulting to Library: (${defaultLocation.lat}, ${defaultLocation.lng})`);
+      return { lat: defaultLocation.lat, lng: defaultLocation.lng };
+    }
+    
+    return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
   useEffect(() => {
@@ -46,20 +65,32 @@ export const useMeetups = (selectedCategory: string | null = null) => {
           const eventRows = data as unknown as EventRow[];
           const meetups: Meetup[] = eventRows.map(event => {
             const lobbySize = event.lobby_size || 5;
+            
+            // Determine coordinates - use stored coordinates if available, otherwise find them based on location name
+            let latitude = event.latitude;
+            let longitude = event.longitude;
+            
+            if ((!latitude || !longitude || latitude === 0 || longitude === 0) && event.location) {
+              const coords = getLocationCoordinates(event.location);
+              latitude = coords.lat;
+              longitude = coords.lng;
+              console.log(`Using matched coordinates for "${event.location}": (${latitude}, ${longitude})`);
+            }
+            
             return {
               id: event.id.toString(),
               title: event.title,
               description: event.description || "No description available",
               dateTime: formatEventDate(event.event_date),
               location: event.location,
-              points: getPointsForLobbySize(lobbySize), // Calculate points based on lobby size
+              points: getPointsForLobbySize(lobbySize),
               createdBy: event.creator_name || "Anonymous",
-              creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80", // Default avatar
+              creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
               lobbySize: lobbySize,
               category: event.category || "Other",
               attendees: [],
-              latitude: event.latitude,
-              longitude: event.longitude
+              latitude: latitude,
+              longitude: longitude
             };
           });
           
@@ -116,26 +147,25 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       const lobbySize = meetupData.lobbySize || 5;
       const points = getPointsForLobbySize(lobbySize);
       
-      // Make sure we have coordinates
+      // Make sure we have coordinates - use provided coordinates or find them based on location name
       let latitude = meetupData.latitude;
       let longitude = meetupData.longitude;
       
-      // If coordinates are not provided or are zero, use exact location match
       if ((!latitude || !longitude || latitude === 0 || longitude === 0) && meetupData.location) {
-        // Find exact match by name
-        const exactLocationMatch = campusLocations.find(loc => loc.name === meetupData.location);
+        // Find exact match from our predefined locations
+        const matchedLocation = findLocationByName(meetupData.location);
         
-        if (exactLocationMatch) {
-          latitude = exactLocationMatch.lat;
-          longitude = exactLocationMatch.lng;
-          console.log(`Using exact coordinates for meetup at "${meetupData.location}": (${latitude}, ${longitude})`);
+        if (matchedLocation) {
+          latitude = matchedLocation.lat;
+          longitude = matchedLocation.lng;
+          console.log(`Using exact location coordinates for "${meetupData.location}": (${latitude}, ${longitude})`);
         } else {
           // Fallback to library as default location
           const defaultLocation = campusLocations.find(loc => loc.id === "library");
           if (defaultLocation) {
             latitude = defaultLocation.lat;
             longitude = defaultLocation.lng;
-            console.log(`No exact match found for "${meetupData.location}", using library coordinates: (${latitude}, ${longitude})`);
+            console.log(`No match found for "${meetupData.location}", using library coordinates: (${latitude}, ${longitude})`);
           }
         }
       }
@@ -151,12 +181,12 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         creator_name: userName,
         created_at: new Date().toISOString(),
         semester: "Spring 2025",
-        xp_reward: points, // Use calculated points based on lobby size
+        xp_reward: points,
         organizer_xp_reward: 5,
         category: meetupData.category,
         lobby_size: lobbySize,
-        latitude: latitude, // Store coordinates
-        longitude: longitude // Store coordinates
+        latitude: latitude,
+        longitude: longitude
       }).select().single();
 
       if (error) {
@@ -185,14 +215,14 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         description: eventRow.description || "No description available",
         dateTime: formatEventDate(eventRow.event_date),
         location: eventRow.location,
-        points: points, // Use calculated points
+        points: points,
         createdBy: eventRow.creator_name || userName,
         creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
         lobbySize: eventRow.lobby_size || 5,
         category: eventRow.category || "Other",
         attendees: [],
-        latitude: eventRow.latitude, // Include coordinates
-        longitude: eventRow.longitude // Include coordinates
+        latitude: eventRow.latitude,
+        longitude: eventRow.longitude
       };
       
       setAllMeetups(prev => [newMeetup, ...prev]);
