@@ -50,6 +50,16 @@ const getLocationCoordinates = (locationName: string | null) => {
     }
   }
   
+  // Special case for Jazz Ensemble at Jonsson Performance Hall
+  if (locationName.toLowerCase().includes("university theatre") && 
+      (locationName.toLowerCase().includes("jazz") || locationName.toLowerCase().includes("ensemble"))) {
+    const performanceHall = campusLocations.find(loc => loc.id === "jonsson");
+    if (performanceHall) {
+      console.log(`Using Jonsson Performance Hall coordinates for Jazz Ensemble at "${locationName}": (${performanceHall.lat}, ${performanceHall.lng})`);
+      return { lat: performanceHall.lat, lng: performanceHall.lng };
+    }
+  }
+  
   // Use our new helper function
   const matchedLocation = findLocationByName(locationName);
   if (matchedLocation) {
@@ -105,9 +115,21 @@ const Maps = () => {
                 coords = { lat: event.latitude, lng: event.longitude };
                 console.log(`Event ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
               } else {
-                // Fall back to location name matching
-                coords = getLocationCoordinates(event.location);
-                console.log(`Event ${event.title} using matched coordinates: (${coords.lat}, ${coords.lng})`);
+                // Special case for Jazz Ensemble
+                if (event.title && event.title.toLowerCase().includes("jazz") && 
+                    event.title.toLowerCase().includes("ensemble")) {
+                  const jonsson = campusLocations.find(loc => loc.id === "jonsson");
+                  if (jonsson) {
+                    coords = { lat: jonsson.lat, lng: jonsson.lng };
+                    console.log(`Jazz Ensemble event using Jonsson Hall coordinates: (${coords.lat}, ${coords.lng})`);
+                  } else {
+                    coords = getLocationCoordinates(event.location);
+                  }
+                } else {
+                  // Fall back to location name matching
+                  coords = getLocationCoordinates(event.location);
+                  console.log(`Event ${event.title} using matched coordinates: (${coords.lat}, ${coords.lng})`);
+                }
               }
               
               return {
@@ -200,7 +222,22 @@ const Maps = () => {
           // Load mock events as a fallback
           const mockEvents = getEvents();
           const mockLocations = mockEvents.map(event => {
-            const coords = getLocationCoordinates(event.location);
+            let coords;
+            
+            // Special case for Jazz Ensemble
+            if (event.title && event.title.toLowerCase().includes("jazz") && 
+                event.title.toLowerCase().includes("ensemble")) {
+              // Use the same coordinates as Symphony Orchestra (Jonsson Hall)
+              const jonsson = campusLocations.find(loc => loc.id === "jonsson");
+              if (jonsson) {
+                coords = { lat: jonsson.lat, lng: jonsson.lng };
+                console.log(`Mock Jazz Ensemble event using Jonsson Hall coordinates: (${coords.lat}, ${coords.lng})`);
+              } else {
+                coords = getLocationCoordinates(event.location);
+              }
+            } else {
+              coords = getLocationCoordinates(event.location);
+            }
             
             return {
               id: `mock-${event.id}`,
@@ -231,7 +268,22 @@ const Maps = () => {
         // Use mock data as last resort
         const events = getEvents();
         const locations = events.map(event => {
-          const coords = getLocationCoordinates(event.location);
+          let coords;
+          
+          // Special case for Jazz Ensemble
+          if (event.title && event.title.toLowerCase().includes("jazz") && 
+              event.title.toLowerCase().includes("ensemble")) {
+            // Place it at Jonsson Hall
+            const jonsson = campusLocations.find(loc => loc.id === "jonsson");
+            if (jonsson) {
+              coords = { lat: jonsson.lat, lng: jonsson.lng };
+              console.log(`Last resort: Jazz Ensemble using Jonsson coordinates: (${coords.lat}, ${coords.lng})`);
+            } else {
+              coords = getLocationCoordinates(event.location);
+            }
+          } else {
+            coords = getLocationCoordinates(event.location);
+          }
           
           return {
             id: `mock-${event.id}`,
