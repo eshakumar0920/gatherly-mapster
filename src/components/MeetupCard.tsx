@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -263,7 +262,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             return;
           }
           
-          // Convert number ID to string for the UI function
+          // Now we can safely pass the user ID as a string
           const newUserId = String(newUser.id);
           await joinMeetupInDb(meetup.id, newUserId);
           joinMeetupLobby(meetup.id);
@@ -290,7 +289,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             .eq('id', userId);
         }
         
-        // Using the userId as a string (should match expected type)
+        // Pass userId as a string - the function will handle conversion
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }

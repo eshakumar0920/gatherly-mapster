@@ -294,14 +294,19 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
-  const joinMeetupLobby = async (meetupId: string, userId: string): Promise<boolean> => {
+  // Update to accept either string or number userId
+  const joinMeetupLobby = async (meetupId: string, userId: string | number): Promise<boolean> => {
     try {
       // First check if user is already in the lobby
+      // Convert meetupId and userId to numbers for the database query
+      const meetupIdNumber = typeof meetupId === 'string' ? parseInt(meetupId) : meetupId;
+      const userIdNumber = typeof userId === 'string' ? parseInt(userId) : userId;
+      
       const { data: existingParticipant, error: checkError } = await supabase
         .from('participants')
         .select('*')
-        .eq('event_id', parseInt(meetupId))
-        .eq('user_id', parseInt(userId))
+        .eq('event_id', meetupIdNumber)
+        .eq('user_id', userIdNumber)
         .single();
       
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
@@ -320,8 +325,8 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       
       // Insert participant - convert string IDs to numbers for the database
       const { error } = await supabase.from('participants').insert({
-        event_id: parseInt(meetupId),
-        user_id: parseInt(userId),
+        event_id: meetupIdNumber,
+        user_id: userIdNumber,
         joined_at: new Date().toISOString(),
         attendance_status: 'registered'
       });
