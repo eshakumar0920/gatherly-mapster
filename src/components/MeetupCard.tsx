@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -47,7 +48,7 @@ const getAvatarForUser = (id: string, name?: string) => {
 export { getAvatarForUser };
 
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
-  const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
+  const { joinMeetupLobby, joinedLobbies, userId, avatar } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -119,8 +120,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           const mappedAttendees: Attendee[] = data.map(participant => ({
             id: participant.user_id.toString(),
             name: participant.users.username || "Anonymous",
-            // Use illustrated avatar instead of profile picture
-            avatar: getAvatarForUser(participant.user_id.toString(), participant.users.username),
+            // Use user's custom avatar if available
+            avatar: getUserAvatar(participant.user_id.toString(), participant.users.username),
             status: participant.attendance_status === 'attended' ? 'going' : 'interested'
           }));
           
@@ -138,6 +139,17 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     fetchAttendees();
   }, [meetup.id]);
   
+  // Helper function to get user's avatar (from storage if available or generate one)
+  const getUserAvatar = (userId: string, username?: string) => {
+    // If the user is the current user, use their selected avatar
+    if (userId === user?.uid) {
+      return avatar || getAvatarForUser(userId, username);
+    }
+    
+    // For other users, generate a consistent avatar
+    return getAvatarForUser(userId, username);
+  };
+  
   // Check if user is in attendees list
   useEffect(() => {
     if (isJoinedLobby && user && !attendees.some(a => a.id === userId)) {
@@ -146,13 +158,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         {
           id: userId || "current-user",
           name: user.email?.split('@')[0] || "Current User",
-          // Use illustrated avatar for current user
-          avatar: getAvatarForUser(userId || "current-user", user.email?.split('@')[0]),
+          // Use user's selected avatar if available
+          avatar: avatar || getAvatarForUser(userId || "current-user", user.email?.split('@')[0]),
           status: "interested"
         }
       ]);
     }
-  }, [isJoinedLobby, user, userId, attendees]);
+  }, [isJoinedLobby, user, userId, attendees, avatar]);
   
   const formattedDateTime = (() => {
     if (meetup.dateTime == null) {
@@ -238,7 +250,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             .insert({
               email: user.email,
               username: username,
-              join_date: new Date().toISOString()
+              join_date: new Date().toISOString(),
+              profile_picture: avatar // Store the user's selected avatar
             })
             .select('id')
             .single();
@@ -257,10 +270,26 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           joinMeetupLobby(meetup.id);
           
         } else {
+          // Update the user's avatar if they have one selected
+          if (avatar) {
+            await supabase
+              .from('users')
+              .update({ profile_picture: avatar })
+              .eq('id', userData.id);
+          }
+          
           await joinMeetupInDb(meetup.id, userData.id.toString());
           joinMeetupLobby(meetup.id);
         }
       } else {
+        // Update the user's avatar if they have one selected
+        if (avatar) {
+          await supabase
+            .from('users')
+            .update({ profile_picture: avatar })
+            .eq('id', userId);
+        }
+        
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }

@@ -5,12 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { pointClassifications } from "@/services/types";
 import { campusLocations, findLocationByName } from "@/utils/campusLocations";
+import { useUserStore } from "@/services/meetupService";
 
 export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
+  const { avatar } = useUserStore(); // Get user's selected avatar
+  
   // Helper function to calculate points based on lobby size
   const getPointsForLobbySize = (lobbySize: number): number => {
     const classification = pointClassifications.find(
@@ -48,8 +50,13 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
-  // Helper function to get an illustrated avatar for a user
+  // Helper function to get an illustrated avatar for a user - use the user's selected avatar if available
   const getIllustratedAvatar = (id: string, name?: string) => {
+    // If this is for the current user and they have a selected avatar
+    if (avatar) {
+      return avatar;
+    }
+    
     const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const avatars = [
       "/placeholder.svg",
@@ -144,7 +151,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     };
     
     fetchMeetups();
-  }, [selectedCategory, toast]);
+  }, [selectedCategory, toast, avatar]); // Add avatar to dependencies to refresh when it changes
 
   // Helper function to handle date formatting safely
   const formatEventDate = (dateString: string): string => {
@@ -246,8 +253,11 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       
       const eventRow = data as unknown as EventRow;
       
-      // Use illustrated avatar for the new meetup creator
-      const creatorAvatar = getIllustratedAvatar(eventRow.id.toString(), userName);
+      // Get profile picture if the user has one set
+      const userAvatar = avatar; // Use the user's selected avatar
+      
+      // Use the user's selected avatar if available
+      const creatorAvatar = userAvatar || getIllustratedAvatar(eventRow.id.toString(), userName);
       
       const newMeetup: Meetup = {
         id: eventRow.id.toString(),
