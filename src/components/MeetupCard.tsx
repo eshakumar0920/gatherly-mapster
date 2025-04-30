@@ -40,8 +40,10 @@ const formatDate = (meetup: Meetup): string => {
         }
       }
     } else if (meetup.dateTime && typeof meetup.dateTime === 'object') {
-      // Instead of instanceof Date, check if it's an object
-      const dateCheck = new Date(meetup.dateTime.toString());
+      // Check if it's a date-like object without using instanceof
+      // Convert to a string safely first
+      const dateString = String(meetup.dateTime);
+      const dateCheck = new Date(dateString);
       if (isValid(dateCheck)) {
         dateObj = dateCheck;
       }
@@ -100,3 +102,4 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
 
 export default MeetupCard;
 export { formatDate };
+
