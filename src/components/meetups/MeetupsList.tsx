@@ -38,6 +38,15 @@ const MeetupsList = ({
     ) || pointClassifications[0];
   };
 
+  // Updated meetups with correct point values based on classification
+  const meetupsWithCorrectPoints = meetups.map(meetup => {
+    const classification = getClassification(meetup.lobbySize);
+    return {
+      ...meetup,
+      points: classification.basePoints
+    };
+  });
+
   return (
     <div className="space-y-4">
       {showPointsClassification && (
@@ -61,7 +70,7 @@ const MeetupsList = ({
         </div>
       )}
 
-      {meetups.map(meetup => {
+      {meetupsWithCorrectPoints.map(meetup => {
         const classification = getClassification(meetup.lobbySize);
         return (
           <div 

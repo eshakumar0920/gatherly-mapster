@@ -4,11 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { pointClassifications } from "@/services/types";
 
 export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  // Helper function to calculate points based on lobby size
+  const getPointsForLobbySize = (lobbySize: number): number => {
+    const classification = pointClassifications.find(
+      c => lobbySize >= c.minSize && lobbySize <= c.maxSize
+    );
+    return classification ? classification.basePoints : pointClassifications[0].basePoints;
+  };
 
   useEffect(() => {
     const fetchMeetups = async () => {
@@ -35,19 +44,22 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         
         if (data && data.length > 0) {
           const eventRows = data as unknown as EventRow[];
-          const meetups: Meetup[] = eventRows.map(event => ({
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description || "No description available",
-            dateTime: formatEventDate(event.event_date),
-            location: event.location,
-            points: event.xp_reward || 3,
-            createdBy: event.creator_name || "Anonymous",
-            creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80", // Default avatar
-            lobbySize: event.lobby_size || 5,
-            category: event.category || "Other",
-            attendees: []
-          }));
+          const meetups: Meetup[] = eventRows.map(event => {
+            const lobbySize = event.lobby_size || 5;
+            return {
+              id: event.id.toString(),
+              title: event.title,
+              description: event.description || "No description available",
+              dateTime: formatEventDate(event.event_date),
+              location: event.location,
+              points: getPointsForLobbySize(lobbySize), // Calculate points based on lobby size
+              createdBy: event.creator_name || "Anonymous",
+              creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80", // Default avatar
+              lobbySize: lobbySize,
+              category: event.category || "Other",
+              attendees: []
+            };
+          });
           
           setAllMeetups(meetups);
         } else {
@@ -99,6 +111,9 @@ export const useMeetups = (selectedCategory: string | null = null) => {
 
   const createMeetup = async (meetupData: Partial<Meetup>, userId: string, userName: string): Promise<Meetup | null> => {
     try {
+      const lobbySize = meetupData.lobbySize || 5;
+      const points = getPointsForLobbySize(lobbySize);
+      
       const { data, error } = await supabase.from('events').insert({
         title: meetupData.title,
         description: meetupData.description,
@@ -108,10 +123,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         creator_name: userName,
         created_at: new Date().toISOString(),
         semester: "Spring 2025",
-        xp_reward: meetupData.points || 3,
+        xp_reward: points, // Use calculated points based on lobby size
         organizer_xp_reward: 5,
         category: meetupData.category,
-        lobby_size: meetupData.lobbySize || 5
+        lobby_size: lobbySize
       }).select().single();
 
       if (error) {
@@ -140,7 +155,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         description: eventRow.description || "No description available",
         dateTime: formatEventDate(eventRow.event_date),
         location: eventRow.location,
-        points: eventRow.xp_reward || 3,
+        points: points, // Use calculated points
         createdBy: eventRow.creator_name || userName,
         creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
         lobbySize: eventRow.lobby_size || 5,
@@ -228,12 +243,16 @@ export const useMeetups = (selectedCategory: string | null = null) => {
 
   const checkInToMeetup = async (meetupId: string, userId: string): Promise<boolean> => {
     try {
+      // Find the meetup to get its points value based on lobby size
+      const meetup = allMeetups.find(m => m.id === meetupId);
+      const pointsToAward = meetup ? meetup.points : 3;
+
       // Update participant status to attended
       const { error } = await supabase
         .from('participants')
         .update({ 
           attendance_status: 'attended',
-          xp_earned: 3 // Default XP value
+          xp_earned: pointsToAward // Use the points based on lobby size
         })
         .eq('event_id', parseInt(meetupId))
         .eq('user_id', parseInt(userId));
@@ -250,7 +269,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       
       toast({
         title: "Check-in successful!",
-        description: "You've checked in to this meetup and earned points!",
+        description: `You've checked in to this meetup and earned ${pointsToAward} points!`,
       });
       
       return true;
