@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
+import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
@@ -49,15 +49,19 @@ const Profile = () => {
     friends, 
     tags, 
     selectedSticker,
+    avatar,
     addFriend, 
     removeFriend, 
     updateTags,
     updateProfile,
+    updateAvatar,
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [isProfilePictureDialogOpen, setIsProfilePictureDialogOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -70,6 +74,8 @@ const Profile = () => {
   });
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(avatar || null);
   
   const pointsToNextLevel = level * 10;
   const progress = (points % 10) * 10;
@@ -147,6 +153,44 @@ const Profile = () => {
   const triggerStickers = () => {
     setShowStickers(true);
   };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      
+      // Create object URL for immediate preview
+      const objectUrl = URL.createObjectURL(file);
+      setAvatarUrl(objectUrl);
+      
+      // Simulate upload with a delay
+      setTimeout(() => {
+        // Update avatar in state
+        updateAvatar(objectUrl);
+        setUploadingAvatar(false);
+        setIsProfilePictureDialogOpen(false);
+        
+        toast({
+          title: "Profile picture updated!",
+          description: "Your profile picture has been successfully updated."
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your profile picture.",
+        variant: "destructive"
+      });
+      setUploadingAvatar(false);
+    }
+  };
   
   return (
     <div className="pb-20">
@@ -164,9 +208,16 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
-                <span className="text-4xl">👤</span>
+            <div className="relative cursor-pointer" onClick={() => setIsProfilePictureDialogOpen(true)}>
+              <Avatar className="h-24 w-24 rounded-full bg-muted mb-4">
+                {avatarUrl ? (
+                  <AvatarImage src={avatarUrl} alt={name} />
+                ) : (
+                  <AvatarFallback className="text-4xl">👤</AvatarFallback>
+                )}
+              </Avatar>
+              <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <Upload className="h-8 w-8 text-white" />
               </div>
               {level > 0 && (
                 <ProfileSticker 
@@ -179,7 +230,10 @@ const Profile = () => {
                 variant="outline" 
                 size="sm" 
                 className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
-                onClick={triggerStickers}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerStickers();
+                }}
               >
                 {selectedSticker !== null ? (
                   <User className="h-4 w-4" />
@@ -299,6 +353,14 @@ const Profile = () => {
                 <User className="mr-2 h-4 w-4" />
                 Edit Profile
               </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                onClick={() => setIsProfilePictureDialogOpen(true)}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Change Profile Picture
+              </Button>
               <Button variant="outline" className="w-full justify-start" disabled>
                 Notification Settings
               </Button>
@@ -412,6 +474,50 @@ const Profile = () => {
           
           <DialogFooter>
             <Button onClick={handleUpdateTags}>Save Interests</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isProfilePictureDialogOpen} onOpenChange={setIsProfilePictureDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Profile Picture</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-6 flex flex-col items-center gap-4">
+            <Avatar className="h-32 w-32">
+              {avatarUrl ? (
+                <AvatarImage src={avatarUrl} alt={name} />
+              ) : (
+                <AvatarFallback className="text-5xl">👤</AvatarFallback>
+              )}
+            </Avatar>
+            
+            <div className="text-center">
+              <label htmlFor="avatarUpload" className="cursor-pointer">
+                <div className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md inline-flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  {uploadingAvatar ? "Uploading..." : "Upload New Picture"}
+                </div>
+                <input 
+                  id="avatarUpload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleAvatarUpload}
+                  disabled={uploadingAvatar}
+                />
+              </label>
+              <p className="text-xs text-muted-foreground mt-2">
+                Recommended: Square image, max 2MB
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProfilePictureDialogOpen(false)}>
+              Cancel
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,7 +1,31 @@
-
 // Common types used across the application
-export type Tag = 'Gaming' | 'Sports' | 'Academic' | 'Arts' | 'Music' | 'Technology' | 'Food' | 'Outdoors' | 
-                  'Reading' | 'Photography' | 'Fitness' | 'Movies' | 'Science' | 'Cooking' | 'Fashion' | 'Design' | 'Travel';
+export type Tag = 
+  | "Technology" 
+  | "Arts" 
+  | "Music" 
+  | "Sports" 
+  | "Food" 
+  | "Outdoors" 
+  | "Gaming" 
+  | "Reading" 
+  | "Photography" 
+  | "Fitness" 
+  | "Movies"
+  | "Science" 
+  | "Cooking" 
+  | "Fashion" 
+  | "Design" 
+  | "Travel" 
+  | "Academic";
+
+export interface UserActions {
+  addAttendedMeetup: (meetup: MeetupType) => void;
+  addFriend: (friend: Friend) => void;
+  removeFriend: (friendId: string) => void;
+  updateProfile: (name: string, email: string) => void;
+  updateTags: (tags: Tag[]) => void;
+  updateAvatar: (avatarUrl: string) => void;
+}
 
 export interface Friend {
   id: string;
