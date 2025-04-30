@@ -17,6 +17,10 @@ import { useUserStore } from '@/services/meetupService';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { Toaster } from '@/components/ui/toaster';
 import './App.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient();
 
 function AppContent() {
   const { level } = useUserStore();
@@ -55,11 +59,13 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <LevelUpProvider>
-        <AppContent />
-      </LevelUpProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <LevelUpProvider>
+          <AppContent />
+        </LevelUpProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
