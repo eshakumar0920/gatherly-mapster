@@ -100,6 +100,13 @@ const utdLocations: MapLocation[] = [
     lat: 32.9854,
     lng: -96.7513,
     description: "Campus visitor center and admissions office"
+  },
+  {
+    id: "jonsson",
+    title: "Jonsson Performance Hall",
+    lat: 32.988451582173454,
+    lng: -96.74861335191952,
+    description: "Performance venue for concerts and orchestral events"
   }
 ];
 

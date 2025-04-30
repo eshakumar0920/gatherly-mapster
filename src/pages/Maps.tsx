@@ -49,6 +49,7 @@ const UTD_LOCATIONS = {
   'Founders Building': { lat: 32.98754567890123, lng: -96.74914567890123 }, // Full precision coordinates
   'Callier Center': { lat: 32.98924567890123, lng: -96.74634567890123 }, // Full precision coordinates
   'Visitor Center': { lat: 32.98544567890123, lng: -96.75134567890123 }, // Full precision coordinates
+  'Jonsson Performance Hall': { lat: 32.988451582173454, lng: -96.74861335191952 }, // Added Jonsson Performance Hall
   'default': { lat: 32.98864567890123, lng: -96.74794567890123 } // UTD center as default with full precision
 };
 
@@ -86,6 +87,14 @@ const getLocationCoordinates = (locationName: string) => {
       locationName.toLowerCase().includes('school of management') || 
       locationName.toLowerCase().includes('jindal')) {
     return UTD_LOCATIONS['School of Management'];
+  }
+  
+  // Special handling for Jonsson Performance Hall
+  if (locationName.toLowerCase().includes('jonsson') || 
+      locationName.toLowerCase().includes('performance hall') ||
+      locationName.toLowerCase().includes('symphony') ||
+      locationName.toLowerCase().includes('orchestra')) {
+    return UTD_LOCATIONS['Jonsson Performance Hall'];
   }
   
   // Exact match first

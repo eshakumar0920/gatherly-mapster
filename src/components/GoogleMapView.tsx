@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
@@ -56,7 +55,8 @@ const BUILDING_LOCATIONS = {
   'Natural Sciences': { lat: 32.98664567890123, lng: -96.74764567890123 }, // Full precision coordinates
   'Founders Building': { lat: 32.98754567890123, lng: -96.74914567890123 }, // Full precision coordinates
   'Callier Center': { lat: 32.98924567890123, lng: -96.74634567890123 }, // Full precision coordinates
-  'Visitor Center': { lat: 32.98544567890123, lng: -96.75134567890123 } // Full precision coordinates
+  'Visitor Center': { lat: 32.98544567890123, lng: -96.75134567890123 }, // Full precision coordinates
+  'Jonsson Performance Hall': { lat: 32.988451582173454, lng: -96.74861335191952 } // Added Jonsson Performance Hall
 };
 
 // Manual mapping for specific events with full precision coordinates
@@ -66,7 +66,8 @@ const EVENT_LOCATION_OVERRIDES = {
   "International Food Festival": { lat: 32.98994567890123, lng: -96.75014567890123 }, // Student Union exact location with full precision
   "Student Entrepreneur Showcase": { lat: 32.98642345678901, lng: -96.74784567890123 }, // Blackstone LaunchPad with full precision
   "Student Art Showcase": { lat: 32.98553456789012, lng: -96.75012345678901 }, // SP/N Gallery with full precision
-  "Wellness Wednesday": { lat: 32.98742345678901, lng: -96.75254567890123 } // Recreation Center West with full precision
+  "Wellness Wednesday": { lat: 32.98742345678901, lng: -96.75254567890123 }, // Recreation Center West with full precision
+  "UTD Symphony Orchestra Spring Concert": { lat: 32.988451582173454, lng: -96.74861335191952 } // Added Symphony Orchestra event at Jonsson Performance Hall
 };
 
 const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
@@ -345,4 +346,3 @@ const GoogleMapView = ({ locations }: GoogleMapViewProps) => {
 };
 
 export default GoogleMapView;
-
