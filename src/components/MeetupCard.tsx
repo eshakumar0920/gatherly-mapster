@@ -44,15 +44,6 @@ const getAvatarForUser = (id: string, name?: string) => {
   return illustratedAvatars[charSum % illustratedAvatars.length];
 };
 
-// Helper to convert username to display name
-const getDisplayName = (username: string) => {
-  // Special case for exk200006
-  if (username && username.toLowerCase().includes('exk200006')) {
-    return "Esha Kumar";
-  }
-  return username || "Anonymous";
-};
-
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
   const { toast } = useToast();
@@ -64,7 +55,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
-    name: getDisplayName(meetup.createdBy || "Anonymous"),
+    name: meetup.createdBy || "Anonymous",
     avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use illustrated avatar
   });
   
@@ -81,7 +72,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             
           if (!error && data) {
             setCreatorInfo({
-              name: getDisplayName(data.username || meetup.createdBy),
+              name: data.username || meetup.createdBy,
               // Use illustrated avatar instead of profile picture
               avatar: getAvatarForUser(meetup.createdBy, data.username)
             });
@@ -91,7 +82,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         }
       } else {
         setCreatorInfo({
-          name: getDisplayName(meetup.createdBy || "Anonymous"),
+          name: meetup.createdBy || "Anonymous",
           avatar: getAvatarForUser(meetup.id)
         });
       }
