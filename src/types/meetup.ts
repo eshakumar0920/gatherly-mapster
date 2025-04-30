@@ -10,10 +10,10 @@ export interface Meetup {
   createdBy: string;
   creatorAvatar?: string;
   lobbySize: number;
-  category?: string; // Added category property as optional
+  category?: string;
   attendees?: string[];
-  latitude?: number;  // Added latitude property as optional
-  longitude?: number; // Added longitude property as optional
+  latitude?: number;
+  longitude?: number;
 }
 
 // Event data as it comes from Supabase
@@ -25,12 +25,12 @@ export interface EventRow {
   event_date: string;
   created_at: string;
   creator_id: number;
-  creator_name: string | null;  // Added to match the new database column
+  creator_name: string | null;
   semester: string | null;
   organizer_xp_reward: number | null;
   xp_reward: number | null;
   category?: string;
-  lobby_size: number | null;  // Added to match the new database column
-  latitude?: number;  // Added latitude property as optional
-  longitude?: number; // Added longitude property as optional
+  lobby_size: number | null;
+  latitude?: number;
+  longitude?: number;
 }

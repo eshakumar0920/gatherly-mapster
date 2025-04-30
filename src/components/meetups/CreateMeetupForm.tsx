@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,7 +23,7 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
   location: z.string().min(3, "Location is required").refine(
-    (val) => campusLocations.some(loc => loc.name === val),
+    (val) => campusLocations.some(loc => loc.name === val || normalizeLocationName(val, loc.name)),
     { message: "Please select a valid campus location from the dropdown" }
   ),
   category: z.string().min(1, "Category is required"),
@@ -33,6 +32,14 @@ const formSchema = z.object({
     z.number().int().positive("Lobby size must be greater than 0")
   ),
 });
+
+// Helper function to normalize and compare location names
+const normalizeLocationName = (input: string, reference: string): boolean => {
+  const normalize = (text: string) => text.trim().toLowerCase().replace(/building|hall|center/gi, "").replace(/\s+/g, " ").trim();
+  const normalizedInput = normalize(input);
+  const normalizedRef = normalize(reference);
+  return normalizedInput.includes(normalizedRef) || normalizedRef.includes(normalizedInput);
+};
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -137,11 +144,27 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
+      // Find or get coordinates for the selected location
+      let lat = locationCoordinates.lat;
+      let lng = locationCoordinates.lng;
+      
+      // If coordinates are still 0, find the location in campusLocations
+      if (lat === 0 && lng === 0) {
+        const locationMatch = campusLocations.find(loc => 
+          loc.name === values.location || normalizeLocationName(values.location, loc.name)
+        );
+        
+        if (locationMatch) {
+          lat = locationMatch.lat;
+          lng = locationMatch.lng;
+        }
+      }
+      
       const meetupData = {
         ...values,
         points: 3, // Default points
-        latitude: locationCoordinates.lat,
-        longitude: locationCoordinates.lng
+        latitude: lat,
+        longitude: lng
       };
       
       const newMeetup = await createMeetup(meetupData, currentUserId, userData.username);
@@ -293,4 +316,3 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 };
 
 export default CreateMeetupForm;
-

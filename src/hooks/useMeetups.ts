@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { pointClassifications } from "@/services/types";
+import { campusLocations } from "@/utils/campusLocations";
 
 export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
@@ -111,10 +111,56 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
+  // Find matching campus location or assign random one
+  const findCampusLocation = (locationName: string) => {
+    // Try to find an exact match first
+    const exactMatch = campusLocations.find(loc => 
+      loc.name.toLowerCase() === locationName.toLowerCase()
+    );
+    
+    if (exactMatch) {
+      return { lat: exactMatch.lat, lng: exactMatch.lng };
+    }
+    
+    // Try normalized matching
+    const normalize = (text: string) => {
+      return text.trim().toLowerCase()
+        .replace(/building|hall|center/gi, "")
+        .replace(/\s+/g, " ").trim();
+    };
+    
+    const normalizedInput = normalize(locationName);
+    
+    for (const location of campusLocations) {
+      const normalizedName = normalize(location.name);
+      if (normalizedInput.includes(normalizedName) || normalizedName.includes(normalizedInput)) {
+        return { lat: location.lat, lng: location.lng };
+      }
+    }
+    
+    // If no match, use a random campus location
+    const randomIndex = Math.floor(Math.random() * campusLocations.length);
+    return { 
+      lat: campusLocations[randomIndex].lat, 
+      lng: campusLocations[randomIndex].lng 
+    };
+  };
+
   const createMeetup = async (meetupData: Partial<Meetup>, userId: string, userName: string): Promise<Meetup | null> => {
     try {
       const lobbySize = meetupData.lobbySize || 5;
       const points = getPointsForLobbySize(lobbySize);
+      
+      // Make sure we have coordinates
+      let latitude = meetupData.latitude;
+      let longitude = meetupData.longitude;
+      
+      // If coordinates are not provided or are zero, try to find them from the location name
+      if ((!latitude || !longitude) && meetupData.location) {
+        const locationCoords = findCampusLocation(meetupData.location);
+        latitude = locationCoords.lat;
+        longitude = locationCoords.lng;
+      }
       
       const { data, error } = await supabase.from('events').insert({
         title: meetupData.title,
@@ -129,8 +175,8 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         organizer_xp_reward: 5,
         category: meetupData.category,
         lobby_size: lobbySize,
-        latitude: meetupData.latitude, // Store coordinates
-        longitude: meetupData.longitude // Store coordinates
+        latitude: latitude, // Store coordinates
+        longitude: longitude // Store coordinates
       }).select().single();
 
       if (error) {
