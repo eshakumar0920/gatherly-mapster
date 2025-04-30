@@ -40,7 +40,7 @@ export const getAvatarForUser = (userId: string | null, name: string): string =>
   const skinColor = getSkinColor(skinTone);
   
   // Generate the avatar URL with parameters for happiness and diversity
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&gender=${gender}&mouth=smile&skinColor=${skinColor}&eyes=happy&facialHairProbability=${gender === 'male' ? 50 : 0}&accessories=eyepatch,kurt,prescription02,round,sunglasses&accessoriesProbability=20`;
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&gender=${gender === 'other' ? '' : gender}&mouth=smile&skinColor=${skinColor}&eyes=happy`;
 };
 
 /**
@@ -72,4 +72,3 @@ const hashString = (str: string): number => {
   }
   return Math.abs(hash);
 };
-

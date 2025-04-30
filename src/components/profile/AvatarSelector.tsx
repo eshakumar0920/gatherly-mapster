@@ -73,6 +73,22 @@ const AvatarSelector = ({ open, onOpenChange, onSelectAvatar, currentAvatar }: A
     }
   };
 
+  // Make sure the avatar is selected when dialog opens if currentAvatar matches
+  // one of the predefined avatars
+  React.useEffect(() => {
+    if (currentAvatar) {
+      setSelectedAvatar(currentAvatar);
+      
+      // Find which tab the current avatar belongs to
+      for (const [category, avatars] of Object.entries(predefinedAvatars)) {
+        if (avatars.includes(currentAvatar)) {
+          setSelectedTab(category);
+          break;
+        }
+      }
+    }
+  }, [currentAvatar, open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -96,10 +112,16 @@ const AvatarSelector = ({ open, onOpenChange, onSelectAvatar, currentAvatar }: A
             <TabsContent key={category} value={category} className="mt-0">
               <div className="flex flex-wrap gap-4 justify-center py-4">
                 {avatars.map((avatar, index) => (
-                  <div key={index} className="relative cursor-pointer" onClick={() => setSelectedAvatar(avatar)}>
-                    <Avatar className="h-16 w-16 border-2 hover:border-primary transition-all">
-                      <AvatarImage src={avatar} />
-                      <AvatarFallback>Avatar</AvatarFallback>
+                  <div 
+                    key={index} 
+                    className="relative cursor-pointer" 
+                    onClick={() => setSelectedAvatar(avatar)}
+                  >
+                    <Avatar className={`h-16 w-16 border-2 transition-all ${selectedAvatar === avatar ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}>
+                      <AvatarImage src={avatar} alt={`Avatar option ${index + 1}`} />
+                      <AvatarFallback>
+                        {category.charAt(0).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     {selectedAvatar === avatar && (
                       <div className="absolute inset-0 flex items-center justify-center bg-primary/20 rounded-full">
