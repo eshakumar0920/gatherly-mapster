@@ -1,7 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,6 @@ const EventLobby = () => {
   const { attendMeetup } = useUserStore();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [organizer, setOrganizer] = useState<any>(null);
   
   useEffect(() => {
     const events = getEvents();
@@ -68,34 +68,10 @@ const EventLobby = () => {
         time: formattedTime
       };
       setEvent(updatedEvent);
-      
-      // Fetch organizer info if we have creatorId
-      if (foundEvent.creatorId) {
-        fetchOrganizerInfo(foundEvent.creatorId);
-      }
     } else {
       console.log("Event not found for ID:", eventId);
     }
   }, [eventId]);
-
-  const fetchOrganizerInfo = async (creatorId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('username, profile_picture')
-        .eq('id', parseInt(creatorId)) // Convert string to number for the query
-        .single();
-      
-      if (data && !error) {
-        setOrganizer({
-          name: data.username || "Event Organizer",
-          avatar: data.profile_picture || null
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching organizer info:", error);
-    }
-  };
 
   const filteredAttendees = mockAttendees.filter(attendee => {
     if (attendeeView === "all") return true;
@@ -217,17 +193,6 @@ const EventLobby = () => {
           <div className="flex items-center text-sm">
             <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
             <span>{event.location}</span>
-          </div>
-          
-          <div className="flex items-center text-sm">
-            <User className="h-4 w-4 mr-2 text-muted-foreground" />
-            <div className="flex items-center">
-              <Avatar className="h-5 w-5 mr-2">
-                <AvatarImage src={organizer?.avatar || ""} />
-                <AvatarFallback>{(organizer?.name || event.organizer || "O").charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span>{organizer?.name || event.organizer || "Event Organizer"}</span>
-            </div>
           </div>
         </div>
       </div>
