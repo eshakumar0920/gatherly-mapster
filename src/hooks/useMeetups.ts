@@ -13,6 +13,15 @@ export const useMeetups = (selectedCategory: string | null = null) => {
   const { toast } = useToast();
   const { avatar } = useUserStore(); // Get user's selected avatar
   
+  // Array of cute animal avatars
+  const cuteAnimalAvatars = [
+    "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=100&h=100&fit=crop&auto=format", // Orange tabby cat
+    "https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&auto=format", // Grey kitten
+    "https://images.unsplash.com/photo-1441057206919-63d19fac2369?w=100&h=100&fit=crop&auto=format", // Two penguins
+    "https://images.unsplash.com/photo-1501286353178-1ec871214838?w=100&h=100&fit=crop&auto=format", // Monkey with banana
+    "/placeholder.svg", // Default placeholder SVG
+  ];
+  
   // Helper function to calculate points based on lobby size
   const getPointsForLobbySize = (lobbySize: number): number => {
     const classification = pointClassifications.find(
@@ -50,22 +59,16 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
-  // Helper function to get an illustrated avatar for a user - use the user's selected avatar
+  // Helper function to get a cute animal avatar for a user
   const getIllustratedAvatar = (id: string, name?: string) => {
     // If this is for the current user and they have a selected avatar
     if (avatar) {
       return avatar;
     }
     
+    // Generate consistent animal avatar based on user id/name
     const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const avatars = [
-      "/placeholder.svg",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily", 
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight",
-      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver"
-    ];
-    return avatars[charSum % avatars.length];
+    return cuteAnimalAvatars[charSum % cuteAnimalAvatars.length];
   };
 
   useEffect(() => {
@@ -107,7 +110,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
               console.log(`UseMeetups: Using matched coordinates for "${event.location}": (${latitude}, ${longitude})`);
             }
             
-            // Use illustrated avatar instead of real photo
+            // Use cute animal avatar instead of real photo
             const creatorAvatar = getIllustratedAvatar(event.id.toString(), event.creator_name);
             
             return {
@@ -253,11 +256,8 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       
       const eventRow = data as unknown as EventRow;
       
-      // Get profile picture if the user has one set
-      const userAvatar = avatar; // Use the user's selected avatar
-      
-      // Use the user's selected avatar if available
-      const creatorAvatar = userAvatar || getIllustratedAvatar(eventRow.id.toString(), userName);
+      // Get cute animal avatar for creator
+      const creatorAvatar = avatar || getIllustratedAvatar(eventRow.id.toString(), userName);
       
       const newMeetup: Meetup = {
         id: eventRow.id.toString(),
