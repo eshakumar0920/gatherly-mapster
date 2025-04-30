@@ -1,4 +1,3 @@
-
 // Campus location definitions that can be reused across the app
 export interface CampusLocation {
   id: string;
@@ -121,7 +120,7 @@ export const campusLocations: CampusLocation[] = [
     lat: 32.98736607080019,
     lng: -96.74828234522143,
     description: "Central outdoor gathering space for campus events",
-    aliases: ["plinth", "plaza", "central plaza"]
+    aliases: ["plinth", "the plinth", "plaza", "central plaza", "art walk", "art walk in the plinth"]
   },
   {
     id: "ecsw",
@@ -192,7 +191,7 @@ export function findLocationByName(locationName: string): CampusLocation | undef
   // Debug log to help diagnose matching issues
   console.log(`Finding location for: "${locationName}" (normalized: "${normalizedName}")`);
   
-  // Try exact match first
+  // Try exact match first (case insensitive)
   const exactMatch = campusLocations.find(
     loc => normalizeText(loc.name) === normalizedName
   );
@@ -202,7 +201,16 @@ export function findLocationByName(locationName: string): CampusLocation | undef
     return exactMatch;
   }
   
-  // Special case for library references - immediately check for these
+  // Check for "The Plinth" specifically since it's a common meeting point
+  if (normalizedName.includes("plinth")) {
+    const plinth = campusLocations.find(loc => loc.id === "plinth");
+    if (plinth) {
+      console.log(`Plinth special case match for "${locationName}": ${plinth.name} (${plinth.lat}, ${plinth.lng})`);
+      return plinth;
+    }
+  }
+  
+  // Special case for library references
   if (normalizedName.includes("library") || 
       normalizedName.includes("mcdermott") || 
       normalizedName.includes("study")) {

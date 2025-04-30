@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -22,16 +21,27 @@ export const useMeetups = (selectedCategory: string | null = null) => {
 
   // Helper function to get accurate coordinates for a location
   const getLocationCoordinates = (locationName: string) => {
+    console.log("UseMeetups: Getting coordinates for location:", locationName);
+    
+    // Check for "The Plinth" directly with different variations
+    if (locationName.toLowerCase().includes("plinth")) {
+      const plinth = campusLocations.find(loc => loc.id === "plinth");
+      if (plinth) {
+        console.log(`UseMeetups: Found direct plinth match for "${locationName}": ${plinth.name} (${plinth.lat}, ${plinth.lng})`);
+        return { lat: plinth.lat, lng: plinth.lng };
+      }
+    }
+    
     const matchedLocation = findLocationByName(locationName);
     if (matchedLocation) {
-      console.log(`Found coordinates for "${locationName}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
+      console.log(`UseMeetups: Found coordinates for "${locationName}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
       return { lat: matchedLocation.lat, lng: matchedLocation.lng };
     }
     
     // Default to library if no match found
     const defaultLocation = campusLocations.find(loc => loc.id === "library");
     if (defaultLocation) {
-      console.log(`No match found for "${locationName}", defaulting to Library: (${defaultLocation.lat}, ${defaultLocation.lng})`);
+      console.log(`UseMeetups: No match found for "${locationName}", defaulting to Library: (${defaultLocation.lat}, ${defaultLocation.lng})`);
       return { lat: defaultLocation.lat, lng: defaultLocation.lng };
     }
     
@@ -74,7 +84,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
               const coords = getLocationCoordinates(event.location);
               latitude = coords.lat;
               longitude = coords.lng;
-              console.log(`Using matched coordinates for "${event.location}": (${latitude}, ${longitude})`);
+              console.log(`UseMeetups: Using matched coordinates for "${event.location}": (${latitude}, ${longitude})`);
             }
             
             return {
@@ -152,20 +162,30 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       let longitude = meetupData.longitude;
       
       if ((!latitude || !longitude || latitude === 0 || longitude === 0) && meetupData.location) {
-        // Find exact match from our predefined locations
-        const matchedLocation = findLocationByName(meetupData.location);
-        
-        if (matchedLocation) {
-          latitude = matchedLocation.lat;
-          longitude = matchedLocation.lng;
-          console.log(`Using exact location coordinates for "${meetupData.location}": (${latitude}, ${longitude})`);
+        // Check for "The Plinth" directly
+        if (meetupData.location.toLowerCase().includes("plinth")) {
+          const plinth = campusLocations.find(loc => loc.id === "plinth");
+          if (plinth) {
+            latitude = plinth.lat;
+            longitude = plinth.lng;
+            console.log(`UseMeetups: Direct plinth match for "${meetupData.location}": ${plinth.name} (${latitude}, ${longitude})`);
+          }
         } else {
-          // Fallback to library as default location
-          const defaultLocation = campusLocations.find(loc => loc.id === "library");
-          if (defaultLocation) {
-            latitude = defaultLocation.lat;
-            longitude = defaultLocation.lng;
-            console.log(`No match found for "${meetupData.location}", using library coordinates: (${latitude}, ${longitude})`);
+          // Find exact match from our predefined locations
+          const matchedLocation = findLocationByName(meetupData.location);
+          
+          if (matchedLocation) {
+            latitude = matchedLocation.lat;
+            longitude = matchedLocation.lng;
+            console.log(`UseMeetups: Using exact location coordinates for "${meetupData.location}": (${latitude}, ${longitude})`);
+          } else {
+            // Fallback to library as default location
+            const defaultLocation = campusLocations.find(loc => loc.id === "library");
+            if (defaultLocation) {
+              latitude = defaultLocation.lat;
+              longitude = defaultLocation.lng;
+              console.log(`UseMeetups: No match found for "${meetupData.location}", using library coordinates: (${latitude}, ${longitude})`);
+            }
           }
         }
       }

@@ -39,6 +39,17 @@ const getLocationCoordinates = (locationName: string | null) => {
     return { lat: defaultLocation.lat, lng: defaultLocation.lng };
   }
   
+  console.log(`Maps: Looking for coordinates for "${locationName}"`);
+  
+  // Check for "The Plinth" directly with different variations
+  if (locationName.toLowerCase().includes("plinth")) {
+    const plinth = campusLocations.find(loc => loc.id === "plinth");
+    if (plinth) {
+      console.log(`Maps: Found direct plinth match for "${locationName}": ${plinth.name} (${plinth.lat}, ${plinth.lng})`);
+      return { lat: plinth.lat, lng: plinth.lng };
+    }
+  }
+  
   // Use the findLocationByName helper function directly
   const matchedLocation = findLocationByName(locationName);
   if (matchedLocation) {
