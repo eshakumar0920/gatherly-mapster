@@ -31,7 +31,7 @@ import { ProfileSticker } from "@/components/ProfileStickers";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
 import AvatarSelector from "@/components/profile/AvatarSelector";
-import { getAvatarForUser } from "@/components/MeetupCard"; // Import the avatar generator function
+import { getAvatarForUser } from "@/utils/avatarUtils"; // Updated import from our new utility file
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
