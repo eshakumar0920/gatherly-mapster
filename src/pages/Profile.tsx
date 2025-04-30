@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,10 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLevelUp } from "@/contexts/LevelUpContext";
-import { ProfileAvatar } from "@/components/ProfileAvatars";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
-import ProfileAvatars from "@/components/ProfileAvatars";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -34,7 +35,7 @@ const Profile = () => {
     email, 
     friends, 
     tags, 
-    selectedSticker: selectedAvatar,
+    updateAvatar,
     addFriend, 
     removeFriend, 
     updateTags,
@@ -148,10 +149,6 @@ const Profile = () => {
 
   const { setShowAvatars } = useLevelUp();
 
-  const openAvatarSelector = () => {
-    setShowAvatars(true);
-  };
-
   const handleSaveNotificationSettings = (settings: NotificationSettingsType) => {
     setNotificationSettings(settings);
     // Here you would typically save to a backend or localStorage
@@ -186,24 +183,24 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="relative cursor-pointer" onClick={openAvatarSelector}>
-              <ProfileAvatar 
-                level={level} 
-                selectedAvatar={selectedAvatar} 
-                size="lg"
-                className="mb-4"
-              />
+            <div className="relative cursor-pointer">
+              <Avatar className="h-24 w-24 bg-green-200 mb-4">
+                <AvatarFallback className="bg-green-200 text-green-600 text-2xl">
+                  {name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openAvatarSelector();
-                }}
               >
                 <User className="h-4 w-4" />
               </Button>
+              <div className="absolute -bottom-1 -left-1">
+                <Badge variant="outline" className="bg-primary text-primary-foreground px-2 py-0.5 text-xs">
+                  Level {level}
+                </Badge>
+              </div>
             </div>
             <h2 className="text-xl font-semibold">{name}</h2>
             <p className="text-muted-foreground">{email}</p>
@@ -274,9 +271,11 @@ const Profile = () => {
                   <div key={friend.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
                     <div className="flex items-center gap-2">
                       {/* We'll show a default avatar instead of the profile picture */}
-                      <div className="h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
-                      </div>
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary/20 text-primary">
+                          {friend.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="text-sm font-medium">{friend.name}</p>
                         <div className="flex gap-1">
@@ -318,7 +317,6 @@ const Profile = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={openAvatarSelector}
               >
                 <User className="mr-2 h-4 w-4" />
                 Change Avatar
@@ -462,8 +460,6 @@ const Profile = () => {
         onSave={handleSavePrivacySettings}
         initialSettings={privacySettings}
       />
-
-      <ProfileAvatars />
 
       <Navigation />
     </div>
