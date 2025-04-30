@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EventRow, Meetup } from "@/types/meetup";
@@ -12,15 +13,6 @@ export const useMeetups = (selectedCategory: string | null = null) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { avatar } = useUserStore(); // Get user's selected avatar
-  
-  // Array of cute animal avatars
-  const cuteAnimalAvatars = [
-    "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=100&h=100&fit=crop&auto=format", // Orange tabby cat
-    "https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&auto=format", // Grey kitten
-    "https://images.unsplash.com/photo-1441057206919-63d19fac2369?w=100&h=100&fit=crop&auto=format", // Two penguins
-    "https://images.unsplash.com/photo-1501286353178-1ec871214838?w=100&h=100&fit=crop&auto=format", // Monkey with banana
-    "/placeholder.svg", // Default placeholder SVG
-  ];
   
   // Helper function to calculate points based on lobby size
   const getPointsForLobbySize = (lobbySize: number): number => {
@@ -59,16 +51,40 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
-  // Helper function to get a cute animal avatar for a user
+  // Special avatars for specific people - updated with specified characteristics
+  const specialAvatars = {
+    "patrick": "https://api.dicebear.com/7.x/avataaars/svg?seed=Patrick&mouth=smile&eyes=happy&skinColor=f2d3b1&hairColor=a55728&accessoriesType=round&facialHairType=none&facialHairColor=a55728&clotheType=hoodie&clotheColor=3c4f5c&eyebrowType=default&mouthType=smile&top=shortHair&eyeType=happy",
+    "neethu": "https://api.dicebear.com/7.x/avataaars/svg?seed=Neethu&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=overall&clotheColor=d14836&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy",
+    "esha": "https://api.dicebear.com/7.x/avataaars/svg?seed=Esha&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=624a2e&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy",
+    "sophia": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&mouth=smile&eyes=happy&skinColor=f2d3b1&hairColor=4a312c&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=5199e4&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy"
+  };
+
+  // Helper function to get an illustrated avatar for a user with happy facial expressions
   const getIllustratedAvatar = (id: string, name?: string) => {
+    // Check for special avatars first
+    if (name) {
+      const lowerName = name.toLowerCase();
+      for (const [specialName, avatar] of Object.entries(specialAvatars)) {
+        if (lowerName.includes(specialName)) {
+          return avatar;
+        }
+      }
+    }
+    
     // If this is for the current user and they have a selected avatar
     if (avatar) {
       return avatar;
     }
     
-    // Generate consistent animal avatar based on user id/name
     const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    return cuteAnimalAvatars[charSum % cuteAnimalAvatars.length];
+    const avatars = [
+      "/placeholder.svg",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&mouth=smile&eyes=happy",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily&mouth=smile&eyes=happy", 
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight&mouth=smile&eyes=happy",
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver&mouth=smile&eyes=happy"
+    ];
+    return avatars[charSum % avatars.length];
   };
 
   useEffect(() => {
@@ -110,7 +126,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
               console.log(`UseMeetups: Using matched coordinates for "${event.location}": (${latitude}, ${longitude})`);
             }
             
-            // Use cute animal avatar instead of real photo
+            // Use illustrated avatar instead of real photo
             const creatorAvatar = getIllustratedAvatar(event.id.toString(), event.creator_name);
             
             return {
@@ -256,8 +272,11 @@ export const useMeetups = (selectedCategory: string | null = null) => {
       
       const eventRow = data as unknown as EventRow;
       
-      // Get cute animal avatar for creator
-      const creatorAvatar = avatar || getIllustratedAvatar(eventRow.id.toString(), userName);
+      // Get profile picture if the user has one set
+      const userAvatar = avatar; // Use the user's selected avatar
+      
+      // Use the user's selected avatar if available
+      const creatorAvatar = userAvatar || getIllustratedAvatar(eventRow.id.toString(), userName);
       
       const newMeetup: Meetup = {
         id: eventRow.id.toString(),
@@ -294,19 +313,19 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
-  // Modified to accept both string and number userId types
-  const joinMeetupLobby = async (meetupId: string, userId: string | number): Promise<boolean> => {
+  // Update joinMeetupLobby to accept string IDs
+  const joinMeetupLobby = async (meetupId: string, userId: string): Promise<boolean> => {
     try {
-      // First check if user is already in the lobby
-      // Convert meetupId and userId to numbers for the database query
-      const meetupIdNumber = typeof meetupId === 'string' ? parseInt(meetupId) : meetupId;
-      const userIdNumber = typeof userId === 'string' ? parseInt(userId) : userId;
+      // Convert string IDs to numbers for database operations
+      const numericMeetupId = parseInt(meetupId);
+      const numericUserId = parseInt(userId);
       
+      // First check if user is already in the lobby
       const { data: existingParticipant, error: checkError } = await supabase
         .from('participants')
         .select('*')
-        .eq('event_id', meetupIdNumber)
-        .eq('user_id', userIdNumber)
+        .eq('event_id', numericMeetupId)
+        .eq('user_id', numericUserId)
         .single();
       
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
@@ -323,10 +342,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         return true;
       }
       
-      // Insert participant - convert string IDs to numbers for the database
+      // Insert participant - using numeric IDs for the database
       const { error } = await supabase.from('participants').insert({
-        event_id: meetupIdNumber,
-        user_id: userIdNumber,
+        event_id: numericMeetupId,
+        user_id: numericUserId,
         joined_at: new Date().toISOString(),
         attendance_status: 'registered'
       });
@@ -360,6 +379,10 @@ export const useMeetups = (selectedCategory: string | null = null) => {
 
   const checkInToMeetup = async (meetupId: string, userId: string): Promise<boolean> => {
     try {
+      // Convert string IDs to numbers for database operations
+      const numericMeetupId = parseInt(meetupId);
+      const numericUserId = parseInt(userId);
+      
       // Find the meetup to get its points value based on lobby size
       const meetup = allMeetups.find(m => m.id === meetupId);
       const pointsToAward = meetup ? meetup.points : 3;
@@ -371,8 +394,8 @@ export const useMeetups = (selectedCategory: string | null = null) => {
           attendance_status: 'attended',
           xp_earned: pointsToAward // Use the points based on lobby size
         })
-        .eq('event_id', parseInt(meetupId))
-        .eq('user_id', parseInt(userId));
+        .eq('event_id', numericMeetupId)
+        .eq('user_id', numericUserId);
       
       if (error) {
         console.error("Error checking in to meetup:", error);

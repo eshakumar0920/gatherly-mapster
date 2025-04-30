@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MeetupType, Tag, Friend, UserActions } from './types';
@@ -99,6 +100,7 @@ export const useUserStore = create<UserState & UserActions>()(
           selectedSticker: stickerIndex
         }));
       },
+      // Add new actions
       joinMeetupLobby: (meetupId: string) => {
         set((state) => ({
           ...state,

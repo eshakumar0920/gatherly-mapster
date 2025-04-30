@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -17,27 +18,49 @@ interface MeetupCardProps {
   meetup: Meetup;
 }
 
-// Array of cute animal avatars to use instead of illustrated people
-const cuteAnimalAvatars = [
-  "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=100&h=100&fit=crop&auto=format", // Orange tabby cat
-  "https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&auto=format", // Grey kitten
-  "https://images.unsplash.com/photo-1441057206919-63d19fac2369?w=100&h=100&fit=crop&auto=format", // Two penguins
-  "https://images.unsplash.com/photo-1501286353178-1ec871214838?w=100&h=100&fit=crop&auto=format", // Monkey with banana
-  "/placeholder.svg", // Default placeholder SVG
-];
-
+// Define the Attendee interface to fix TypeScript errors
 interface Attendee {
   id: string;
   name: string;
-  avatar: string;
+  avatar?: string;
   status: "going" | "interested";
 }
 
+// Array of happier illustrated avatars with cheerful expressions
+const illustratedAvatars = [
+  "/placeholder.svg", // Default placeholder SVG
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&mouth=smile&eyes=happy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily&mouth=smile&eyes=happy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight&mouth=smile&eyes=happy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Fluffy&mouth=smile&eyes=happy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Milo&mouth=smile&eyes=happy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver&mouth=smile&eyes=happy",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella&mouth=smile&eyes=happy",
+];
+
+// Special avatars for specific people - updated with specified characteristics
+const specialAvatars = {
+  "patrick": "https://api.dicebear.com/7.x/avataaars/svg?seed=Patrick&mouth=smile&eyes=happy&skinColor=f2d3b1&hairColor=a55728&accessoriesType=round&facialHairType=none&facialHairColor=a55728&clotheType=hoodie&clotheColor=3c4f5c&eyebrowType=default&mouthType=smile&top=shortHair&eyeType=happy",
+  "neethu": "https://api.dicebear.com/7.x/avataaars/svg?seed=Neethu&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=overall&clotheColor=d14836&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy",
+  "esha": "https://api.dicebear.com/7.x/avataaars/svg?seed=Esha&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=624a2e&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy",
+  "sophia": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&mouth=smile&eyes=happy&skinColor=f2d3b1&hairColor=4a312c&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=5199e4&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy"
+};
+
 // Helper to get a consistent avatar for a specific user ID or name
 const getAvatarForUser = (id: string, name?: string) => {
+  // Check for special names (case-insensitive)
+  if (name) {
+    const lowerName = name.toLowerCase();
+    for (const [specialName, avatar] of Object.entries(specialAvatars)) {
+      if (lowerName.includes(specialName)) {
+        return avatar;
+      }
+    }
+  }
+
   // Convert the id or name to a number to use as index
   const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return cuteAnimalAvatars[charSum % cuteAnimalAvatars.length];
+  return illustratedAvatars[charSum % illustratedAvatars.length];
 };
 
 // Export the avatar generator function to use elsewhere in the app
@@ -55,7 +78,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
     name: meetup.createdBy || "Anonymous",
-    avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use cute animal avatar
+    avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use illustrated avatar
   });
   
   // Fetch creator info if not available
@@ -72,7 +95,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           if (!error && data) {
             setCreatorInfo({
               name: data.username || meetup.createdBy,
-              // Use cute animal avatar instead of profile picture
+              // Use illustrated avatar instead of profile picture
               avatar: getAvatarForUser(meetup.createdBy, data.username)
             });
           }
@@ -116,7 +139,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           const mappedAttendees: Attendee[] = data.map(participant => ({
             id: participant.user_id.toString(),
             name: participant.users.username || "Anonymous",
-            // Use cute animal avatar
+            // Use user's custom avatar if available
             avatar: getUserAvatar(participant.user_id.toString(), participant.users.username),
             status: participant.attendance_status === 'attended' ? 'going' : 'interested'
           }));
@@ -142,7 +165,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
       return avatar || getAvatarForUser(userId, username);
     }
     
-    // For other users, generate a consistent cute animal avatar
+    // For other users, generate a consistent avatar
     return getAvatarForUser(userId, username);
   };
   
@@ -154,7 +177,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         {
           id: userId || "current-user",
           name: user.email?.split('@')[0] || "Current User",
-          // Use cute animal avatar
+          // Use user's selected avatar if available
           avatar: avatar || getAvatarForUser(userId || "current-user", user.email?.split('@')[0]),
           status: "interested"
         }
@@ -262,7 +285,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             return;
           }
           
-          // Now we can safely pass the user ID as a string or number
+          // Convert ID to string before passing to functions
           const newUserId = String(newUser.id);
           await joinMeetupInDb(meetup.id, newUserId);
           joinMeetupLobby(meetup.id);
@@ -275,8 +298,9 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               .eq('id', userData.id);
           }
           
-          // Pass ID as string or number
-          await joinMeetupInDb(meetup.id, userData.id);
+          // Convert ID to string before passing to functions
+          const userIdStr = String(userData.id);
+          await joinMeetupInDb(meetup.id, userIdStr);
           joinMeetupLobby(meetup.id);
         }
       } else {
@@ -285,10 +309,10 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           await supabase
             .from('users')
             .update({ profile_picture: avatar })
-            .eq('id', userId);
+            .eq('id', parseInt(userId));
         }
         
-        // Pass userId as is - function will handle conversion
+        // userId is already a string, so pass it directly
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }
