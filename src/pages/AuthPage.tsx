@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, User, LogIn, UserPlus, AlertCircle } from "lucide-react";
@@ -78,6 +77,9 @@ const AuthPage = () => {
       if (!result.success) {
         throw new Error(result.error.message);
       }
+      
+      // Store the user's name in localStorage
+      localStorage.setItem("impulse_user_name", signupName);
       
       // Check if email confirmation is required
       if (result.data?.user && !result.data.user.email_confirmed_at) {
