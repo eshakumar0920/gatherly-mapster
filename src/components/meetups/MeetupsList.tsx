@@ -23,7 +23,7 @@ const MeetupsList = ({ meetups, isLoading, onMeetupClick }: MeetupsListProps) =>
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="space-y-4">
       {meetups.map(meetup => (
         <div 
           key={meetup.id} 
