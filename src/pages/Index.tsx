@@ -153,10 +153,10 @@ const Index = () => {
         </h1>
       </div>
 
-      {/* Header - Updated with welcome message */}
+      {/* Header - Updated with welcome message and exclamation mark */}
       <header className="p-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Welcome to impulse</h1>
+          <h1 className="text-2xl font-bold">Welcome to impulse!</h1>
           <p className="text-muted-foreground">Discover exciting UTD events and connect with fellow students</p>
         </div>
         <div className="flex items-center gap-2">
