@@ -291,6 +291,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             .eq('id', userId);
         }
         
+        // This is the line causing the error - convert userId to number before passing
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }
