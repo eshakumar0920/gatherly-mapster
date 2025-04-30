@@ -6,52 +6,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Diverse predefined avatar options with properly formatted URLs
+// Simplified avatar options with direct SVG URLs
 const predefinedAvatars = {
   women: [
-    // Women with different skin tones and features
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily&gender=female&mouth=smile&skinColor=light&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie&gender=female&mouth=smile&skinColor=pale&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma&gender=female&mouth=smile&skinColor=dark&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia&gender=female&mouth=smile&skinColor=black&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella&gender=female&mouth=smile&skinColor=brown&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe&gender=female&mouth=smile&skinColor=tanned&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya&gender=female&mouth=smile&skinColor=yellow&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Ava&gender=female&mouth=smile&skinColor=light&eyes=happy&hairColor=black",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Mia&gender=female&mouth=smile&skinColor=brown&eyes=happy&hairColor=blonde",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Aria&gender=female&mouth=smile&skinColor=dark&eyes=happy&hairColor=auburn",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Layla&gender=female&mouth=smile&skinColor=tanned&eyes=happy&topType=longHairCurly",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Lexi&gender=female&mouth=smile&skinColor=black&eyes=happy&topType=longHairFro"
+    // 5 women with different skin tones
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily&gender=female&mouth=smile&skinColor=light",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie&gender=female&mouth=smile&skinColor=brown",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma&gender=female&mouth=smile&skinColor=dark",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia&gender=female&mouth=smile&skinColor=black",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella&gender=female&mouth=smile&skinColor=tanned"
   ],
   men: [
-    // Men with different skin tones and features
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&gender=male&mouth=smile&skinColor=light&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jack&gender=male&mouth=smile&skinColor=pale&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Noah&gender=male&mouth=smile&skinColor=dark&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Liam&gender=male&mouth=smile&skinColor=black&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=William&gender=male&mouth=smile&skinColor=brown&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Omar&gender=male&mouth=smile&skinColor=tanned&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Raj&gender=male&mouth=smile&skinColor=yellow&eyes=happy&topType=turban",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Miguel&gender=male&mouth=smile&skinColor=brown&eyes=happy&facialHairType=beardMajestic",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Chen&gender=male&mouth=smile&skinColor=light&eyes=happy&topType=shortHairShortFlat",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Amir&gender=male&mouth=smile&skinColor=tanned&eyes=happy&facialHairType=moustacheFancy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jamal&gender=male&mouth=smile&skinColor=dark&eyes=happy&topType=shortHairDreads01",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Kenji&gender=male&mouth=smile&skinColor=yellow&eyes=happy&topType=shortHairSides"
-  ],
-  nonbinary: [
-    // Non-binary/gender neutral options with different skin tones
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&mouth=smile&skinColor=light&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan&mouth=smile&skinColor=pale&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Taylor&mouth=smile&skinColor=dark&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Robin&mouth=smile&skinColor=black&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Casey&mouth=smile&skinColor=brown&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Morgan&mouth=smile&skinColor=tanned&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Avery&mouth=smile&skinColor=yellow&eyes=happy&topType=shortHairFrizzle",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Quinn&mouth=smile&skinColor=light&eyes=happy&clotheType=overall",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Riley&mouth=smile&skinColor=brown&eyes=happy&accessoriesType=roundGlasses",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Blake&mouth=smile&skinColor=dark&eyes=happy&topType=shortHairShaggyMullet",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jamie&mouth=smile&skinColor=tanned&eyes=happy&topType=longhairBob",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Dakota&mouth=smile&skinColor=black&eyes=happy&topType=hatWinter"
+    // 5 men with different skin tones
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&gender=male&mouth=smile&skinColor=light",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jack&gender=male&mouth=smile&skinColor=brown",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Noah&gender=male&mouth=smile&skinColor=dark",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Liam&gender=male&mouth=smile&skinColor=black",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=William&gender=male&mouth=smile&skinColor=tanned"
   ]
 };
 
@@ -102,10 +73,9 @@ const AvatarSelector = ({ open, onOpenChange, onSelectAvatar, currentAvatar }: A
           onValueChange={setSelectedTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-3 mb-4">
+          <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="women">Women</TabsTrigger>
             <TabsTrigger value="men">Men</TabsTrigger>
-            <TabsTrigger value="nonbinary">Non-Binary</TabsTrigger>
           </TabsList>
           
           {Object.entries(predefinedAvatars).map(([category, avatars]) => (

@@ -18,7 +18,7 @@ type SkinToneOption = 'light' | 'medium' | 'dark';
 export const getAvatarForUser = (userId: string | null, name: string): string => {
   // If no user id or name is provided, return a default avatar
   if (!userId && !name) {
-    return "https://api.dicebear.com/7.x/avataaars/svg?seed=default&mouth=smile&eyes=happy";
+    return "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
   }
   
   // Create a deterministic but varied seed based on the name or ID
@@ -39,8 +39,8 @@ export const getAvatarForUser = (userId: string | null, name: string): string =>
   // Map skin tone to DiceBear skin color parameter
   const skinColor = getSkinColor(skinTone);
   
-  // Generate the avatar URL with parameters for happiness and diversity
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&gender=${gender === 'other' ? '' : gender}&mouth=smile&skinColor=${skinColor}&eyes=happy`;
+  // Generate the avatar URL with simplified parameters
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&gender=${gender === 'other' ? '' : gender}&skinColor=${skinColor}`;
 };
 
 /**
