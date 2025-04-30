@@ -50,7 +50,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     return { lat: 32.9886, lng: -96.7491 }; // UTD center coordinates as last resort
   };
 
-  // Helper function to get an illustrated avatar for a user - use the user's selected avatar if available
+  // Helper function to get an illustrated avatar for a user - use the user's selected avatar
   const getIllustratedAvatar = (id: string, name?: string) => {
     // If this is for the current user and they have a selected avatar
     if (avatar) {

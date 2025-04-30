@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -16,13 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface MeetupCardProps {
   meetup: Meetup;
-}
-
-interface Attendee {
-  id: string;
-  name: string;
-  avatar?: string;
-  status: "going" | "interested";
 }
 
 // Array of illustrated avatars to use instead of real photos
@@ -293,7 +285,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             .eq('id', userId);
         }
         
-        // Use the string userId directly - the function now expects a string
+        // Using the userId as a string which now matches the expected type
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }
