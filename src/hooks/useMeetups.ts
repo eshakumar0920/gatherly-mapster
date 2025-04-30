@@ -294,7 +294,7 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
-  // Update to accept either string or number userId
+  // Modified to accept both string and number userId types
   const joinMeetupLobby = async (meetupId: string, userId: string | number): Promise<boolean> => {
     try {
       // First check if user is already in the lobby

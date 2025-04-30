@@ -262,7 +262,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             return;
           }
           
-          // Now we can safely pass the user ID as a string
+          // Now we can safely pass the user ID as a string or number
           const newUserId = String(newUser.id);
           await joinMeetupInDb(meetup.id, newUserId);
           joinMeetupLobby(meetup.id);
@@ -275,9 +275,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               .eq('id', userData.id);
           }
           
-          // Convert number ID to string for the UI function
-          const userIdStr = String(userData.id);
-          await joinMeetupInDb(meetup.id, userIdStr);
+          // Pass ID as string or number
+          await joinMeetupInDb(meetup.id, userData.id);
           joinMeetupLobby(meetup.id);
         }
       } else {
@@ -289,7 +288,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             .eq('id', userId);
         }
         
-        // Pass userId as a string - the function will handle conversion
+        // Pass userId as is - function will handle conversion
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
       }
