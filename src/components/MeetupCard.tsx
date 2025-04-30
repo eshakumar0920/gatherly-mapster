@@ -43,6 +43,9 @@ const getAvatarForUser = (id: string, name?: string) => {
   return illustratedAvatars[charSum % illustratedAvatars.length];
 };
 
+// Export the avatar generator function to use elsewhere in the app
+export { getAvatarForUser };
+
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
   const { toast } = useToast();

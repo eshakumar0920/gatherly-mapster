@@ -30,6 +30,7 @@ import { useLevelUp } from "@/contexts/LevelUpContext";
 import { ProfileSticker } from "@/components/ProfileStickers";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
+import { getAvatarForUser } from "@/components/MeetupCard"; // Import the avatar generator function
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -56,6 +57,7 @@ const Profile = () => {
     updateTags,
     updateProfile,
     updateAvatar,
+    userId
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
@@ -94,7 +96,10 @@ const Profile = () => {
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(avatar || null);
+  // Use getAvatarForUser to generate an avatar if none exists
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    avatar || (userId ? getAvatarForUser(userId, name) : null)
+  );
   
   const pointsToNextLevel = level * 10;
   const progress = (points % 10) * 10;
@@ -114,10 +119,14 @@ const Profile = () => {
       return;
     }
     
+    // Use the avatar generator to create consistent avatars for friends
+    const friendId = `friend${Date.now()}`;
+    const generatedAvatar = getAvatarForUser(friendId, newFriend.name);
+    
     const friend: Friend = {
-      id: `friend${Date.now()}`,
+      id: friendId,
       name: newFriend.name,
-      avatar: newFriend.avatar || undefined,
+      avatar: newFriend.avatar || generatedAvatar,
       tags: []
     };
     
@@ -250,7 +259,9 @@ const Profile = () => {
                 {avatarUrl ? (
                   <AvatarImage src={avatarUrl} alt={name} />
                 ) : (
-                  <AvatarFallback className="text-4xl">👤</AvatarFallback>
+                  <AvatarFallback className="text-4xl">
+                    {name ? name.charAt(0).toUpperCase() : "👤"}
+                  </AvatarFallback>
                 )}
               </Avatar>
               <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
