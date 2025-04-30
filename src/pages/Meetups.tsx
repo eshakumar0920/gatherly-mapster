@@ -21,18 +21,13 @@ const Meetups = () => {
   const { points, level } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { allMeetups, isLoading, setAllMeetups } = useMeetups(null); // Changed to null to fetch all meetups initially
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
 
   const filteredMeetups = allMeetups.filter(meetup => {
     // If we have a search query, filter by title
     if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    // If we have a selected category (not "all"), filter by category
-    if (selectedCategory && selectedCategory !== "all") {
-      return meetup.category?.toLowerCase() === selectedCategory.toLowerCase();
-    }
-    // If no category is selected or "all" is selected, show all meetups
     return true;
   });
 
@@ -109,7 +104,10 @@ const Meetups = () => {
             <DialogTitle>Create New Meetup</DialogTitle>
           </DialogHeader>
           <CreateMeetupForm 
-            onSuccess={setAllMeetups}
+            onSuccess={(newMeetups) => {
+              setAllMeetups(prev => Array.isArray(newMeetups) ? [...newMeetups, ...prev] : [...prev, newMeetups]);
+              setIsDialogOpen(false);
+            }}
             onClose={() => setIsDialogOpen(false)}
           />
         </DialogContent>

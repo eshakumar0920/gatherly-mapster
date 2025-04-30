@@ -5,7 +5,7 @@ import { EventRow, Meetup } from "@/types/meetup";
 import { useToast } from "@/hooks/use-toast";
 import { meetups as sampleMeetups } from "@/services/meetupService";
 
-export const useMeetups = (selectedCategory: string | null) => {
+export const useMeetups = (selectedCategory: string | null = null) => {
   const [allMeetups, setAllMeetups] = useState<Meetup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -26,7 +26,7 @@ export const useMeetups = (selectedCategory: string | null) => {
           console.error("Error fetching meetups:", error);
           toast({
             title: "Error fetching meetups",
-            description: "Could not load meetups from the database",
+            description: "Could not load meetups from the database. Using sample data instead.",
             variant: "destructive"
           });
           
@@ -36,7 +36,6 @@ export const useMeetups = (selectedCategory: string | null) => {
             : sampleMeetups;
           
           setAllMeetups(filteredMeetups);
-          setIsLoading(false);
           return;
         }
         
@@ -46,7 +45,7 @@ export const useMeetups = (selectedCategory: string | null) => {
             id: event.id.toString(),
             title: event.title,
             description: event.description || "No description available",
-            dateTime: new Date(event.event_date).toLocaleString(),
+            dateTime: new Date(event.event_date).toISOString(),
             location: event.location,
             points: event.xp_reward || 3,
             createdBy: event.creator_name || "Anonymous",
@@ -56,8 +55,7 @@ export const useMeetups = (selectedCategory: string | null) => {
             attendees: []
           }));
           
-          // Combine sample meetups with database meetups for a richer experience
-          // but prioritize database meetups for IDs that might overlap
+          // Combine sample meetups with database meetups
           const dbIds = new Set(databaseMeetups.map(m => m.id));
           const nonDuplicateSampleMeetups = sampleMeetups.filter(m => !dbIds.has(m.id));
           

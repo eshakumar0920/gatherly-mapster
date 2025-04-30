@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Meetup } from "@/types/meetup";
@@ -99,6 +100,54 @@ export const meetups: Meetup[] = [
     creatorAvatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&h=200&q=80",
     lobbySize: 30,
     category: "gaming"
+  },
+  {
+    id: "109",
+    title: "Photography Club Meetup",
+    description: "Join fellow photography enthusiasts for a campus photo walk. All skill levels welcome!",
+    dateTime: "2025-05-18T15:00:00",
+    location: "Arts Building, Room A2.200",
+    points: 4,
+    createdBy: "Photography Club",
+    creatorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 20,
+    category: "arts"
+  },
+  {
+    id: "110",
+    title: "Book Club: Science Fiction",
+    description: "This month we're discussing 'Project Hail Mary' by Andy Weir. New members welcome!",
+    dateTime: "2025-05-20T18:30:00",
+    location: "McDermott Library, MC 3.612",
+    points: 3,
+    createdBy: "Literary Society",
+    creatorAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 15,
+    category: "academic"
+  },
+  {
+    id: "111",
+    title: "Debate Club: Tech Ethics",
+    description: "Join our monthly debate on ethical issues in modern technology. This month: AI regulation.",
+    dateTime: "2025-05-22T17:00:00",
+    location: "Green Hall, Room 2.302",
+    points: 6,
+    createdBy: "Debate Society",
+    creatorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 24,
+    category: "academic"
+  },
+  {
+    id: "112",
+    title: "Language Exchange: Spanish",
+    description: "Practice your Spanish conversation skills with fellow students in a casual, supportive environment.",
+    dateTime: "2025-05-24T14:00:00",
+    location: "Student Union, Room 2.602",
+    points: 4,
+    createdBy: "Language Club",
+    creatorAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80",
+    lobbySize: 18,
+    category: "cultural"
   }
 ];
 
