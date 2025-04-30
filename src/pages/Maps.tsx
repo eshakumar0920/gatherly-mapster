@@ -74,14 +74,17 @@ const Maps = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  // Generate map locations from events
+  // Generate map locations from events AND meetups
   useEffect(() => {
     const loadLocations = async () => {
       try {
         setIsLoading(true);
         console.log("Loading map locations with search query:", searchQuery || "none");
         
-        // Try to get events from API first
+        // Array to collect all locations
+        let allLocations: MapLocation[] = [];
+        
+        // First try to get events from API
         try {
           const params: EventSearchParams = {
             query: searchQuery || undefined
@@ -106,7 +109,7 @@ const Maps = () => {
               }
               
               return {
-                id: String(event.id),
+                id: `event-${event.id}`,
                 title: event.title,
                 lat: coords.lat,
                 lng: coords.lng,
@@ -116,18 +119,16 @@ const Maps = () => {
               };
             });
             
-            console.log("API returned locations:", apiLocations.length);
-            setMapLocations(apiLocations);
-            setIsLoading(false);
-            return;
+            console.log("API returned events:", apiLocations.length);
+            allLocations = [...allLocations, ...apiLocations];
           }
         } catch (apiError) {
-          console.error("Error fetching from API, falling back to Supabase:", apiError);
+          console.error("Error fetching events from API, falling back to Supabase:", apiError);
         }
         
-        // Try Supabase if API fails
+        // Now try to get meetups from Supabase
         try {
-          console.log("Fetching from Supabase...");
+          console.log("Fetching meetups from Supabase...");
           let query = supabase.from('events').select('*');
           
           if (searchQuery) {
@@ -137,9 +138,9 @@ const Maps = () => {
           const { data: supabaseEvents, error } = await query;
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
-            console.log("Supabase returned events:", supabaseEvents.length);
+            console.log("Supabase returned meetups:", supabaseEvents.length);
             
-            const supabaseLocations = supabaseEvents.map(event => {
+            const meetupLocations = supabaseEvents.map(event => {
               let coords;
               const eventData = event as any; // Type assertion to access latitude/longitude
               
@@ -147,7 +148,7 @@ const Maps = () => {
               if (eventData.latitude && eventData.longitude && 
                   eventData.latitude !== 0 && eventData.longitude !== 0) {
                 coords = { lat: eventData.latitude, lng: eventData.longitude };
-                console.log(`Event ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
+                console.log(`Meetup ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
               } else {
                 // Special case for library events
                 if (event.location && 
@@ -166,47 +167,51 @@ const Maps = () => {
                   coords = getLocationCoordinates(event.location);
                 }
                 
-                console.log(`Event ${event.title} using matched coordinates for "${event.location}": (${coords.lat}, ${coords.lng})`);
+                console.log(`Meetup ${event.title} using matched coordinates for "${event.location}": (${coords.lat}, ${coords.lng})`);
               }
               
               return {
-                id: String(event.id),
+                id: `meetup-${event.id}`,
                 title: event.title,
                 lat: coords.lat,
                 lng: coords.lng,
                 description: `${event.description || ''} - Location: ${event.location}`,
                 category: event.category || "Other",
-                isEvent: true
+                isEvent: false
               };
             });
             
-            setMapLocations(supabaseLocations);
-            setIsLoading(false);
-            return;
+            allLocations = [...allLocations, ...meetupLocations];
           } else {
-            console.log("No events from Supabase or error:", error);
+            console.log("No meetups from Supabase or error:", error);
           }
         } catch (supabaseError) {
           console.error("Error fetching from Supabase, falling back to mock data:", supabaseError);
         }
         
-        // Fall back to mock data if both API and Supabase fail
-        const mockEvents = getEvents();
-        const mockLocations = mockEvents.map(event => {
-          const coords = getLocationCoordinates(event.location);
+        // If no locations were found from API or Supabase, use mock data
+        if (allLocations.length === 0) {
+          // Fall back to mock data if both API and Supabase fail
+          const mockEvents = getEvents();
+          const mockLocations = mockEvents.map(event => {
+            const coords = getLocationCoordinates(event.location);
+            
+            return {
+              id: `mock-${event.id}`,
+              title: event.title,
+              lat: coords.lat,
+              lng: coords.lng,
+              description: `${event.description} - Location: ${event.location}`,
+              category: event.category,
+              isEvent: true
+            };
+          });
           
-          return {
-            id: event.id,
-            title: event.title,
-            lat: coords.lat,
-            lng: coords.lng,
-            description: `${event.description} - Location: ${event.location}`,
-            category: event.category,
-            isEvent: true
-          };
-        });
+          allLocations = [...allLocations, ...mockLocations];
+        }
         
-        setMapLocations(mockLocations);
+        console.log(`Total locations loaded: ${allLocations.length} (${allLocations.filter(l => l.isEvent).length} events, ${allLocations.filter(l => !l.isEvent).length} meetups)`);
+        setMapLocations(allLocations);
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading map locations:", error);
@@ -222,7 +227,7 @@ const Maps = () => {
           const coords = getLocationCoordinates(event.location);
           
           return {
-            id: event.id,
+            id: `mock-${event.id}`,
             title: event.title,
             lat: coords.lat,
             lng: coords.lng,
