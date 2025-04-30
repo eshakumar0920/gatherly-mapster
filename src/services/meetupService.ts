@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MeetupType, Tag, Friend, UserActions } from './types';
@@ -12,10 +11,11 @@ interface UserState {
   friends: Friend[];
   tags: Tag[];
   selectedSticker: number | null;
-  avatar: string | null;
+  // Remove avatar
   // Add missing state properties
   userId: string | null;
   joinedLobbies: string[];
+  avatar: string | null;
 }
 
 export const useUserStore = create<UserState & UserActions>()(
@@ -30,6 +30,7 @@ export const useUserStore = create<UserState & UserActions>()(
       tags: ["Technology", "Academic", "Gaming"],
       selectedSticker: null,
       avatar: null,
+      // Remove avatar
       // Initialize new state properties
       userId: null,
       joinedLobbies: [],
@@ -94,6 +95,7 @@ export const useUserStore = create<UserState & UserActions>()(
           avatar: avatarUrl
         }));
       },
+      // Remove updateAvatar method
       setSelectedSticker: (stickerIndex: number | null) => {
         set((state) => ({
           ...state,

@@ -5,9 +5,8 @@ import { Clock, MapPin, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import { Meetup } from "@/types/meetup";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,52 +21,11 @@ interface MeetupCardProps {
 interface Attendee {
   id: string;
   name: string;
-  avatar?: string;
   status: "going" | "interested";
 }
 
-// Array of happier illustrated avatars with cheerful expressions
-const illustratedAvatars = [
-  "/placeholder.svg", // Default placeholder SVG
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&mouth=smile&eyes=happy",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily&mouth=smile&eyes=happy",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight&mouth=smile&eyes=happy",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Fluffy&mouth=smile&eyes=happy",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Milo&mouth=smile&eyes=happy",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver&mouth=smile&eyes=happy",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella&mouth=smile&eyes=happy",
-];
-
-// Special avatars for specific people - updated with specified characteristics
-const specialAvatars = {
-  "patrick": "https://api.dicebear.com/7.x/avataaars/svg?seed=Patrick&mouth=smile&eyes=happy&skinColor=f2d3b1&hairColor=a55728&accessoriesType=round&facialHairType=none&facialHairColor=a55728&clotheType=hoodie&clotheColor=3c4f5c&eyebrowType=default&mouthType=smile&top=shortHair&eyeType=happy",
-  "neethu": "https://api.dicebear.com/7.x/avataaars/svg?seed=Neethu&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=overall&clotheColor=d14836&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy",
-  "esha": "https://api.dicebear.com/7.x/avataaars/svg?seed=Esha&mouth=smile&eyes=happy&skinColor=ae8569&hairColor=2c1b18&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=624a2e&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy",
-  "sophia": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&mouth=smile&eyes=happy&skinColor=f2d3b1&hairColor=4a312c&accessoriesType=none&facialHairType=none&clotheType=blazer&clotheColor=5199e4&eyebrowType=default&mouthType=smile&top=longHair&eyeType=happy"
-};
-
-// Helper to get a consistent avatar for a specific user ID or name
-const getAvatarForUser = (id: string, name?: string) => {
-  // Check for special names (case-insensitive)
-  if (name) {
-    const lowerName = name.toLowerCase();
-    for (const [specialName, avatar] of Object.entries(specialAvatars)) {
-      if (lowerName.includes(specialName)) {
-        return avatar;
-      }
-    }
-  }
-
-  // Convert the id or name to a number to use as index
-  const charSum = (id + (name || "")).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return illustratedAvatars[charSum % illustratedAvatars.length];
-};
-
-// Export the avatar generator function to use elsewhere in the app
-export { getAvatarForUser };
-
 const MeetupCard = ({ meetup }: MeetupCardProps) => {
-  const { joinMeetupLobby, joinedLobbies, userId, avatar } = useUserStore();
+  const { joinMeetupLobby, joinedLobbies, userId } = useUserStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -76,9 +34,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const isJoinedLobby = joinedLobbies?.includes(meetup.id);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [creatorInfo, setCreatorInfo] = useState<{name: string, avatar?: string}>({
-    name: meetup.createdBy || "Anonymous",
-    avatar: getAvatarForUser(meetup.id, meetup.createdBy) // Use illustrated avatar
+  const [creatorInfo, setCreatorInfo] = useState<{name: string}>({
+    name: meetup.createdBy || "Anonymous"
   });
   
   // Fetch creator info if not available
@@ -88,15 +45,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         try {
           const { data, error } = await supabase
             .from('users')
-            .select('username, profile_picture')
+            .select('username')
             .eq('username', meetup.createdBy)
             .single();
             
           if (!error && data) {
             setCreatorInfo({
-              name: data.username || meetup.createdBy,
-              // Use illustrated avatar instead of profile picture
-              avatar: getAvatarForUser(meetup.createdBy, data.username)
+              name: data.username || meetup.createdBy
             });
           }
         } catch (err) {
@@ -104,14 +59,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         }
       } else {
         setCreatorInfo({
-          name: meetup.createdBy || "Anonymous",
-          avatar: getAvatarForUser(meetup.id)
+          name: meetup.createdBy || "Anonymous"
         });
       }
     };
     
     fetchCreatorInfo();
-  }, [meetup.createdBy, meetup.creatorAvatar]);
+  }, [meetup.createdBy]);
   
   // Fetch actual attendees from database - removing mock data
   useEffect(() => {
@@ -123,8 +77,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             user_id,
             attendance_status,
             users!inner(
-              username,
-              profile_picture
+              username
             )
           `)
           .eq('event_id', parseInt(meetup.id)); // Convert string to number
@@ -139,14 +92,11 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           const mappedAttendees: Attendee[] = data.map(participant => ({
             id: participant.user_id.toString(),
             name: participant.users.username || "Anonymous",
-            // Use user's custom avatar if available
-            avatar: getUserAvatar(participant.user_id.toString(), participant.users.username),
             status: participant.attendance_status === 'attended' ? 'going' : 'interested'
           }));
           
           setAttendees(mappedAttendees);
         } else {
-          // No mock data, just set empty array if no real attendees
           setAttendees([]);
         }
       } catch (err) {
@@ -158,17 +108,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
     fetchAttendees();
   }, [meetup.id]);
   
-  // Helper function to get user's avatar (from storage if available or generate one)
-  const getUserAvatar = (userId: string, username?: string) => {
-    // If the user is the current user, use their selected avatar
-    if (userId === user?.uid) {
-      return avatar || getAvatarForUser(userId, username);
-    }
-    
-    // For other users, generate a consistent avatar
-    return getAvatarForUser(userId, username);
-  };
-  
   // Check if user is in attendees list
   useEffect(() => {
     if (isJoinedLobby && user && !attendees.some(a => a.id === userId)) {
@@ -177,13 +116,11 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         {
           id: userId || "current-user",
           name: user.email?.split('@')[0] || "Current User",
-          // Use user's selected avatar if available
-          avatar: avatar || getAvatarForUser(userId || "current-user", user.email?.split('@')[0]),
           status: "interested"
         }
       ]);
     }
-  }, [isJoinedLobby, user, userId, attendees, avatar]);
+  }, [isJoinedLobby, user, userId, attendees]);
   
   const formattedDateTime = (() => {
     if (meetup.dateTime == null) {
@@ -270,7 +207,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               email: user.email,
               username: username,
               join_date: new Date().toISOString(),
-              profile_picture: avatar
             })
             .select('id')
             .single();
@@ -290,28 +226,12 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           await joinMeetupInDb(meetup.id, newUserId);
           joinMeetupLobby(meetup.id);
         } else {
-          // Update the user's avatar if they have one selected
-          if (avatar) {
-            await supabase
-              .from('users')
-              .update({ profile_picture: avatar })
-              .eq('id', userData.id);
-          }
-          
           // Convert ID to string before passing to functions
           const userIdStr = String(userData.id);
           await joinMeetupInDb(meetup.id, userIdStr);
           joinMeetupLobby(meetup.id);
         }
       } else {
-        // Update the user's avatar if they have one selected
-        if (avatar) {
-          await supabase
-            .from('users')
-            .update({ profile_picture: avatar })
-            .eq('id', parseInt(userId));
-        }
-        
         // userId is already a string, so pass it directly
         await joinMeetupInDb(meetup.id, userId);
         joinMeetupLobby(meetup.id);
@@ -356,10 +276,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           {/* Creator information - highlighted more prominently */}
           <div className="flex items-center mt-2 text-sm border-l-2 border-primary pl-2">
             <div className="flex items-center">
-              <Avatar className="h-5 w-5 mr-1">
-                <AvatarImage src={creatorInfo.avatar || ""} />
-                <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
-              </Avatar>
+              <User className="h-4 w-4 mr-1 text-muted-foreground" />
               <span className="font-medium">Created by {creatorInfo.name}</span>
             </div>
           </div>
@@ -386,23 +303,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                 <Users className="h-4 w-4 mr-1" />
                 <span>{attendees.length}/{meetup.lobbySize}</span>
-                
-                {/* Show mini avatars for attendees */}
-                {attendees.length > 0 && (
-                  <div className="flex -space-x-2 ml-2">
-                    {attendees.slice(0, 2).map((attendee, index) => (
-                      <Avatar key={`${attendee.id}-${index}`} className="h-4 w-4 border border-background">
-                        <AvatarImage src={attendee.avatar} />
-                        <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                    ))}
-                    {attendees.length > 2 && (
-                      <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-xs">
-                        +{attendees.length - 2}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-2" align="end">
@@ -412,10 +312,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                   attendees.map((attendee, index) => (
                     <div key={`${attendee.id}-${index}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={attendee.avatar} />
-                          <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <User className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">{attendee.name}</span>
                       </div>
                       <Badge 
