@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -39,22 +40,25 @@ const getLocationCoordinates = (locationName: string | null) => {
     return { lat: defaultLocation.lat, lng: defaultLocation.lng };
   }
   
-  // Use our new helper function
-  const matchedLocation = findLocationByName(locationName);
-  if (matchedLocation) {
-    return { lat: matchedLocation.lat, lng: matchedLocation.lng };
-  }
-  
   // Special case for library
   if (locationName.toLowerCase().includes("library") || 
       locationName.toLowerCase().includes("mcdermott")) {
     const library = campusLocations.find(loc => loc.id === "library");
     if (library) {
+      console.log(`Using library coordinates for "${locationName}": (${library.lat}, ${library.lng})`);
       return { lat: library.lat, lng: library.lng };
     }
   }
   
+  // Use our new helper function
+  const matchedLocation = findLocationByName(locationName);
+  if (matchedLocation) {
+    console.log(`Found matched location for "${locationName}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
+    return { lat: matchedLocation.lat, lng: matchedLocation.lng };
+  }
+  
   // If no match found, use a random campus location with small offset for distribution
+  console.log(`No location match found for "${locationName}", using fallback`);
   const randomIndex = Math.floor(Math.random() * campusLocations.length);
   const randomLocation = campusLocations[randomIndex];
   
@@ -75,6 +79,7 @@ const Maps = () => {
     const loadLocations = async () => {
       try {
         setIsLoading(true);
+        console.log("Loading map locations with search query:", searchQuery || "none");
         
         // Try to get events from API first
         try {
@@ -90,11 +95,14 @@ const Maps = () => {
               let coords;
               
               // Check if event has coordinates first
-              if (event.latitude && event.longitude) {
+              if (event.latitude && event.longitude && 
+                  event.latitude !== 0 && event.longitude !== 0) {
                 coords = { lat: event.latitude, lng: event.longitude };
+                console.log(`Event ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
               } else {
                 // Fall back to location name matching
                 coords = getLocationCoordinates(event.location);
+                console.log(`Event ${event.title} using matched coordinates: (${coords.lat}, ${coords.lng})`);
               }
               
               return {
@@ -108,8 +116,9 @@ const Maps = () => {
               };
             });
             
-            console.log("API locations:", apiLocations);
+            console.log("API returned locations:", apiLocations.length);
             setMapLocations(apiLocations);
+            setIsLoading(false);
             return;
           }
         } catch (apiError) {
@@ -118,25 +127,46 @@ const Maps = () => {
         
         // Try Supabase if API fails
         try {
-          const { data: supabaseEvents, error } = await supabase
-            .from('events')
-            .select('*')
-            .ilike(searchQuery ? 'title' : 'id', searchQuery ? `%${searchQuery}%` : '%');
+          console.log("Fetching from Supabase...");
+          let query = supabase.from('events').select('*');
+          
+          if (searchQuery) {
+            query = query.ilike('title', `%${searchQuery}%`);
+          }
+          
+          const { data: supabaseEvents, error } = await query;
           
           if (!error && supabaseEvents && supabaseEvents.length > 0) {
-            console.log("Supabase events:", supabaseEvents);
+            console.log("Supabase returned events:", supabaseEvents.length);
+            
             const supabaseLocations = supabaseEvents.map(event => {
               let coords;
               const eventData = event as any; // Type assertion to access latitude/longitude
               
               // Check if event has coordinates first
-              if (eventData.latitude && eventData.longitude) {
+              if (eventData.latitude && eventData.longitude && 
+                  eventData.latitude !== 0 && eventData.longitude !== 0) {
                 coords = { lat: eventData.latitude, lng: eventData.longitude };
-                console.log(`Event ${event.title} has coordinates:`, coords);
+                console.log(`Event ${event.title} has coordinates: (${coords.lat}, ${coords.lng})`);
               } else {
-                // Fall back to location name matching
-                coords = getLocationCoordinates(event.location);
-                console.log(`Event ${event.title} using matched coordinates for ${event.location}:`, coords);
+                // Special case for library events
+                if (event.location && 
+                   (event.location.toLowerCase().includes("library") || 
+                    event.location.toLowerCase().includes("mcdermott") ||
+                    event.title.toLowerCase().includes("study"))) {
+                  const library = campusLocations.find(loc => loc.id === "library");
+                  if (library) {
+                    coords = { lat: library.lat, lng: library.lng };
+                    console.log(`Using library coordinates for "${event.title}": (${coords.lat}, ${coords.lng})`);
+                  } else {
+                    coords = getLocationCoordinates(event.location);
+                  }
+                } else {
+                  // Fall back to location name matching
+                  coords = getLocationCoordinates(event.location);
+                }
+                
+                console.log(`Event ${event.title} using matched coordinates for "${event.location}": (${coords.lat}, ${coords.lng})`);
               }
               
               return {
@@ -151,6 +181,7 @@ const Maps = () => {
             });
             
             setMapLocations(supabaseLocations);
+            setIsLoading(false);
             return;
           } else {
             console.log("No events from Supabase or error:", error);
@@ -176,6 +207,7 @@ const Maps = () => {
         });
         
         setMapLocations(mockLocations);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error loading map locations:", error);
         toast({
@@ -201,7 +233,6 @@ const Maps = () => {
         });
         
         setMapLocations(locations);
-      } finally {
         setIsLoading(false);
       }
     };

@@ -28,9 +28,22 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
       
       // If coordinates callback is provided and value is a known location, call it with coordinates
       if (onCoordinatesChange) {
+        // Use our improved location finder function
         const matchedLocation = findLocationByName(value);
         if (matchedLocation) {
+          console.log(`Found location match for "${value}": ${matchedLocation.name} (${matchedLocation.lat}, ${matchedLocation.lng})`);
           onCoordinatesChange(matchedLocation.lat, matchedLocation.lng);
+        } else {
+          // Special case for the library
+          if (value.toLowerCase().includes("library") || value.toLowerCase().includes("mcdermott")) {
+            const libraryLocation = findLocationByName("McDermott Library");
+            if (libraryLocation) {
+              console.log(`Library location detected for "${value}" using coordinates: (${libraryLocation.lat}, ${libraryLocation.lng})`);
+              onCoordinatesChange(libraryLocation.lat, libraryLocation.lng);
+            }
+          } else {
+            console.log(`No location match found for "${value}"`);
+          }
         }
       }
     }
@@ -58,6 +71,7 @@ const LocationSelector = ({ value, onChange, onCoordinatesChange }: LocationSele
     
     // If coordinates callback is provided, call it with the location's coordinates
     if (onCoordinatesChange) {
+      console.log(`Selected location with coordinates: ${location.name} (${location.lat}, ${location.lng})`);
       onCoordinatesChange(location.lat, location.lng);
     }
   };
