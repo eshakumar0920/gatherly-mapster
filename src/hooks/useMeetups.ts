@@ -57,7 +57,9 @@ export const useMeetups = (selectedCategory: string | null = null) => {
               creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80", // Default avatar
               lobbySize: lobbySize,
               category: event.category || "Other",
-              attendees: []
+              attendees: [],
+              latitude: event.latitude,
+              longitude: event.longitude
             };
           });
           
@@ -126,7 +128,9 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         xp_reward: points, // Use calculated points based on lobby size
         organizer_xp_reward: 5,
         category: meetupData.category,
-        lobby_size: lobbySize
+        lobby_size: lobbySize,
+        latitude: meetupData.latitude, // Store coordinates
+        longitude: meetupData.longitude // Store coordinates
       }).select().single();
 
       if (error) {
@@ -160,7 +164,9 @@ export const useMeetups = (selectedCategory: string | null = null) => {
         creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
         lobbySize: eventRow.lobby_size || 5,
         category: eventRow.category || "Other",
-        attendees: []
+        attendees: [],
+        latitude: eventRow.latitude, // Include coordinates
+        longitude: eventRow.longitude // Include coordinates
       };
       
       setAllMeetups(prev => [newMeetup, ...prev]);

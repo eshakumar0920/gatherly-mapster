@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Star, Users } from "lucide-react";
+import { Search, Plus, Star, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -63,6 +63,11 @@ const Meetups = () => {
     navigate(`/meetups/${meetupId}`);
   };
 
+  // View on map functionality
+  const handleViewOnMap = () => {
+    navigate("/maps");
+  };
+
   return (
     <div className="pb-20">
       <div className="p-4 pt-6 flex items-center justify-center">
@@ -112,9 +117,13 @@ const Meetups = () => {
         </Tabs>
       </div>
 
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 flex flex-col gap-4">
         <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Create New Meetup
+        </Button>
+        
+        <Button variant="outline" className="w-full" onClick={handleViewOnMap}>
+          <MapPin className="h-4 w-4 mr-2" /> View All Meetups on Map
         </Button>
       </div>
 

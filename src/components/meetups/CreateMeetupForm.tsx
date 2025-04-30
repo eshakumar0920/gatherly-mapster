@@ -16,12 +16,17 @@ import { Meetup } from "@/types/meetup";
 import { useMeetups } from "@/hooks/useMeetups";
 import { useUserStore } from "@/services/meetupService";
 import { useState } from "react";
+import LocationSelector from "./LocationSelector";
+import { campusLocations } from "@/utils/campusLocations";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   dateTime: z.string().min(3, "Date and time is required"),
-  location: z.string().min(3, "Location is required"),
+  location: z.string().min(3, "Location is required").refine(
+    (val) => campusLocations.some(loc => loc.name === val),
+    { message: "Please select a valid campus location from the dropdown" }
+  ),
   category: z.string().min(1, "Category is required"),
   lobbySize: z.preprocess(
     (val) => Number(val),
@@ -42,6 +47,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { createMeetup } = useMeetups();
   const { userId, setUserId } = useUserStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationCoordinates, setLocationCoordinates] = useState({ lat: 0, lng: 0 });
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -54,6 +60,10 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       lobbySize: 5,
     },
   });
+
+  const handleLocationCoordinatesChange = (lat: number, lng: number) => {
+    setLocationCoordinates({ lat, lng });
+  };
 
   const onSubmit = async (values: FormValues) => {
     if (isSubmitting) return;
@@ -114,7 +124,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('username')
-        .eq('id', parseInt(currentUserId)) // Convert string to number
+        .eq('id', parseInt(currentUserId))
         .single();
         
       if (userError || !userData) {
@@ -129,7 +139,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       
       const meetupData = {
         ...values,
-        points: 3 // Default points
+        points: 3, // Default points
+        latitude: locationCoordinates.lat,
+        longitude: locationCoordinates.lng
       };
       
       const newMeetup = await createMeetup(meetupData, currentUserId, userData.username);
@@ -138,6 +150,11 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         onSuccess(newMeetup);
         onClose();
         form.reset();
+        
+        toast({
+          title: "Meetup created!",
+          description: "Your meetup has been successfully added to the map.",
+        });
       }
     } catch (error) {
       console.error("Error in meetup creation:", error);
@@ -207,7 +224,11 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
               <FormItem>
                 <FormLabel>Location</FormLabel>
                 <FormControl>
-                  <Input placeholder="Student Union" {...field} />
+                  <LocationSelector 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onCoordinatesChange={handleLocationCoordinatesChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -272,3 +293,4 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
 };
 
 export default CreateMeetupForm;
+
