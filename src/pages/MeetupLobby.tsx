@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MapPin, Clock, User, ScanQrCode, UserCheck, Check } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, Scan, UserCheck, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -298,7 +298,7 @@ const MeetupLobby = () => {
     }
   };
   
-  // Define the missing handleQRScanSuccess function
+  // Define the handleQRScanSuccess function
   const handleQRScanSuccess = (data: string) => {
     // Close QR scanner dialog
     setIsQRScannerOpen(false);
@@ -461,7 +461,7 @@ const MeetupLobby = () => {
                   onClick={() => setIsQRScannerOpen(true)}
                   disabled={checkingIn}
                 >
-                  <ScanQrCode className="mr-2 h-4 w-4" />
+                  <Scan className="mr-2 h-4 w-4" />
                   {checkingIn ? "Processing..." : "Scan QR Code to Check In"}
                 </Button>
               ) : (
