@@ -1,0 +1,150 @@
+
+import React from 'react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { useLevelUp } from '@/contexts/LevelUpContext';
+import { useUserStore } from '@/services/meetupService';
+import { useToast } from '@/hooks/use-toast';
+import { stickers, StickerType } from '@/utils/badgeData';
+import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+interface ProfileAvatarProps {
+  level: number;
+  selectedAvatar: number | null;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+// This component displays the avatar with sticker
+export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ 
+  level, 
+  selectedAvatar,
+  className = "",
+  size = 'md'
+}) => {
+  const stickerIndex = selectedAvatar !== null 
+    ? selectedAvatar 
+    : Math.min(level - 1, stickers.length - 1);
+    
+  if (stickerIndex < 0) return null;
+  
+  const sticker = stickers[stickerIndex];
+  const IconComponent = sticker.icon;
+  
+  // Map size prop to actual Tailwind classes
+  const sizeClasses = {
+    sm: 'h-8 w-8',
+    md: 'h-12 w-12',
+    lg: 'h-24 w-24'
+  };
+  
+  const iconSize = sizeClasses[size];
+  
+  return (
+    <div className={`${className} flex items-center justify-center`}>
+      <div className={`${sticker.color} rounded-full p-4 shadow-md ${iconSize}`}>
+        <IconComponent className="w-full h-full" fill="currentColor" />
+      </div>
+    </div>
+  );
+};
+
+// This component shows the avatar selection dialog
+const ProfileAvatars: React.FC = () => {
+  const { showAvatars, setShowAvatars, selectedAvatar, setSelectedAvatar } = useLevelUp();
+  const { level } = useUserStore();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  const availableAvatars = stickers.filter(sticker => sticker.level <= level);
+  
+  const handleSelectAvatar = (index: number) => {
+    setSelectedAvatar(index);
+    setShowAvatars(false);
+    
+    toast({
+      title: "Avatar selected!",
+      description: `You've changed your profile avatar to ${stickers[index].name}.`
+    });
+  };
+
+  const goToBadgesPage = () => {
+    setShowAvatars(false);
+    navigate('/badges');
+  };
+  
+  return (
+    <Dialog open={showAvatars} onOpenChange={setShowAvatars}>
+      <DialogContent className="max-w-md max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Choose Your Avatar</DialogTitle>
+          <DialogDescription>
+            Select an avatar to display on your profile.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <p className="text-sm text-muted-foreground mb-4">
+            Select an avatar for your profile. You've unlocked {availableAvatars.length} out of {stickers.length} avatars!
+          </p>
+          
+          <ScrollArea className="h-[50vh] pr-4">
+            <div className="grid grid-cols-3 gap-4 pb-4">
+              {stickers.map((sticker, index) => {
+                const isUnlocked = sticker.level <= level;
+                const IconComponent = sticker.icon;
+                
+                return (
+                  <div 
+                    key={index}
+                    onClick={() => isUnlocked && handleSelectAvatar(index)}
+                    className={`
+                      flex flex-col items-center justify-center p-4 rounded-lg border 
+                      ${isUnlocked 
+                        ? `${sticker.color} cursor-pointer hover:bg-muted transition-colors` 
+                        : 'opacity-40 bg-muted/50 cursor-not-allowed'}
+                      ${selectedAvatar === index ? 'ring-2 ring-primary' : ''}
+                    `}
+                  >
+                    <IconComponent 
+                      className="h-16 w-16"
+                      fill={isUnlocked ? "currentColor" : "none"}
+                    />
+                    <p className="text-sm mt-2 text-center font-medium">
+                      {sticker.name}
+                    </p>
+                    {!isUnlocked && (
+                      <span className="text-xs mt-1">
+                        Level {sticker.level}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowAvatars(false)}>
+            Close
+          </Button>
+          <Button variant="secondary" onClick={goToBadgesPage}>
+            View All Badges
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ProfileAvatars;

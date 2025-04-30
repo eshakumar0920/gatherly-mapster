@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,30 +7,15 @@ import Navigation from "@/components/Navigation";
 import { useUserStore } from "@/services/meetupService";
 import { Friend, Tag as TagType } from "@/services/types";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import LootBoxPopup from "@/components/LootBoxPopup";
 import { useLevelUp } from "@/contexts/LevelUpContext";
-import { ProfileSticker } from "@/components/ProfileStickers";
+import { ProfileAvatar } from "@/components/ProfileAvatars";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
-import ProfileStickers from "@/components/ProfileStickers";
+import ProfileAvatars from "@/components/ProfileAvatars";
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -50,22 +35,18 @@ const Profile = () => {
     email, 
     friends, 
     tags, 
-    selectedSticker,
-    avatar,
+    selectedSticker: selectedAvatar,
     addFriend, 
     removeFriend, 
     updateTags,
     updateProfile,
-    updateAvatar,
   } = useUserStore();
   
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
-  const [isProfilePictureDialogOpen, setIsProfilePictureDialogOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
   const [isPrivacySettingsOpen, setIsPrivacySettingsOpen] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -95,8 +76,6 @@ const Profile = () => {
   
   const [selectedTags, setSelectedTags] = useState<TagType[]>(tags);
 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(avatar || null);
-  
   const pointsToNextLevel = level * 10;
   const progress = (points % 10) * 10;
   
@@ -168,50 +147,12 @@ const Profile = () => {
     }
   };
 
-  const { setShowStickers } = useLevelUp();
+  const { setShowAvatars } = useLevelUp();
 
-  const triggerStickers = () => {
-    setShowStickers(true);
+  const openAvatarSelector = () => {
+    setShowAvatars(true);
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) {
-      return;
-    }
-
-    try {
-      setUploadingAvatar(true);
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      
-      // Create object URL for immediate preview
-      const objectUrl = URL.createObjectURL(file);
-      setAvatarUrl(objectUrl);
-      
-      // Simulate upload with a delay
-      setTimeout(() => {
-        // Update avatar in state
-        updateAvatar(objectUrl);
-        setUploadingAvatar(false);
-        setIsProfilePictureDialogOpen(false);
-        
-        toast({
-          title: "Profile picture updated!",
-          description: "Your profile picture has been successfully updated."
-        });
-      }, 1000);
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your profile picture.",
-        variant: "destructive"
-      });
-      setUploadingAvatar(false);
-    }
-  };
-  
   const handleSaveNotificationSettings = (settings: NotificationSettingsType) => {
     setNotificationSettings(settings);
     // Here you would typically save to a backend or localStorage
@@ -246,38 +187,23 @@ const Profile = () => {
       <div className="p-4">
         <div className="bg-card border rounded-lg p-6 space-y-8">
           <div className="flex flex-col items-center">
-            <div className="relative cursor-pointer" onClick={() => setIsProfilePictureDialogOpen(true)}>
-              <Avatar className="h-24 w-24 rounded-full bg-muted mb-4">
-                {avatarUrl ? (
-                  <AvatarImage src={avatarUrl} alt={name} />
-                ) : (
-                  <AvatarFallback className="text-4xl">👤</AvatarFallback>
-                )}
-              </Avatar>
-              <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <Upload className="h-8 w-8 text-white" />
-              </div>
-              {level > 0 && (
-                <ProfileSticker 
-                  level={level} 
-                  selectedSticker={selectedSticker} 
-                  size="lg"
-                />
-              )}
+            <div className="relative cursor-pointer" onClick={openAvatarSelector}>
+              <ProfileAvatar 
+                level={level} 
+                selectedAvatar={selectedAvatar} 
+                size="lg"
+                className="mb-4"
+              />
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-1"
                 onClick={(e) => {
                   e.stopPropagation();
-                  triggerStickers();
+                  openAvatarSelector();
                 }}
               >
-                {selectedSticker !== null ? (
-                  <User className="h-4 w-4" />
-                ) : (
-                  <Star className="h-4 w-4" />
-                )}
+                <User className="h-4 w-4" />
               </Button>
             </div>
             <h2 className="text-xl font-semibold">{name}</h2>
@@ -324,6 +250,7 @@ const Profile = () => {
             </div>
           </div>
           
+          {/* Friends section */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Friends</h3>
@@ -347,13 +274,10 @@ const Profile = () => {
                 friends.map(friend => (
                   <div key={friend.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        {friend.avatar ? (
-                          <AvatarImage src={friend.avatar} alt={friend.name} />
-                        ) : (
-                          <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
-                        )}
-                      </Avatar>
+                      {/* We'll show a default avatar instead of the profile picture */}
+                      <div className="h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
                       <div>
                         <p className="text-sm font-medium">{friend.name}</p>
                         <div className="flex gap-1">
@@ -380,6 +304,7 @@ const Profile = () => {
             </div>
           </div>
           
+          {/* Account settings */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Account Settings</h3>
             <div className="space-y-2">
@@ -393,11 +318,11 @@ const Profile = () => {
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full justify-start" 
-                onClick={() => setIsProfilePictureDialogOpen(true)}
+                className="w-full justify-start"
+                onClick={openAvatarSelector}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                Change Profile Picture
+                <User className="mr-2 h-4 w-4" />
+                Change Avatar
               </Button>
               <Button 
                 variant="outline" 
@@ -426,6 +351,7 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Dialog modals */}
       <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -444,12 +370,12 @@ const Profile = () => {
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="friendAvatar" className="text-sm font-medium">Avatar URL (optional)</label>
+              <label htmlFor="friendTags" className="text-sm font-medium">Tags (optional)</label>
               <Input 
-                id="friendAvatar"
-                placeholder="https://example.com/avatar.jpg"
-                value={newFriend.avatar || ''}
-                onChange={e => setNewFriend({...newFriend, avatar: e.target.value})}
+                id="friendTags"
+                placeholder="Technology, Gaming, etc."
+                value={newFriend.tags?.join(', ') || ''}
+                onChange={e => setNewFriend({...newFriend, tags: e.target.value.split(',').map(tag => tag.trim() as TagType).filter(Boolean)})}
               />
             </div>
           </div>
@@ -524,50 +450,6 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isProfilePictureDialogOpen} onOpenChange={setIsProfilePictureDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Profile Picture</DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-6 flex flex-col items-center gap-4">
-            <Avatar className="h-32 w-32">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={name} />
-              ) : (
-                <AvatarFallback className="text-5xl">👤</AvatarFallback>
-              )}
-            </Avatar>
-            
-            <div className="text-center">
-              <label htmlFor="avatarUpload" className="cursor-pointer">
-                <div className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md inline-flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  {uploadingAvatar ? "Uploading..." : "Upload New Picture"}
-                </div>
-                <input 
-                  id="avatarUpload" 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={handleAvatarUpload}
-                  disabled={uploadingAvatar}
-                />
-              </label>
-              <p className="text-xs text-muted-foreground mt-2">
-                Recommended: Square image, max 2MB
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsProfilePictureDialogOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <NotificationSettings 
         open={isNotificationSettingsOpen}
         onOpenChange={setIsNotificationSettingsOpen}
@@ -582,7 +464,7 @@ const Profile = () => {
         initialSettings={privacySettings}
       />
 
-      <ProfileStickers />
+      <ProfileAvatars />
 
       <Navigation />
     </div>

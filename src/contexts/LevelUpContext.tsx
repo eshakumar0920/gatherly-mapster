@@ -7,10 +7,10 @@ interface LevelUpContextProps {
   setShowLevelUp: (show: boolean) => void;
   newLevel: number | null;
   setNewLevel: (level: number | null) => void;
-  showStickers: boolean;
-  setShowStickers: (show: boolean) => void;
-  selectedSticker: number | null;
-  setSelectedSticker: (index: number | null) => void;
+  showAvatars: boolean;
+  setShowAvatars: (show: boolean) => void;
+  selectedAvatar: number | null;
+  setSelectedAvatar: (index: number | null) => void;
 }
 
 const LevelUpContext = createContext<LevelUpContextProps | undefined>(undefined);
@@ -18,11 +18,11 @@ const LevelUpContext = createContext<LevelUpContextProps | undefined>(undefined)
 export function LevelUpProvider({ children }: { children: ReactNode }) {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newLevel, setNewLevel] = useState<number | null>(null);
-  const [showStickers, setShowStickers] = useState(false);
-  const { selectedSticker, setSelectedSticker: updateSelectedSticker } = useUserStore();
+  const [showAvatars, setShowAvatars] = useState(false);
+  const { selectedSticker: selectedAvatar, setSelectedSticker: updateSelectedAvatar } = useUserStore();
 
-  const setSelectedSticker = (index: number | null) => {
-    updateSelectedSticker(index);
+  const setSelectedAvatar = (index: number | null) => {
+    updateSelectedAvatar(index);
   };
 
   return (
@@ -32,10 +32,10 @@ export function LevelUpProvider({ children }: { children: ReactNode }) {
         setShowLevelUp,
         newLevel,
         setNewLevel,
-        showStickers,
-        setShowStickers,
-        selectedSticker,
-        setSelectedSticker,
+        showAvatars,
+        setShowAvatars,
+        selectedAvatar,
+        setSelectedAvatar,
       }}
     >
       {children}
