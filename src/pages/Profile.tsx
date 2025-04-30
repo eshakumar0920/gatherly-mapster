@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Award, Star, UserPlus, X, Tag, User, Upload } from "lucide-react";
@@ -39,7 +40,7 @@ const availableTags: TagType[] = [
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user, verifiedEmail } = useAuth();
   const { toast } = useToast();
   const { 
     points, 
@@ -65,6 +66,8 @@ const Profile = () => {
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
   const [isPrivacySettingsOpen, setIsPrivacySettingsOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [userFullName, setUserFullName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   
   const [newFriend, setNewFriend] = useState<Partial<Friend>>({
     name: "",
@@ -72,8 +75,8 @@ const Profile = () => {
   });
   
   const [profileForm, setProfileForm] = useState({
-    name,
-    email
+    name: "",
+    email: ""
   });
 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettingsType>({
@@ -98,6 +101,39 @@ const Profile = () => {
   
   const pointsToNextLevel = level * 10;
   const progress = (points % 10) * 10;
+  
+  // Fetch user information on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      // Get current authenticated user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        // For seo200002@utdallas.edu specifically assign a full name
+        let fullName = "";
+        if (currentUser.email === "seo200002@utdallas.edu") {
+          fullName = "Soojin Oh";
+        } else {
+          // Extract name from metadata if available
+          fullName = currentUser.user_metadata?.name || name || "User";
+        }
+        
+        setUserFullName(fullName);
+        setUserEmail(currentUser.email || verifiedEmail || email);
+        
+        // Update form data
+        setProfileForm({
+          name: fullName,
+          email: currentUser.email || verifiedEmail || email
+        });
+        
+        // Update store with user data
+        updateProfile(fullName, currentUser.email || verifiedEmail || email);
+      }
+    };
+    
+    fetchUserData();
+  }, [user, verifiedEmail, updateProfile, name, email]);
   
   const handleLogout = () => {
     logout();
@@ -151,6 +187,8 @@ const Profile = () => {
   
   const handleUpdateProfile = () => {
     updateProfile(profileForm.name, profileForm.email);
+    setUserFullName(profileForm.name);
+    setUserEmail(profileForm.email);
     setIsEditProfileDialogOpen(false);
     
     toast({
@@ -248,9 +286,11 @@ const Profile = () => {
             <div className="relative cursor-pointer" onClick={() => setIsProfilePictureDialogOpen(true)}>
               <Avatar className="h-24 w-24 rounded-full bg-muted mb-4">
                 {avatarUrl ? (
-                  <AvatarImage src={avatarUrl} alt={name} />
+                  <AvatarImage src={avatarUrl} alt={userFullName} />
                 ) : (
-                  <AvatarFallback className="text-4xl">👤</AvatarFallback>
+                  <AvatarFallback className="text-4xl">
+                    {userFullName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 )}
               </Avatar>
               <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -279,8 +319,8 @@ const Profile = () => {
                 )}
               </Button>
             </div>
-            <h2 className="text-xl font-semibold">{name}</h2>
-            <p className="text-muted-foreground">{email}</p>
+            <h2 className="text-xl font-semibold">{userFullName}</h2>
+            <p className="text-muted-foreground">{userEmail}</p>
             
             <div className="flex flex-wrap gap-1 mt-2 justify-center">
               {tags.map(tag => (
@@ -483,7 +523,13 @@ const Profile = () => {
                 placeholder="Your email"
                 value={profileForm.email}
                 onChange={e => setProfileForm({...profileForm, email: e.target.value})}
+                disabled={!!user} // Disable email editing if user is authenticated
               />
+              {user && (
+                <p className="text-xs text-muted-foreground">
+                  Email cannot be changed for authenticated users
+                </p>
+              )}
             </div>
           </div>
           
