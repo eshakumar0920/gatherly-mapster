@@ -319,6 +319,17 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
             {meetup.description}
           </p>
+          
+          {/* Creator information - highlighted more prominently */}
+          <div className="flex items-center mt-2 text-sm border-l-2 border-primary pl-2">
+            <div className="flex items-center">
+              <Avatar className="h-5 w-5 mr-1">
+                <AvatarImage src={creatorInfo.avatar || ""} />
+                <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <span className="font-medium">Created by {creatorInfo.name}</span>
+            </div>
+          </div>
         </div>
         <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full text-yellow-600 text-xs">
           +{meetup.points} pts
@@ -337,17 +348,6 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
         </div>
         
         <div className="flex justify-between">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <User className="h-4 w-4 mr-2" />
-            <div className="flex items-center">
-              <Avatar className="h-5 w-5 mr-1">
-                <AvatarImage src={creatorInfo.avatar || ""} />
-                <AvatarFallback>{creatorInfo.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span>{creatorInfo.name}</span>
-            </div>
-          </div>
-          
           <Popover>
             <PopoverTrigger asChild>
               <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
@@ -358,13 +358,13 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
                 {attendees.length > 0 && (
                   <div className="flex -space-x-2 ml-2">
                     {attendees.slice(0, 2).map((attendee, index) => (
-                      <Avatar key={`${attendee.id}-${index}`} className="h-5 w-5 border border-background">
+                      <Avatar key={`${attendee.id}-${index}`} className="h-4 w-4 border border-background">
                         <AvatarImage src={attendee.avatar} />
                         <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                     ))}
                     {attendees.length > 2 && (
-                      <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-xs">
+                      <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-xs">
                         +{attendees.length - 2}
                       </div>
                     )}

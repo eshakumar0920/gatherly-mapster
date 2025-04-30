@@ -70,25 +70,27 @@ const MeetupsList = ({
         </div>
       )}
 
-      {meetupsWithCorrectPoints.map(meetup => {
-        const classification = getClassification(meetup.lobbySize);
-        return (
-          <div 
-            key={meetup.id} 
-            onClick={() => onMeetupClick(meetup.id)}
-            className="cursor-pointer"
-          >
-            <MeetupCard meetup={meetup} />
-            {showPointsClassification && (
-              <div className="mt-1 text-xs flex justify-end">
-                <Badge variant="outline" className={`${classification.color} border-none`}>
-                  {classification.label}: {classification.basePoints} pts
-                </Badge>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <div className="grid grid-cols-1 gap-4">
+        {meetupsWithCorrectPoints.map(meetup => {
+          const classification = getClassification(meetup.lobbySize);
+          return (
+            <div 
+              key={meetup.id} 
+              onClick={() => onMeetupClick(meetup.id)}
+              className="cursor-pointer"
+            >
+              <MeetupCard meetup={meetup} />
+              {showPointsClassification && (
+                <div className="mt-1 text-xs flex justify-end">
+                  <Badge variant="outline" className={`${classification.color} border-none`}>
+                    {classification.label}: {classification.basePoints} pts
+                  </Badge>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
