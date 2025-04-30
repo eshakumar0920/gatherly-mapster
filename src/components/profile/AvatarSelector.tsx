@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -75,7 +75,7 @@ const AvatarSelector = ({ open, onOpenChange, onSelectAvatar, currentAvatar }: A
 
   // Make sure the avatar is selected when dialog opens if currentAvatar matches
   // one of the predefined avatars
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentAvatar) {
       setSelectedAvatar(currentAvatar);
       
