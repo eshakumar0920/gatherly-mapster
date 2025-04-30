@@ -214,7 +214,7 @@ const Index = () => {
           <ContentLoader message="Loading content..." />
         ) : (
           <>
-            {/* Events Section - Now first */}
+            {/* Events Section - Now first, without QR code */}
             <div className="pb-6">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold">Featured Events</h2>

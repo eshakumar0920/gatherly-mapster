@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MapPin, Clock, User, Check, UserCheck } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, Check, UserCheck, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -50,6 +50,8 @@ const MeetupLobby = () => {
   const [isJoined, setIsJoined] = useState<boolean>(false);
   const [checkingIn, setCheckingIn] = useState<boolean>(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState<boolean>(false);
+  const [isQRCodeOpen, setIsQRCodeOpen] = useState<boolean>(false);
+  const [qrMode, setQrMode] = useState<"scan" | "display">("scan");
   
   useEffect(() => {
     // Check if the meetup is in attended meetups
@@ -297,7 +299,13 @@ const MeetupLobby = () => {
   };
   
   const handleOpenQRScanner = () => {
+    setQrMode("scan");
     setIsQRScannerOpen(true);
+  };
+  
+  const handleShowQRCode = () => {
+    setQrMode("display");
+    setIsQRCodeOpen(true);
   };
   
   const handleQRScanSuccess = (data: string) => {
@@ -482,9 +490,9 @@ const MeetupLobby = () => {
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
             <div className="max-w-lg mx-auto flex gap-2">
               {isAttending ? (
-                <Button className="w-full" disabled variant="default">
-                  <Check className="mr-2 h-4 w-4" />
-                  Checked In
+                <Button className="w-full" variant="default" onClick={handleShowQRCode}>
+                  <QrCode className="mr-2 h-4 w-4" />
+                  Show QR Code
                 </Button>
               ) : isJoined ? (
                 <Button 
@@ -527,6 +535,19 @@ const MeetupLobby = () => {
             onSuccess={handleQRScanSuccess} 
             onCancel={() => setIsQRScannerOpen(false)}
             meetupId={meetupId}
+            mode="scan"
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* QR Code Display Dialog */}
+      <Dialog open={isQRCodeOpen} onOpenChange={setIsQRCodeOpen}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <QRScanner 
+            onSuccess={() => {}} 
+            onCancel={() => setIsQRCodeOpen(false)}
+            meetupId={meetupId}
+            mode="display"
           />
         </DialogContent>
       </Dialog>
