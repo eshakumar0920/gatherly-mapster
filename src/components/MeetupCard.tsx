@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users } from "lucide-react";
@@ -266,7 +265,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
             return;
           }
           
-          await joinMeetupInDb(meetup.id, newUser.id.toString());
+          // Fixed: Convert newUser.id to string before passing it to joinMeetupInDb
+          await joinMeetupInDb(meetup.id, String(newUser.id));
           joinMeetupLobby(meetup.id);
           
         } else {
@@ -278,7 +278,8 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
               .eq('id', userData.id);
           }
           
-          await joinMeetupInDb(meetup.id, userData.id.toString());
+          // Fixed: Convert userData.id to string before passing it to joinMeetupInDb
+          await joinMeetupInDb(meetup.id, String(userData.id));
           joinMeetupLobby(meetup.id);
         }
       } else {
