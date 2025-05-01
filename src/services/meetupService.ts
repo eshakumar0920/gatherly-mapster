@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MeetupType, Tag, Friend, UserActions } from './types';
@@ -7,12 +8,10 @@ interface UserState {
   email: string;
   points: number;
   level: number;
-  attendedMeetups: MeetupType[];
+  attendedMeetups: string[]; // Changed from MeetupType[] to string[]
   friends: Friend[];
   tags: Tag[];
   selectedSticker: number | null;
-  // Remove avatar
-  // Add missing state properties
   userId: string | null;
   joinedLobbies: string[];
   avatar: string | null;
@@ -30,34 +29,23 @@ export const useUserStore = create<UserState & UserActions>()(
       tags: ["Technology", "Academic", "Gaming"],
       selectedSticker: null,
       avatar: null,
-      // Remove avatar
-      // Initialize new state properties
       userId: null,
       joinedLobbies: [],
       addAttendedMeetup: (meetup: MeetupType | string) => {
         set((state) => {
           // Handle both MeetupType objects and string IDs
           if (typeof meetup === 'string') {
-            const meetupObject: MeetupType = {
-              id: meetup,
-              title: "Attended Meetup",
-              description: "Attended via check-in",
-              dateTime: new Date().toISOString(),
-              location: "UTD",
-              points: 5, // Default points
-              createdBy: "System",
-              lobbySize: 0
-            };
+            // Just add the ID to the attendedMeetups array
             return {
               ...state,
-              attendedMeetups: [...state.attendedMeetups, meetupObject],
+              attendedMeetups: [...state.attendedMeetups, meetup],
               points: state.points + 5,
               level: Math.floor((state.points + 5) / 10)
             };
           } else {
             return {
               ...state,
-              attendedMeetups: [...state.attendedMeetups, meetup],
+              attendedMeetups: [...state.attendedMeetups, meetup.id],
               points: state.points + (meetup.points || 5),
               level: Math.floor((state.points + (meetup.points || 5)) / 10)
             };
@@ -95,14 +83,12 @@ export const useUserStore = create<UserState & UserActions>()(
           avatar: avatarUrl
         }));
       },
-      // Remove updateAvatar method
       setSelectedSticker: (stickerIndex: number | null) => {
         set((state) => ({
           ...state,
           selectedSticker: stickerIndex
         }));
       },
-      // Add new actions
       joinMeetupLobby: (meetupId: string) => {
         set((state) => ({
           ...state,
@@ -111,20 +97,10 @@ export const useUserStore = create<UserState & UserActions>()(
       },
       attendMeetup: (meetupId: string, points: number) => {
         set((state) => {
-          const meetup: MeetupType = {
-            id: meetupId,
-            title: "Attended Meetup",
-            description: "Attended via check-in",
-            dateTime: new Date().toISOString(),
-            location: "UTD",
-            points: points,
-            createdBy: "System",
-            lobbySize: 0
-          };
-          
+          // Just store the ID in the attendedMeetups array
           return {
             ...state,
-            attendedMeetups: [...state.attendedMeetups, meetup],
+            attendedMeetups: [...state.attendedMeetups, meetupId],
             points: state.points + points,
             level: Math.floor((state.points + points) / 10)
           };
@@ -136,6 +112,17 @@ export const useUserStore = create<UserState & UserActions>()(
           userId
         }));
       },
+      // Alias for attendMeetup to support existing code
+      checkInToMeetup: (meetupId: string, points: number) => {
+        set((state) => {
+          return {
+            ...state,
+            attendedMeetups: [...state.attendedMeetups, meetupId],
+            points: state.points + points,
+            level: Math.floor((state.points + points) / 10)
+          };
+        });
+      }
     }),
     {
       name: "user-storage"

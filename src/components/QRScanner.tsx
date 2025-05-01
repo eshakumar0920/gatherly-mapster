@@ -5,20 +5,35 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 interface QRScannerProps {
-  onSuccess: (data: string) => void;
-  onCancel: () => void;
+  onSuccess?: (data: string) => void; // Changed from onResult
+  onCancel?: () => void; // Changed from onClose
   meetupId?: string;
   mode?: "scan" | "display"; // For switching between scanning and displaying
+  onResult?: (data: string) => void; // Added for backward compatibility
+  onClose?: () => void; // Added for backward compatibility
 }
 
 const QRScanner = ({ 
   onSuccess, 
   onCancel, 
+  onResult, // Support both naming conventions
+  onClose,
   meetupId,
   mode = "scan" // Default to scan mode
 }: QRScannerProps) => {
   const [scanning, setScanning] = useState(false);
   const { toast } = useToast();
+  
+  // Use the appropriate callback (support both naming conventions)
+  const handleSuccess = (data: string) => {
+    if (onSuccess) onSuccess(data);
+    if (onResult) onResult(data); // For backward compatibility
+  };
+
+  const handleCancel = () => {
+    if (onCancel) onCancel();
+    if (onClose) onClose(); // For backward compatibility
+  };
   
   // Generate QR code data for this meetup
   const qrData = meetupId ? `meetup_${meetupId}` : null;
@@ -44,7 +59,7 @@ const QRScanner = ({
         description: "Event check-in successful!",
       });
       
-      onSuccess(scannedData);
+      handleSuccess(scannedData);
     }, 1500);
   };
   
@@ -67,7 +82,7 @@ const QRScanner = ({
         <Button
           variant="outline"
           className="w-full"
-          onClick={onCancel}
+          onClick={handleCancel}
         >
           <Ban className="mr-2 h-4 w-4" />
           Close
@@ -102,7 +117,7 @@ const QRScanner = ({
         <Button
           variant="outline"
           className="flex-1"
-          onClick={onCancel}
+          onClick={handleCancel}
         >
           <Ban className="mr-2 h-4 w-4" />
           Cancel

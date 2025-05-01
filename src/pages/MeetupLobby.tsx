@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Clock, MapPin, Trophy, QrCode, Edit } from "lucide-react";
@@ -22,13 +23,21 @@ interface Attendee {
   status: "attending" | "registered";
 }
 
+// Define a MapLocation type that matches what MapView expects
+interface MapLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
+
 const MeetupLobby = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { allMeetups, joinMeetupLobby: joinMeetupInDb, checkInToMeetup: checkInAtDb } = useMeetups();
-  const { joinMeetupLobby, checkInToMeetup, joinedLobbies, attendedMeetups, userId, points } = useUserStore();
+  const { joinMeetupLobby, attendMeetup, joinedLobbies, attendedMeetups, userId, points } = useUserStore();
   
   // State variables
   const [isLoading, setIsLoading] = useState(true);
@@ -256,7 +265,8 @@ const MeetupLobby = () => {
       const success = await checkInAtDb(id, userId);
       
       if (success) {
-        checkInToMeetup(id, meetup?.points || 3);
+        // Use attendMeetup instead of checkInToMeetup
+        attendMeetup(id, meetup?.points || 3);
         setIsAttended(true);
         
         toast({
@@ -324,6 +334,17 @@ const MeetupLobby = () => {
     );
   }
 
+  // Convert the map data to the format expected by MapView
+  const mapLocations: MapLocation[] = [];
+  if (meetup.latitude && meetup.longitude) {
+    mapLocations.push({
+      id: meetup.id,
+      name: meetup.title,
+      lat: meetup.latitude,
+      lng: meetup.longitude
+    });
+  }
+
   return (
     <div className="pb-20">
       <div className="p-4 flex items-center">
@@ -389,16 +410,10 @@ const MeetupLobby = () => {
           </div>
         </div>
         
-        {/* Map View */}
+        {/* Map View - updated to use locations prop instead of center/markers */}
         <div className="mb-6 h-[200px] rounded-lg overflow-hidden border">
           {meetup.latitude && meetup.longitude ? (
-            <MapView 
-              center={{ lat: meetup.latitude, lng: meetup.longitude }}
-              markers={[{ 
-                position: { lat: meetup.latitude, lng: meetup.longitude },
-                title: meetup.title
-              }]}
-            />
+            <MapView locations={mapLocations} />
           ) : (
             <div className="h-full flex items-center justify-center bg-muted">
               <p className="text-muted-foreground">No location data available</p>
@@ -483,13 +498,13 @@ const MeetupLobby = () => {
         </DialogContent>
       </Dialog>
       
-      {/* QR Scanner Dialog */}
+      {/* QR Scanner Dialog - updated to use onSuccess and onCancel props */}
       <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Scan QR Code</DialogTitle>
           </DialogHeader>
-          <QRScanner onResult={handleScanResult} onClose={handleCloseCamera} />
+          <QRScanner onSuccess={handleScanResult} onCancel={handleCloseCamera} />
         </DialogContent>
       </Dialog>
 
