@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -295,7 +296,7 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "pl-3 text-left font-normal",
+                          "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
                       >
@@ -331,14 +332,14 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
             control={form.control}
             name="time"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Time</FormLabel>
                 <Select 
                   value={field.value}
                   onValueChange={field.onChange}
                 >
                   <FormControl>
-                    <SelectTrigger className="pl-3">
+                    <SelectTrigger className="w-full">
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
                         <SelectValue placeholder="Select a time" />
