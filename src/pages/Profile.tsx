@@ -31,8 +31,7 @@ import { ProfileSticker } from "@/components/ProfileStickers";
 import NotificationSettings, { NotificationSettingsType } from "@/components/profile/NotificationSettings";
 import PrivacySettings, { PrivacySettingsType } from "@/components/profile/PrivacySettings";
 import AvatarSelector from "@/components/profile/AvatarSelector";
-import { getAvatarForUser } from "@/utils/avatarUtils";
-import ActivityInsights from "@/components/profile/ActivityInsights";
+import { getAvatarForUser } from "@/utils/avatarUtils"; // Updated import from our new utility file
 
 const availableTags: TagType[] = [
   "Technology", "Arts", "Music", "Sports", "Food", "Outdoors", 
@@ -346,8 +345,6 @@ const Profile = () => {
               <span>Attended {attendedMeetups.length} meetups</span>
             </div>
           </div>
-          
-          <ActivityInsights />
           
           <div className="space-y-4">
             <div className="flex justify-between items-center">

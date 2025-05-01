@@ -20,15 +20,12 @@ export function LevelProgress() {
     return null;
   }
 
-  // Starting from level 1 instead of 0
-  const displayLevel = progress.current_level;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h4 className="text-sm font-medium leading-none">
-            Level {displayLevel}
+            Level {progress.current_level}
             {progress.max_level_reached && (
               <Trophy className="h-4 w-4 ml-1 inline text-yellow-500" />
             )}
