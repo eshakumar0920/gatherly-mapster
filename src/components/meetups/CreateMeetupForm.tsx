@@ -21,10 +21,10 @@ import { campusLocations, findLocationByName } from "@/utils/campusLocations";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { cn } from "@/lib/utils";
 
-// Modified validation schema to handle Date objects
+// Modified validation schema to handle Date objects and formatted time
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -70,6 +70,39 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       lobbySize: 5,
     },
   });
+
+  // Format military time to standard AM/PM format
+  const formatTimeToAmPm = (time24h: string): string => {
+    try {
+      if (!time24h) return "";
+      const [hours, minutes] = time24h.split(":");
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const hour12 = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+      return `${hour12}:${minutes} ${ampm}`;
+    } catch (e) {
+      console.error("Error formatting time:", e);
+      return time24h; // Return original if there's an error
+    }
+  };
+
+  // Convert AM/PM format back to 24h for form submission
+  const formatTimeToMilitary = (time12h: string): string => {
+    try {
+      if (!time12h) return "";
+      // If already in 24h format, return as is
+      if (time12h.indexOf("AM") === -1 && time12h.indexOf("PM") === -1 && time12h.includes(":")) {
+        return time12h;
+      }
+      
+      // Parse the time string and convert to 24h format
+      const date = parse(time12h, "h:mm a", new Date());
+      return format(date, "HH:mm");
+    } catch (e) {
+      console.error("Error converting time to military:", e);
+      return time12h; // Return original if there's an error
+    }
+  };
 
   const handleLocationCoordinatesChange = (lat: number, lng: number) => {
     console.log(`Location coordinates selected: (${lat}, ${lng})`);
@@ -148,8 +181,13 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      // Format the date and time into a single string
-      const formattedDateTime = format(values.date, 'MMM dd, yyyy') + ' @ ' + values.time;
+      // Format the date and time into a single string with AM/PM format
+      // First convert the time to military format for internal consistency
+      const militaryTime = formatTimeToMilitary(values.time);
+      
+      // Format the display version with AM/PM
+      const displayTime = formatTimeToAmPm(militaryTime);
+      const formattedDateTime = format(values.date, 'MMM dd, yyyy') + ' @ ' + displayTime;
       
       // Get exact coordinates for the selected location
       let lat = locationCoordinates.lat;
@@ -289,26 +327,49 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
             )}
           />
           
-          {/* Time Picker */}
+          {/* Time Picker with AM/PM format */}
           <FormField
             control={form.control}
             name="time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Time</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      type="time" 
-                      className="pl-10" 
-                      {...field}
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              // Display field value in AM/PM format
+              return (
+                <FormItem>
+                  <FormLabel>Time</FormLabel>
+                  <Select 
+                    value={field.value} 
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="pl-3">
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <SelectValue placeholder="Select a time" />
+                        </div>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {/* Generate time slots every 30 minutes */}
+                      {Array.from({ length: 48 }).map((_, i) => {
+                        const hour = Math.floor(i / 2);
+                        const minute = i % 2 === 0 ? "00" : "30";
+                        const hour12 = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+                        const ampm = hour < 12 ? "AM" : "PM";
+                        const timeValue = `${hour12}:${minute} ${ampm}`;
+                        const timeValueMilitary = `${hour.toString().padStart(2, '0')}:${minute}`;
+                        
+                        return (
+                          <SelectItem key={timeValueMilitary} value={timeValue}>
+                            {timeValue}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
         </div>
         
