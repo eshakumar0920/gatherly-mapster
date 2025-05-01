@@ -64,7 +64,8 @@ const ProfileStickers: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const availableStickers = stickers.filter(sticker => sticker.level <= level);
+  // Make the first two badges always available, and account for level starting at 1
+  const availableStickers = stickers.filter(sticker => sticker.level <= level || sticker.level <= 2);
   
   const handleSelectSticker = (index: number) => {
     setSelectedSticker(index);
@@ -99,7 +100,8 @@ const ProfileStickers: React.FC = () => {
           <ScrollArea className="h-[50vh] pr-4">
             <div className="grid grid-cols-4 gap-4 pb-4">
               {stickers.map((sticker, index) => {
-                const isUnlocked = sticker.level <= level;
+                // First two badges are always unlocked (level 1 and 2)
+                const isUnlocked = sticker.level <= level || sticker.level <= 2;
                 const IconComponent = sticker.icon;
                 
                 return (

@@ -55,6 +55,9 @@ const ActivityInsights = () => {
   const avgPointsPerMeetup = totalAttended > 0 ? Math.round(totalEarned / totalAttended) : 0;
   const totalLobbyJoins = joinedLobbies.length;
   
+  // Display level starting from 1 (instead of 0)
+  const displayLevel = level;
+  
   // Get the most recent activity
   const latestActivity = attendedMeetups.length > 0 
     ? new Date(attendedMeetups[attendedMeetups.length - 1].dateTime).toLocaleDateString()
