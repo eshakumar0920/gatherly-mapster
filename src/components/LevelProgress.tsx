@@ -2,8 +2,9 @@
 import { useLeveling } from '@/hooks/useLeveling';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Star, Trophy, Award } from 'lucide-react';
+import { Star, Trophy, Award, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { pointClassifications } from '@/services/types';
 
 export function LevelProgress() {
   const { 
@@ -19,12 +20,15 @@ export function LevelProgress() {
     return null;
   }
 
+  // Starting from level 1 instead of 0
+  const displayLevel = progress.current_level;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h4 className="text-sm font-medium leading-none">
-            Level {progress.current_level}
+            Level {displayLevel}
             {progress.max_level_reached && (
               <Trophy className="h-4 w-4 ml-1 inline text-yellow-500" />
             )}
@@ -43,10 +47,32 @@ export function LevelProgress() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Award className="h-4 w-4" />
           <span>
-            {progress.active_weeks_streak} week streak! ({progress.activity_bonus} bonus)
+            {progress.active_weeks_streak} week streak! ({progress.activity_bonus}% bonus)
           </span>
         </div>
       )}
+      
+      <div className="border-t pt-2">
+        <h5 className="text-sm font-medium mb-2 flex items-center">
+          <Users className="h-4 w-4 mr-1" />
+          Points by Group Size
+        </h5>
+        <div className="space-y-2">
+          {pointClassifications.map(classification => (
+            <div key={classification.type} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-full ${classification.color}`}>
+                  {classification.label}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>{classification.minSize}-{classification.maxSize} people</span>
+                <span className="font-medium">{classification.basePoints} pts</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

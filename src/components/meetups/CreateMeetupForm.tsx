@@ -12,12 +12,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { categories } from "@/services/eventService";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { Meetup } from "@/types/meetup";
+import { useMeetups } from "@/hooks/useMeetups";
+import { useUserStore } from "@/services/meetupService";
+import { useState } from "react";
+import LocationSelector from "./LocationSelector";
+import { campusLocations, findLocationByName } from "@/utils/campusLocations";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Clock } from "lucide-react";
+import { format, parse } from "date-fns";
+import { cn } from "@/lib/utils";
 
+// Modified validation schema to handle Date objects and formatted time
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  dateTime: z.string().min(3, "Date and time is required"),
-  location: z.string().min(3, "Location is required"),
+  date: z.date({
+    required_error: "A date is required",
+  }),
+  time: z.string().min(1, "Time is required"),
+  location: z.string().min(3, "Location is required").refine(
+    (val) => campusLocations.some(loc => loc.name === val),
+    { message: "Please select a valid campus location from the dropdown" }
+  ),
   category: z.string().min(1, "Category is required"),
   lobbySize: z.preprocess(
     (val) => Number(val),
@@ -28,29 +46,76 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
-  onSuccess: (meetup: any) => void;
+  onSuccess: (meetups: Meetup | Meetup[]) => void;
   onClose: () => void;
 }
 
 const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const { createMeetup } = useMeetups();
+  const { userId, setUserId } = useUserStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationCoordinates, setLocationCoordinates] = useState({ lat: 0, lng: 0 });
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
-      dateTime: "",
+      date: undefined,
+      time: "",
       location: "",
       category: "",
       lobbySize: 5,
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  // Format military time to standard AM/PM format
+  const formatTimeToAmPm = (time24h: string): string => {
     try {
-      if (!user || !user.email) {
+      if (!time24h) return "";
+      const [hours, minutes] = time24h.split(":");
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const hour12 = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+      return `${hour12}:${minutes} ${ampm}`;
+    } catch (e) {
+      console.error("Error formatting time:", e);
+      return time24h; // Return original if there's an error
+    }
+  };
+
+  // Convert AM/PM format back to 24h for form submission
+  const formatTimeToMilitary = (time12h: string): string => {
+    try {
+      if (!time12h) return "";
+      // If already in 24h format, return as is
+      if (time12h.indexOf("AM") === -1 && time12h.indexOf("PM") === -1 && time12h.includes(":")) {
+        return time12h;
+      }
+      
+      // Parse the time string and convert to 24h format
+      const date = parse(time12h, "h:mm a", new Date());
+      return format(date, "HH:mm");
+    } catch (e) {
+      console.error("Error converting time to military:", e);
+      return time12h; // Return original if there's an error
+    }
+  };
+
+  const handleLocationCoordinatesChange = (lat: number, lng: number) => {
+    console.log(`Location coordinates selected: (${lat}, ${lng})`);
+    setLocationCoordinates({ lat, lng });
+  };
+
+  const onSubmit = async (values: FormValues) => {
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      if (!isLoggedIn || !user || !user.email) {
         toast({
           title: "Authentication required",
           description: "You must be logged in to create meetups",
@@ -58,61 +123,119 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         });
         return;
       }
-
-      // NOTE: We're removing lobbySize from the data sent to Supabase
-      // since the column doesn't exist in the database
+      
+      // If we don't have userId in store yet, fetch it
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+          
+        if (userError || !userData) {
+          // Create new user record if not found
+          const username = user.email.split('@')[0];
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+              email: user.email,
+              username: username,
+              join_date: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+            
+          if (createError) {
+            console.error("Error creating user record:", createError);
+            toast({
+              title: "Error creating meetup",
+              description: "Could not create user record in database",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          currentUserId = newUser.id.toString();
+          setUserId(currentUserId);
+        } else {
+          currentUserId = userData.id.toString();
+          setUserId(currentUserId);
+        }
+      }
+      
+      // Get username
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', parseInt(currentUserId))
+        .single();
+        
+      if (userError || !userData) {
+        console.error("Error fetching username:", userError);
+        toast({
+          title: "Error creating meetup",
+          description: "Could not fetch user information",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Format the date and time into a single string with AM/PM format
+      // First convert the time to military format for internal consistency
+      const militaryTime = formatTimeToMilitary(values.time);
+      
+      // Format the display version with AM/PM
+      const displayTime = formatTimeToAmPm(militaryTime);
+      const formattedDateTime = format(values.date, 'MMM dd, yyyy') + ' @ ' + displayTime;
+      
+      // Get exact coordinates for the selected location
+      let lat = locationCoordinates.lat;
+      let lng = locationCoordinates.lng;
+      
+      // If coordinates weren't selected directly, find the exact location from campusLocations
+      if (lat === 0 && lng === 0) {
+        const exactLocationMatch = campusLocations.find(loc => loc.name === values.location);
+        
+        if (exactLocationMatch) {
+          lat = exactLocationMatch.lat;
+          lng = exactLocationMatch.lng;
+          console.log(`Using exact coordinates for "${values.location}": (${lat}, ${lng})`);
+        } else {
+          const defaultLocation = campusLocations.find(loc => loc.id === "library");
+          if (defaultLocation) {
+            lat = defaultLocation.lat;
+            lng = defaultLocation.lng;
+            console.log(`No match found for "${values.location}", using library coordinates: (${lat}, ${lng})`);
+          }
+        }
+      }
+      
       const meetupData = {
         title: values.title,
         description: values.description,
+        dateTime: formattedDateTime,
         location: values.location,
-        event_date: new Date().toISOString(),
         category: values.category,
-        created_at: new Date().toISOString(),
-        semester: "Spring 2025",
-        xp_reward: 3,
-        organizer_xp_reward: 5,
-        creator_id: user.id
+        lobbySize: values.lobbySize,
+        points: 3, // Default points
+        latitude: lat,
+        longitude: lng
       };
       
-      console.log("Creating new meetup:", meetupData);
+      console.log(`Creating meetup at location "${values.location}" with coordinates: (${lat}, ${lng})`);
+      const newMeetup = await createMeetup(meetupData, currentUserId, userData.username);
       
-      // Create the meetup
-      const { data: meetupResult, error: meetupError } = await supabase
-        .from('events')
-        .insert(meetupData)
-        .select()
-        .single();
-
-      if (meetupError) throw meetupError;
-
-      // Automatically add creator to participants
-      const { error: participantError } = await supabase
-        .from('participants')
-        .insert({
-          user_id: user.id,
-          event_id: meetupResult.id,
-          joined_at: new Date().toISOString(),
-          attendance_status: 'going'
-        });
-
-      if (participantError) {
-        console.error("Error adding creator as participant:", participantError);
+      if (newMeetup) {
+        onSuccess(newMeetup);
+        onClose();
+        form.reset();
+        
         toast({
-          title: "Partial success",
-          description: "Meetup created but couldn't add you to participants",
-          variant: "destructive"
+          title: "Meetup created!",
+          description: "Your meetup has been successfully added to the map.",
         });
       }
-
-      // Add the lobby size to the meetup result for frontend use
-      const resultWithLobbySize = {
-        ...meetupResult,
-        lobbySize: values.lobbySize
-      };
-
-      console.log("Meetup created successfully:", resultWithLobbySize);
-      onSuccess(resultWithLobbySize);
-      form.reset();
     } catch (error) {
       console.error("Error in meetup creation:", error);
       toast({
@@ -120,6 +243,8 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -158,34 +283,108 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         />
         
         <div className="grid grid-cols-2 gap-4">
+          {/* Date Picker */}
           <FormField
             control={form.control}
-            name="dateTime"
+            name="date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date & Time</FormLabel>
-                <FormControl>
-                  <Input placeholder="Today @2pm" {...field} />
-                </FormControl>
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "MMM dd, yyyy")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
           />
           
+          {/* Time Picker that stores in 24h format but displays AM/PM */}
           <FormField
             control={form.control}
-            name="location"
+            name="time"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="Student Union" {...field} />
-                </FormControl>
+              <FormItem className="flex flex-col">
+                <FormLabel>Time</FormLabel>
+                <Select 
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <SelectValue placeholder="Select a time" />
+                      </div>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {/* Generate time slots every 30 minutes */}
+                    {Array.from({ length: 48 }).map((_, i) => {
+                      const hour = Math.floor(i / 2);
+                      const minute = i % 2 === 0 ? "00" : "30";
+                      const timeValueMilitary = `${hour.toString().padStart(2, '0')}:${minute}`;
+                      const timeValueDisplay = formatTimeToAmPm(timeValueMilitary);
+                      
+                      return (
+                        <SelectItem key={timeValueMilitary} value={timeValueMilitary}>
+                          {timeValueDisplay}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+        
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Location</FormLabel>
+              <FormControl>
+                <LocationSelector 
+                  value={field.value}
+                  onChange={field.onChange}
+                  onCoordinatesChange={handleLocationCoordinatesChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -234,7 +433,9 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         />
         
         <DialogFooter>
-          <Button type="submit" className="w-full">Create Meetup</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Meetup"}
+          </Button>
         </DialogFooter>
       </form>
     </Form>

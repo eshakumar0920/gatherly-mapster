@@ -1,117 +1,72 @@
 
-import { CalendarDays, Clock, MapPin, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 
 export interface Event {
   id: string;
   title: string;
   description: string;
-  image: string;
   date: string;
   time: string;
   location: string;
-  category: string;
+  image?: string;
+  category?: string;
+  points?: number;
+  creatorId?: string;
+  organizer?: string;
 }
 
-interface EventCardProps {
+export interface EventCardProps {
   event: Event;
-  featured?: boolean;
+  onClick?: () => void;
 }
 
-const EventCard = ({ event, featured = false }: EventCardProps) => {
+const EventCard = ({ event, onClick }: EventCardProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isAdded, setIsAdded] = useState<boolean>(false);
 
-  const handleViewDetails = () => {
-    navigate(`/events/${event.id}`);
-  };
-  
-  const handleAddToProfile = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the card click
-    
-    // In a real app, this would connect to a backend
-    // For now, just store in localStorage
-    const savedEvents = JSON.parse(localStorage.getItem("savedEvents") || "[]");
-    
-    if (!savedEvents.includes(event.id)) {
-      savedEvents.push(event.id);
-      localStorage.setItem("savedEvents", JSON.stringify(savedEvents));
-      
-      toast({
-        title: "Event added to profile",
-        description: "This event has been added to your profile.",
-      });
-      
-      setIsAdded(true);
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
     } else {
-      toast({
-        title: "Event already in profile",
-        description: "This event is already in your profile.",
-      });
+      navigate(`/events/${event.id}`);
     }
   };
-  
-  useEffect(() => {
-    const savedEvents = JSON.parse(localStorage.getItem("savedEvents") || "[]");
-    if (savedEvents.includes(event.id)) {
-      setIsAdded(true);
-    }
-  }, [event.id]);
-  
+
   return (
-    <div className={`event-card ${featured ? 'w-full' : 'w-full'} animate-fade-in`}>
-      <div className="relative">
-        <img 
-          src={event.image} 
+    <div
+      onClick={handleClick}
+      className="bg-card text-card-foreground rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105 cursor-pointer"
+      style={{ height: "400px" }}
+    >
+      <div className="relative h-1/2">
+        <img
+          src={event.image}
           alt={event.title}
-          className={`w-full object-cover ${featured ? 'h-48' : 'h-36'}`}
+          className="w-full h-full object-cover"
         />
-        <div className="event-card-gradient"></div>
-        <div className="absolute bottom-3 left-3 z-20">
-          <span className="px-2 py-1 bg-primary/90 text-primary-foreground text-xs rounded-full">
-            {event.category}
-          </span>
+        <div className="absolute top-2 left-2">
+          {event.category && (
+            <Badge variant="secondary">{event.category}</Badge>
+          )}
         </div>
       </div>
-      
-      <div className="p-4">
-        <h3 className={`font-bold ${featured ? 'text-xl' : 'text-lg'} line-clamp-1`}>{event.title}</h3>
-        <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{event.description}</p>
-        
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <CalendarDays className="h-4 w-4 mr-2" />
-            <span>{event.date}</span>
-          </div>
-          
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 mr-2" />
-            <span>{event.time}</span>
-          </div>
-          
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{event.location}</span>
-          </div>
+      <div className="p-4 h-1/2 flex flex-col justify-between">
+        <div>
+          <h3 className="font-semibold text-lg line-clamp-1">{event.title}</h3>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {event.description}
+          </p>
         </div>
-        
-        <div className="mt-4 flex gap-2">
-          <Button className="flex-1" onClick={handleViewDetails}>
-            View Details
-          </Button>
-          <Button 
-            variant={isAdded ? "outline" : "secondary"} 
-            className="flex items-center" 
-            onClick={handleAddToProfile}
-            disabled={isAdded}
-          >
-            <PlusCircle className="h-4 w-4 mr-1" />
-            {isAdded ? "Added" : "Add"}
-          </Button>
+        <div className="flex flex-col gap-1 text-sm">
+          <p>
+            Date: <span className="font-medium">{event.date}</span>
+          </p>
+          <p>
+            Time: <span className="font-medium">{event.time}</span>
+          </p>
+          <p>
+            Location: <span className="font-medium">{event.location}</span>
+          </p>
         </div>
       </div>
     </div>

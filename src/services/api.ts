@@ -4,13 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 
 // Configure your Flask API base URL here 
 // Use a fallback value if the environment variable is not set
-// w/o ngrok implemented
-//const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
 
-// w/ ngrok
-// url needs updating every time ngrok runs new on a machine
-const NGROK_URL = 'https://ae0e-70-119-113-79.ngrok-free.app'
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || NGROK_URL; 
+// Helper function to validate UTD email domain
+export const isValidUTDEmail = (email: string): boolean => {
+  return email.toLowerCase().endsWith('@utdallas.edu');
+};
+
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
   data?: T;
@@ -77,10 +77,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    // Add console log to debug authorization header
-    console.log("Adding authorization header with token:", token.substring(0, 10) + '...');
-  } else {
-    console.log("No authentication token found in localStorage");
   }
   
   // Handle authentication routes differently - they should go directly to /auth endpoint
@@ -103,7 +99,6 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
 
     if (!response.ok) {
-      console.error('API request failed:', response.status, responseData);
       throw new Error(responseData.message || responseData.error || 'An error occurred');
     }
 
@@ -115,17 +110,29 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 }
 
 export const authApi = {
-  register: (email: string, password: string, metadata?: { name?: string }) => 
-    fetchApi('/auth/register', {
+  register: (email: string, password: string, metadata?: { name?: string }) => {
+    // Validate email domain before making API call
+    if (!isValidUTDEmail(email)) {
+      return Promise.reject(new Error("Only @utdallas.edu email addresses are allowed"));
+    }
+    
+    return fetchApi('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, ...metadata }),
-    }),
+    });
+  },
   
-  login: (email: string, password: string) => 
-    fetchApi('/auth/login', {
+  login: (email: string, password: string) => {
+    // Validate email domain before making API call
+    if (!isValidUTDEmail(email)) {
+      return Promise.reject(new Error("Only @utdallas.edu email addresses are allowed"));
+    }
+    
+    return fetchApi('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    }),
+    });
+  },
   
   verifyToken: () => fetchApi('/auth/verify'),
 };
@@ -137,21 +144,12 @@ async function fetchFromApi<T>(
   headers?: Record<string, string>
 ): Promise<ApiResponse<T>> {
   try {
-    // Add token to headers if available
-    const token = localStorage.getItem('impulse_access_token');
-    const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
-    
     // Skip adding /api/ for authentication routes
     const fullEndpoint = endpoint.startsWith('/auth/') 
       ? endpoint 
       : `/api${endpoint}`;
 
-    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`);
-    if (token) {
-      console.log("With auth token:", token.substring(0, 10) + '...');
-    } else {
-      console.log("No auth token available");
-    }
+    console.log(`Making request to: ${API_BASE_URL}${fullEndpoint}`); // Debug log
     
     const controller = new AbortController();
     // Increase timeout from 5000ms to 10000ms (10 seconds)
@@ -161,7 +159,6 @@ async function fetchFromApi<T>(
       method,
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,
         ...headers
       },
       credentials: 'include',
@@ -207,24 +204,17 @@ function buildQueryString(params: Record<string, any>): string {
 }
 
 export const meetupsApi = {
-  getAllMeetups: () => fetchFromApi<any[]>(`/events?category=meetup`),
+  getAllMeetups: () => fetchFromApi<any[]>('/meetups'),
   
-  getMeetupById: (id: string) => fetchFromApi<any>(`/events/${id}`),
+  getMeetupById: (id: string) => fetchFromApi<any>(`/meetups/${id}`),
   
-  createMeetup: (data: any) => {
-    console.log("Creating meetup with data:", { ...data, category: 'meetup' });
-    return fetchFromApi<any>(
-      '/events',
-      'POST',
-      { ...data, category: 'meetup' }
-    );
-  },
+  createMeetup: (meetupData: any) => fetchFromApi<any>('/meetups', 'POST', meetupData),
   
-  joinMeetupLobby: (id: string, userData: { user_id: number }) =>
-    fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),
+  joinMeetupLobby: (meetupId: string, userData: any) => 
+    fetchFromApi<any>(`/meetups/${meetupId}/join`, 'POST', userData),
   
-  checkInToMeetup: (id: string, userData: { user_id: number }) =>
-    fetchFromApi<any>(`/events/${id}/join`, 'POST', userData),
+  checkInToMeetup: (meetupId: string, userData: any) => 
+    fetchFromApi<any>(`/meetups/${meetupId}/checkin`, 'POST', userData)
 };
 
 export const eventsApi = {

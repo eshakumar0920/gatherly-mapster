@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { eventsApi } from "@/services/api";
 import EventCard from "@/components/EventCard";
 import Navigation from "@/components/Navigation";
+import { useNavigate } from "react-router-dom";
 
 const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -15,6 +16,7 @@ const Events = () => {
   const [events, setEvents] = useState<any[]>(getEvents());
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Function to search events
   const searchEvents = async () => {
@@ -80,6 +82,11 @@ const Events = () => {
     setSelectedCategory("all");
   };
 
+  // Handle click on event card
+  const handleEventClick = (eventId: string) => {
+    navigate(`/events/${eventId}`);
+  };
+
   return (
     <div className="pb-20">
       {/* App Name */}
@@ -142,9 +149,12 @@ const Events = () => {
             <div className="animate-pulse">Loading events...</div>
           </div>
         ) : Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {filteredEvents.map(event => (
-              <EventCard key={event.id} event={event} />
+              <EventCard 
+                key={event.id} 
+                event={event} 
+              />
             ))}
           </div>
         ) : (
@@ -166,4 +176,3 @@ const Events = () => {
 };
 
 export default Events;
-

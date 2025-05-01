@@ -1,333 +1,660 @@
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, Calendar, MapPin, QrCode, Check } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Clock, User, Scan, UserCheck, Check, Trash2, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import Navigation from "@/components/Navigation";
-import QRScanner from "@/components/QRScanner";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useUserStore } from "@/services/meetupService";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import type { Meetup, Participant } from "@/types/meetup";
+import { format, parseISO, isValid } from "date-fns";
+import { Meetup } from "@/types/meetup";
+import QRScanner from "@/components/QRScanner";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/useAuth";
+
+// Sample attendees data
+const sampleAttendees = [
+  {
+    id: "1",
+    name: "Alex Johnson",
+    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=200&h=200&q=80",
+    status: "going" as const
+  },
+  {
+    id: "2",
+    name: "Maria Garcia",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=80",
+    status: "going" as const
+  }
+];
 
 const MeetupLobby = () => {
   const { meetupId } = useParams<{ meetupId: string }>();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { toast } = useToast();
-  const { attendMeetup, joinMeetupLobby: joinLocal, joinedLobbies, attendedMeetups } = useUserStore();
-
+  const { user } = useAuth();
+  const { 
+    name: userName, 
+    avatar: userAvatar, 
+    attendMeetup, 
+    joinMeetupLobby, 
+    attendedMeetups,
+    joinedLobbies, 
+    userId
+  } = useUserStore();
+  
   const [meetup, setMeetup] = useState<Meetup | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isJoined, setIsJoined] = useState(false);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [qrOpen, setQrOpen] = useState(false);
-  const [attendees, setAttendees] = useState<Participant[]>([]);
-  const [view, setView] = useState<"all" | "going" | "interested">("all");
-
+  const [attendees, setAttendees] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAttending, setIsAttending] = useState<boolean>(false);
+  const [isJoined, setIsJoined] = useState<boolean>(false);
+  const [checkingIn, setCheckingIn] = useState<boolean>(false);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [isCreator, setIsCreator] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isQRDisplayOpen, setIsQRDisplayOpen] = useState<boolean>(false);
+  
   useEffect(() => {
-    const fetchMeetupData = async () => {
-      setLoading(true);
-      if (!meetupId) return;
-
+    // Check if the meetup is in attended meetups
+    const hasAttended = attendedMeetups.some(m => m.id === meetupId);
+    setIsAttending(hasAttended);
+    
+    // Check if joined the lobby
+    const hasJoined = joinedLobbies?.includes(meetupId || "");
+    setIsJoined(hasJoined);
+    
+    // Fetch meetup details from database or use mock data
+    const fetchMeetupDetails = async () => {
+      setIsLoading(true);
       try {
-        const numericId = parseInt(meetupId);
-        if (isNaN(numericId)) {
-          throw new Error("Invalid meetup ID");
+        if (meetupId) {
+          const { data, error } = await supabase
+            .from('events')
+            .select('*, users(username, profile_picture)')
+            .eq('id', parseInt(meetupId))
+            .single();
+            
+          if (error) {
+            console.error("Error fetching meetup:", error);
+            toast({
+              title: "Error loading meetup",
+              description: "Could not load meetup details",
+              variant: "destructive"
+            });
+            navigate('/meetups');
+            return;
+          }
+          
+          if (data) {
+            const meetupData: Meetup = {
+              id: data.id.toString(),
+              title: data.title,
+              description: data.description || "No description available",
+              dateTime: data.event_date,
+              location: data.location,
+              points: data.xp_reward || 3,
+              createdBy: data.creator_name || "Anonymous",
+              creatorAvatar: data.users?.profile_picture || null,
+              lobbySize: data.lobby_size || 5,
+              category: data.category || "Other",
+              attendees: []
+            };
+            
+            setMeetup(meetupData);
+            
+            // Check if current user is the creator
+            if (user && data.creator_id && data.creator_id.toString() === userId) {
+              setIsCreator(true);
+              
+              // Automatically mark the creator as attending if they're not already
+              if (!hasAttended) {
+                // Update the attendance status in the database
+                const { error: attendError } = await supabase
+                  .from('participants')
+                  .update({ 
+                    attendance_status: 'attended',
+                    xp_earned: meetupData.points || 3
+                  })
+                  .eq('event_id', parseInt(meetupId))
+                  .eq('user_id', parseInt(userId));
+                
+                if (!attendError) {
+                  // Add to attended meetups in the store
+                  attendMeetup(meetupId, meetupData.points || 3);
+                  setIsAttending(true);
+                }
+              }
+            }
+            
+            // Now fetch attendees
+            fetchAttendees(meetupId);
+          }
         }
-
-        const { data: meetupData, error: meetupError } = await supabase
-          .from('events')
-          .select('*, participants(*)')
-          .eq('id', numericId)
-          .single();
-
-        if (meetupError) {
-          console.error("Error fetching meetup from Supabase:", meetupError);
-          throw meetupError;
-        }
-
-        if (!meetupData) {
-          console.error("No meetup found with ID:", meetupId);
-          throw new Error("Meetup not found");
-        }
-
-        console.log("Fetched meetup data:", meetupData);
-        
-        const transformedMeetup: Meetup = {
-          id: meetupData.id.toString(),
-          title: meetupData.title,
-          description: meetupData.description || "No description available",
-          dateTime: new Date(meetupData.event_date).toISOString(),
-          location: meetupData.location,
-          points: meetupData.xp_reward || 3,
-          xp_reward: meetupData.xp_reward || 3,
-          createdBy: "UTD Student",
-          creatorAvatar: undefined,
-          lobbySize: 5,
-          category: meetupData.category || "Other",
-          attendees: (meetupData.participants || []).map(p => ({
-            ...p,
-            name: `User ${p.user_id}`
-          }))
-        };
-
-        setMeetup(transformedMeetup);
-        setAttendees(transformedMeetup.attendees || []);
-        
       } catch (error) {
-        console.error("Error in fetching meetup details:", error);
+        console.error("Error in fetching meetup:", error);
         toast({
           title: "Error loading meetup",
-          description: "Failed to load meetup details. Please try again.",
+          description: "An unexpected error occurred",
           variant: "destructive"
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
-    fetchMeetupData();
-  }, [meetupId, toast]);
-
-  useEffect(() => {
-    if (meetup) {
-      setIsJoined(joinedLobbies.includes(meetup.id));
-      setIsCheckedIn(attendedMeetups.includes(meetup.id));
-    }
-  }, [meetup, joinedLobbies, attendedMeetups]);
-
-  const handleJoin = async () => {
-    if (!meetup) return;
     
+    fetchMeetupDetails();
+  }, [meetupId, attendedMeetups, joinedLobbies, navigate, toast, user, userId]);
+  
+  const fetchAttendees = async (id: string) => {
     try {
-      const numericId = parseInt(meetup.id);
-      if (isNaN(numericId)) {
-        throw new Error("Invalid meetup ID");
-      }
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('participants')
-        .insert({
-          event_id: numericId,
-          user_id: 1,
-          joined_at: new Date().toISOString(),
-          attendance_status: 'going'
-        });
+        .select(`
+          user_id,
+          attendance_status,
+          users!inner(
+            id,
+            username,
+            profile_picture
+          )
+        `)
+        .eq('event_id', parseInt(id));
         
       if (error) {
-        console.error("Error joining meetup:", error);
-        toast({ 
-          title: "Could not join", 
-          description: "Failed to join the meetup. Please try again.",
-          variant: "destructive" 
+        console.error("Error fetching attendees:", error);
+        setAttendees([]);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const mappedAttendees = data.map(participant => ({
+          id: participant.user_id.toString(),
+          name: participant.users.username || "Anonymous",
+          avatar: participant.users.profile_picture,
+          status: participant.attendance_status === 'attended' ? 'going' : 'interested'
+        }));
+        
+        setAttendees(mappedAttendees);
+      } else {
+        // No mock data fallback, just use empty array
+        setAttendees([]);
+      }
+    } catch (error) {
+      console.error("Error fetching attendees:", error);
+      setAttendees([]);
+    }
+  };
+  
+  const handleJoinLobby = async () => {
+    if (!meetupId) return;
+    
+    try {
+      if (!userId) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to join this meetup",
+          variant: "destructive"
         });
         return;
       }
       
-      joinLocal(meetup.id);
+      // First check if the lobby is full
+      if (attendees.length >= (meetup?.lobbySize || 5)) {
+        toast({
+          title: "Lobby is full",
+          description: "This meetup has reached its maximum capacity",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Add to database
+      const { error } = await supabase.from('participants').insert({
+        event_id: parseInt(meetupId),
+        user_id: parseInt(userId),
+        joined_at: new Date().toISOString(),
+        attendance_status: 'registered'
+      });
+      
+      if (error) {
+        console.error("Error joining meetup:", error);
+        toast({
+          title: "Error joining meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Update local store
+      joinMeetupLobby(meetupId);
+      
+      // Add current user to attendees
+      setAttendees(prev => [
+        ...prev,
+        {
+          id: userId || "current-user",
+          name: userName || "You",
+          avatar: userAvatar,
+          status: "interested"
+        }
+      ]);
+      
       setIsJoined(true);
       
-      const { data: updatedParticipants } = await supabase
-        .from('participants')
-        .select('*')
-        .eq('event_id', numericId);
-        
-      if (updatedParticipants) {
-        const participantsWithNames = updatedParticipants.map(p => ({
-          ...p,
-          name: `User ${p.user_id}`
-        }));
-        setAttendees(participantsWithNames);
+      toast({
+        title: "Joined meetup lobby",
+        description: "You have successfully joined the meetup lobby"
+      });
+      
+    } catch (error) {
+      console.error("Error joining meetup:", error);
+      toast({
+        title: "Error joining meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleCheckIn = async () => {
+    if (!meetupId || !meetup) return;
+    
+    setCheckingIn(true);
+    try {
+      if (!userId) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to check in",
+          variant: "destructive"
+        });
+        setCheckingIn(false);
+        return;
       }
       
-      toast({ title: "Joined Meetup Lobby" });
-    } catch (error) {
-      toast({ title: "Could not join", variant: "destructive" });
-    }
-  };
-
-  const handleCheckIn = () => setQrOpen(true);
-
-  const onScan = async (data: string) => {
-    if (meetup && data.includes(meetupId)) {
-      try {
-        const xpReward = meetup.xp_reward || meetup.points || 3;
-        const { error } = await supabase
-          .from('participants')
-          .update({ 
-            attendance_status: 'attended',
-            xp_earned: xpReward
-          })
-          .eq('event_id', parseInt(meetup.id))
-          .eq('user_id', 1);
+      // Update in database (if needed)
+      supabase
+        .from('participants')
+        .update({ 
+          attendance_status: 'attended',
+          xp_earned: meetup.points || 3
+        })
+        .eq('event_id', parseInt(meetupId))
+        .eq('user_id', parseInt(userId))
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error checking in:", error);
+            toast({
+              title: "Error checking in",
+              description: error.message,
+              variant: "destructive"
+            });
+            setCheckingIn(false);
+            return;
+          }
           
-        if (error) {
-          console.error("Error checking in:", error);
+          // Dispatch action to add to attendedMeetups
+          attendMeetup(meetupId, meetup.points || 3);
+          
+          // Update UI
+          setIsAttending(true);
+          
+          // Update attendee status
+          setAttendees(prev => 
+            prev.map(a => 
+              a.id === userId ? { ...a, status: "going" } : a
+            )
+          );
+          
           toast({
-            title: "Check-in failed",
-            description: "Could not update attendance status",
-            variant: "destructive"
+            title: "Check-in successful!",
+            description: `You earned ${meetup.points || 3} points!`
           });
-          return;
-        }
-        
-        attendMeetup(meetup.id, xpReward);
-        setIsCheckedIn(true);
-        toast({ title: "Checked In!", description: `+${xpReward} XP` });
-      } catch (error) {
-        const xpReward = meetup.xp_reward || meetup.points || 3;
-        attendMeetup(meetup.id, xpReward);
-        setIsCheckedIn(true);
-      }
-    } else {
-      toast({ title: "Invalid QR", variant: "destructive" });
+          
+          setCheckingIn(false);
+        });
+    } catch (error) {
+      console.error("Error checking in:", error);
+      toast({
+        title: "Error checking in",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setCheckingIn(false);
     }
-    setQrOpen(false);
   };
-
-  const filteredAttendees = attendees.filter(a => 
-    view === "all" || a.attendance_status === view
-  );
-
-  if (loading) {
+  
+  // Define the handleDeleteMeetup function
+  const handleDeleteMeetup = async () => {
+    if (!meetupId || !userId) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete participants first (to avoid foreign key constraints)
+      const { error: participantsError } = await supabase
+        .from('participants')
+        .delete()
+        .eq('event_id', parseInt(meetupId));
+      
+      if (participantsError) {
+        console.error("Error deleting participants:", participantsError);
+        toast({
+          title: "Error deleting meetup",
+          description: "Could not remove participants",
+          variant: "destructive"
+        });
+        setIsDeleting(false);
+        return;
+      }
+      
+      // Delete the meetup
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', parseInt(meetupId));
+      
+      if (error) {
+        console.error("Error deleting meetup:", error);
+        toast({
+          title: "Error deleting meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        setIsDeleting(false);
+        return;
+      }
+      
+      toast({
+        title: "Meetup deleted",
+        description: "The meetup has been successfully deleted"
+      });
+      
+      // Navigate back to meetups page
+      navigate('/meetups');
+    } catch (error) {
+      console.error("Error in meetup deletion:", error);
+      toast({
+        title: "Error deleting meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      setIsDeleting(false);
+    }
+  };
+  
+  // Define the handleQRScanSuccess function
+  const handleQRScanSuccess = (data: string) => {
+    // Close QR scanner dialog
+    setIsQRScannerOpen(false);
+    
+    // Process check-in
+    handleCheckIn();
+  };
+  
+  // Format date properly
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return "Date unavailable";
+    
+    // For already formatted strings like "Today @3pm", just return as is
+    if (dateStr.includes('@') || 
+        dateStr.toLowerCase().includes('today') || 
+        dateStr.toLowerCase().includes('tomorrow')) {
+      return dateStr;
+    }
+    
+    try {
+      const parsedDate = parseISO(dateStr);
+      if (isValid(parsedDate)) {
+        return format(parsedDate, "EEEE, MMM d, yyyy 'at' h:mm a");
+      }
+      return dateStr;
+    } catch (error) {
+      return dateStr;
+    }
+  };
+  
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-        <p className="mt-4">Loading meetup details...</p>
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading meetup details...</p>
       </div>
     );
   }
-
+  
   if (!meetup) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h2 className="text-xl mb-4">Meetup not found</h2>
-        <Button onClick={() => navigate("/meetups")}>Back to Meetups</Button>
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Meetup not found</p>
       </div>
     );
   }
-
+  
   return (
     <div className="pb-20">
-      <div className="p-4 flex items-center">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft size={20} />
-        </Button>
-        <h1 className="ml-2 text-2xl font-bold">Meetup Details</h1>
-      </div>
-
-      <div className="p-4 space-y-2">
-        <h2 className="text-2xl font-bold">{meetup?.title}</h2>
-        <p className="text-muted-foreground">{meetup?.description}</p>
-        <div className="flex items-center gap-4 text-sm">
-          <Calendar size={16} />
-          <span>{meetup?.dateTime ? format(new Date(meetup.dateTime), "PPpp") : "Date not available"}</span>
-          <MapPin size={16} />
-          <span>{meetup?.location}</span>
+      <div className="fixed top-0 left-0 right-0 bg-background z-10 border-b">
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <button 
+              onClick={() => navigate('/meetups')} 
+              className="mr-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-lg font-semibold">Meetup Details</h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {isCreator && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-primary hover:bg-primary/10"
+                onClick={() => setIsQRDisplayOpen(true)}
+              >
+                <QrCode className="h-5 w-5" />
+              </Button>
+            )}
+            
+            {isCreator && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
-
-      <Separator />
-
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <Users size={18} className="mr-2" /> 
-            Attendees ({attendees.length})
-          </h3>
-
-          {isMobile ? (
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button size="sm">View All</Button>
-              </DrawerTrigger>
-              <DrawerContent className="p-4">
-                <h4 className="text-lg mb-4">Attendees</h4>
-                {filteredAttendees.map(a => (
-                  <div key={a.id} className="flex items-center gap-3 mb-2">
-                    <Avatar>
-                      <AvatarFallback>U{a.id}</AvatarFallback>
-                    </Avatar>
-                    <span>{a.name || `User ${a.user_id}`}</span>
-                    <Badge>{a.attendance_status || "going"}</Badge>
-                  </div>
-                ))}
-              </DrawerContent>
-            </Drawer>
-          ) : (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button size="sm">View All</Button>
-              </SheetTrigger>
-              <SheetContent className="w-80 p-4">
-                <SheetHeader>
-                  <SheetTitle>Attendees</SheetTitle>
-                </SheetHeader>
-                {filteredAttendees.map(a => (
-                  <div key={a.id} className="flex items-center gap-3 mb-2">
-                    <Avatar>
-                      <AvatarFallback>U{a.id}</AvatarFallback>
-                    </Avatar>
-                    <span>{a.name || `User ${a.user_id}`}</span>
-                    <Badge>{a.attendance_status || "going"}</Badge>
-                  </div>
-                ))}
-              </SheetContent>
-            </Sheet>
-          )}
-        </div>
-
-        <div className="flex -space-x-2 overflow-hidden">
-          {attendees.slice(0, 5).map((a, index) => (
-            <Avatar key={a.id} className="border-2 border-white">
-              <AvatarFallback>U{index + 1}</AvatarFallback>
-            </Avatar>
-          ))}
-          {attendees.length > 5 && (
-            <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full text-xs">
-              +{attendees.length - 5}
+      
+      <div className="pt-16 p-4">
+        <div className="space-y-6">
+          <div>
+            <div className="flex justify-between items-start">
+              <h1 className="text-2xl font-bold">{meetup.title}</h1>
+              <div className="bg-yellow-500/10 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">
+                +{meetup.points} pts
+              </div>
             </div>
-          )}
+            
+            {meetup.category && (
+              <Badge variant="outline" className="mt-2">
+                {meetup.category}
+              </Badge>
+            )}
+            
+            <p className="text-muted-foreground mt-2">
+              {meetup.description}
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{formatDate(meetup.dateTime)}</span>
+            </div>
+            
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{meetup.location}</span>
+            </div>
+            
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-2 text-muted-foreground" />
+              <div className="flex items-center">
+                <Avatar className="h-5 w-5 mr-1">
+                  <AvatarImage src={meetup.creatorAvatar || ""} />
+                  <AvatarFallback>{meetup.createdBy?.charAt(0) || "U"}</AvatarFallback>
+                </Avatar>
+                <span>Organized by {meetup.createdBy}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">Attendees</h2>
+              <div className="text-sm text-muted-foreground">
+                {attendees.length}/{meetup.lobbySize}
+              </div>
+            </div>
+            
+            <div className="bg-muted/50 rounded-md">
+              <Progress 
+                value={(attendees.length / meetup.lobbySize) * 100} 
+                className="h-1 rounded-t-md"
+              />
+              <div className="p-4">
+                {attendees.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-3">
+                    No one has joined this meetup yet. Be the first!
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {attendees.map(attendee => (
+                      <div key={attendee.id} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={attendee.avatar || ""} />
+                            <AvatarFallback>{attendee.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span>{attendee.name}</span>
+                        </div>
+                        <Badge variant={attendee.status === "going" ? "default" : "outline"}>
+                          {attendee.status === "going" ? (
+                            <div className="flex items-center">
+                              <Check className="h-3 w-3 mr-1" />
+                              <span>Attending</span>
+                            </div>
+                          ) : "Interested"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
+            <div className="max-w-lg mx-auto flex gap-2">
+              {isAttending ? (
+                <Button className="w-full" variant="default" disabled>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  {isCreator ? "Host" : "Checked In"}
+                </Button>
+              ) : isJoined ? (
+                isCreator ? (
+                  <Button className="w-full" variant="default" disabled>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Host
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    onClick={() => setIsQRScannerOpen(true)}
+                    disabled={checkingIn}
+                  >
+                    <Scan className="mr-2 h-4 w-4" />
+                    {checkingIn ? "Processing..." : "Scan QR Code to Check In"}
+                  </Button>
+                )
+              ) : (
+                <Button 
+                  className="w-full" 
+                  onClick={handleJoinLobby}
+                  disabled={attendees.length >= meetup.lobbySize}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  {attendees.length >= meetup.lobbySize ? "Lobby Full" : "Join Lobby"}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <Separator />
-
-      <div className="p-4 space-y-3">
-        {!isJoined ? (
-          <Button className="w-full" onClick={handleJoin}>
-            Join Meetup Lobby
-          </Button>
-        ) : !isCheckedIn ? (
-          <Button className="w-full" onClick={handleCheckIn}>
-            <QrCode size={16} className="mr-2" /> Scan QR to Check In
-          </Button>
-        ) : (
-          <Button className="w-full bg-green-500 text-white" disabled>
-            <Check size={16} className="mr-2" /> Checked In
-          </Button>
-        )}
-      </div>
-
-      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent>
-          <DialogTitle>Scan QR Code</DialogTitle>
-          <DialogDescription>
-            Scan the meetup's QR code to confirm your attendance.
-          </DialogDescription>
-          <QRScanner onSuccess={onScan} onCancel={() => setQrOpen(false)} meetupId={meetupId!} />
+      {/* QR Scanner Dialog */}
+      <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <QRScanner 
+            onSuccess={handleQRScanSuccess} 
+            onCancel={() => setIsQRScannerOpen(false)}
+            meetupId={meetupId}
+            mode="scan"
+          />
         </DialogContent>
       </Dialog>
 
-      <Navigation />
+      {/* QR Code Display Dialog (for creators) */}
+      <Dialog open={isQRDisplayOpen} onOpenChange={setIsQRDisplayOpen}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <QRScanner
+            onSuccess={() => {}} // Not used in display mode
+            onCancel={() => setIsQRDisplayOpen(false)}
+            meetupId={meetupId}
+            mode="display"
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Meetup</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this meetup? This action cannot be undone and all participants will be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteMeetup} 
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -2,30 +2,25 @@
 import { Meetup } from "@/types/meetup";
 import MeetupCard from "@/components/MeetupCard";
 import ContentLoader from "@/components/home/ContentLoader";
-import { Skeleton } from "@/components/ui/skeleton";
+import { pointClassifications } from "@/services/types";
+import { Badge } from "@/components/ui/badge";
+import { Users } from "lucide-react";
 
 interface MeetupsListProps {
   meetups: Meetup[];
   isLoading: boolean;
   onMeetupClick: (meetupId: string) => void;
+  showPointsClassification?: boolean;
 }
 
-const MeetupsList = ({ meetups, isLoading, onMeetupClick }: MeetupsListProps) => {
+const MeetupsList = ({ 
+  meetups, 
+  isLoading, 
+  onMeetupClick,
+  showPointsClassification = false
+}: MeetupsListProps) => {
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="border rounded-lg p-4">
-            <Skeleton className="h-6 w-3/4 mb-2" />
-            <Skeleton className="h-4 w-full mb-4" />
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-1/4" />
-              <Skeleton className="h-4 w-1/4" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <ContentLoader message="Loading meetups..." />;
   }
 
   if (meetups.length === 0) {
@@ -36,31 +31,68 @@ const MeetupsList = ({ meetups, isLoading, onMeetupClick }: MeetupsListProps) =>
     );
   }
 
-  console.log("MeetupsList - rendering", meetups.length, "meetups");
-  
+  // Helper to get classification for a meetup
+  const getClassification = (lobbySize: number) => {
+    return pointClassifications.find(
+      c => lobbySize >= c.minSize && lobbySize <= c.maxSize
+    ) || pointClassifications[0];
+  };
+
+  // Updated meetups with correct point values based on classification
+  const meetupsWithCorrectPoints = meetups.map(meetup => {
+    const classification = getClassification(meetup.lobbySize);
+    return {
+      ...meetup,
+      points: classification.basePoints
+    };
+  });
+
   return (
     <div className="space-y-4">
-      {meetups.map(meetup => {
-        const currentAttendees = meetup.attendees?.length || 1; // Default to 1 for creator
-        const isLobbyFull = currentAttendees >= meetup.lobbySize;
-        
-        return (
-          <div 
-            key={meetup.id} 
-            onClick={() => onMeetupClick(meetup.id)}
-            className="cursor-pointer"
-          >
-            <MeetupCard 
-              meetup={{
-                ...meetup,
-                attendees: meetup.attendees || []
-              }} 
-            />
+      {showPointsClassification && (
+        <div className="bg-muted/50 p-3 rounded-md">
+          <h3 className="text-sm font-medium mb-2 flex items-center">
+            <Users className="h-4 w-4 mr-1" /> 
+            Points by Group Size
+          </h3>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {pointClassifications.map(classification => (
+              <Badge 
+                key={classification.type} 
+                variant="outline" 
+                className={`${classification.color} border-none`}
+              >
+                {classification.label}: {classification.basePoints} pts 
+                <span className="opacity-75 ml-1">({classification.minSize}-{classification.maxSize} people)</span>
+              </Badge>
+            ))}
           </div>
-        );
-      })}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4">
+        {meetupsWithCorrectPoints.map(meetup => {
+          const classification = getClassification(meetup.lobbySize);
+          return (
+            <div 
+              key={meetup.id} 
+              onClick={() => onMeetupClick(meetup.id)}
+              className="cursor-pointer"
+            >
+              <MeetupCard meetup={meetup} />
+              {showPointsClassification && (
+                <div className="mt-1 text-xs flex justify-end">
+                  <Badge variant="outline" className={`${classification.color} border-none`}>
+                    {classification.label}: {classification.basePoints} pts
+                  </Badge>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
-};
+}
 
 export default MeetupsList;

@@ -20,8 +20,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "src",
     title: "Student Union",
-    lat: 32.9899,
-    lng: -96.7501,
+    lat: 32.98671581142176,
+    lng: -96.74944890766317,
     description: "Student Union with dining options, study spaces and recreation areas"
   },
   {
@@ -34,8 +34,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "ecss",
     title: "ECSS Building",
-    lat: 32.9879,
-    lng: -96.7511,
+    lat: 32.986311087083465,
+    lng: -96.75045526156833,
     description: "Engineering and Computer Science South building with classrooms and labs"
   },
   {
@@ -62,8 +62,8 @@ const utdLocations: MapLocation[] = [
   {
     id: "activity",
     title: "Activity Center",
-    lat: 32.9874,
-    lng: -96.7524,
+    lat: 32.984835483244666,
+    lng: -96.74954270331894,
     description: "Recreation center with gym and athletic facilities"
   },
   {
@@ -100,6 +100,27 @@ const utdLocations: MapLocation[] = [
     lat: 32.9854,
     lng: -96.7513,
     description: "Campus visitor center and admissions office"
+  },
+  {
+    id: "jonsson",
+    title: "Jonsson Performance Hall",
+    lat: 32.988451582173454,
+    lng: -96.74861335191952,
+    description: "Performance venue for concerts and orchestral events"
+  },
+  {
+    id: "jonsson_jazz", // Added a new ID for the Jazz Ensemble location
+    title: "Jonsson Performance Hall (Jazz)",
+    lat: 32.988451582173454 + 0.0001,
+    lng: -96.74861335191952 - 0.0001,
+    description: "Performance venue for jazz ensemble concerts"
+  },
+  {
+    id: "plinth",
+    title: "The Plinth",
+    lat: 32.98736607080019,
+    lng: -96.74828234522143,
+    description: "Central outdoor gathering space for campus events"
   }
 ];
 

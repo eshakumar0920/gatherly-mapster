@@ -26,10 +26,14 @@ export type Database = {
           category: string | null
           created_at: string
           creator_id: number
+          creator_name: string | null
           description: string | null
           event_date: string
           id: number
+          latitude: number | null
+          lobby_size: number | null
           location: string
+          longitude: number | null
           organizer_xp_reward: number | null
           semester: string | null
           title: string
@@ -39,10 +43,14 @@ export type Database = {
           category?: string | null
           created_at: string
           creator_id: number
+          creator_name?: string | null
           description?: string | null
           event_date: string
           id?: number
+          latitude?: number | null
+          lobby_size?: number | null
           location: string
+          longitude?: number | null
           organizer_xp_reward?: number | null
           semester?: string | null
           title: string
@@ -52,10 +60,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           creator_id?: number
+          creator_name?: string | null
           description?: string | null
           event_date?: string
           id?: number
+          latitude?: number | null
+          lobby_size?: number | null
           location?: string
+          longitude?: number | null
           organizer_xp_reward?: number | null
           semester?: string | null
           title?: string

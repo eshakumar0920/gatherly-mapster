@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, User, LogIn, UserPlus, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, LogIn, UserPlus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,25 +9,63 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmailError, setLoginEmailError] = useState("");
 
   // Signup form state
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [signupEmailError, setSignupEmailError] = useState("");
+
+  const clearError = () => {
+    setErrorMessage("");
+    setLoginEmailError("");
+    setSignupEmailError("");
+  };
+
+  const validateUTDEmail = (email: string): boolean => {
+    return email.toLowerCase().endsWith('@utdallas.edu');
+  };
+
+  const handleLoginEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setLoginEmail(email);
+    
+    // Clear error if previously set
+    if (loginEmailError) setLoginEmailError("");
+  };
+
+  const handleSignupEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setSignupEmail(email);
+    
+    // Clear error if previously set
+    if (signupEmailError) setSignupEmailError("");
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
+    
+    // Validate UTD email
+    if (!validateUTDEmail(loginEmail)) {
+      setLoginEmailError("Please use your UTD email (@utdallas.edu)");
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -44,6 +82,8 @@ const AuthPage = () => {
       
       navigate("/events");
     } catch (error: any) {
+      console.error("Login error:", error);
+      setErrorMessage(error.message || "An error occurred during login");
       toast({
         title: "Login failed",
         description: error.message || "An error occurred during login",
@@ -56,13 +96,22 @@ const AuthPage = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
+    
+    // Validate UTD email
+    if (!validateUTDEmail(signupEmail)) {
+      setSignupEmailError("Please use your UTD email (@utdallas.edu)");
+      return;
+    }
+    
+    if (signupPassword !== signupConfirmPassword) {
+      setErrorMessage("Passwords don't match");
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      if (signupPassword !== signupConfirmPassword) {
-        throw new Error("Passwords don't match");
-      }
-      
       const result = await signup(signupEmail, signupPassword, { name: signupName });
       
       if (!result.success) {
@@ -84,6 +133,8 @@ const AuthPage = () => {
         navigate("/events");
       }
     } catch (error: any) {
+      console.error("Signup error:", error);
+      setErrorMessage(error.message || "An error occurred during signup");
       toast({
         title: "Sign up failed",
         description: error.message || "An error occurred during signup",
@@ -91,28 +142,6 @@ const AuthPage = () => {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGuestLogin = async () => {
-    // For guest login, we'll use Supabase's anonymous session
-    try {
-      const { data, error } = await supabase.auth.signInAnonymously();
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Continuing as guest",
-        description: "You can create an account later to save your progress.",
-      });
-      
-      navigate("/events");
-    } catch (error: any) {
-      toast({
-        title: "Guest login failed",
-        description: error.message || "An error occurred",
-        variant: "destructive",
-      });
     }
   };
 
@@ -128,7 +157,14 @@ const AuthPage = () => {
 
       {/* Auth Container */}
       <div className="w-full max-w-md bg-card rounded-lg shadow-lg border border-border p-6">
-        <Tabs defaultValue="login" className="w-full">
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs defaultValue="login" className="w-full" onValueChange={clearError}>
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -145,12 +181,15 @@ const AuthPage = () => {
                     id="email"
                     type="email" 
                     placeholder="name@utdallas.edu" 
-                    className="pl-10"
+                    className={`pl-10 ${loginEmailError ? "border-destructive" : ""}`}
                     value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    onChange={handleLoginEmailChange}
                     required
                   />
                 </div>
+                {loginEmailError && (
+                  <p className="text-xs text-destructive mt-1">{loginEmailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -164,6 +203,15 @@ const AuthPage = () => {
                         toast({
                           title: "Email required",
                           description: "Please enter your email address to reset your password",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      if (!validateUTDEmail(loginEmail)) {
+                        toast({
+                          title: "Invalid email",
+                          description: "Please enter a valid UTD email address (@utdallas.edu)",
                           variant: "destructive",
                         });
                         return;
@@ -242,12 +290,15 @@ const AuthPage = () => {
                     id="signup-email"
                     type="email" 
                     placeholder="name@utdallas.edu" 
-                    className="pl-10"
+                    className={`pl-10 ${signupEmailError ? "border-destructive" : ""}`}
                     value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
+                    onChange={handleSignupEmailChange}
                     required
                   />
                 </div>
+                {signupEmailError && (
+                  <p className="text-xs text-destructive mt-1">{signupEmailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -298,17 +349,6 @@ const AuthPage = () => {
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
         </div>
-      </div>
-
-      {/* Guest Entry */}
-      <div className="mt-6">
-        <Button 
-          variant="outline" 
-          onClick={handleGuestLogin}
-          className="flex items-center gap-2"
-        >
-          Continue as Guest <ArrowRight className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );

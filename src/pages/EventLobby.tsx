@@ -1,19 +1,20 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users, Share, Calendar, Clock, MapPin, Check } from "lucide-react";
+import { ArrowLeft, Users, Share, Calendar, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { getEvents } from "@/services/eventService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parse } from "date-fns";
+import { useUserStore } from "@/services/meetupService";
 
 const mockAttendees = [
   { id: "1", name: "Jane Cooper", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop", status: "going" },
@@ -30,9 +31,9 @@ const EventLobby = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { attendMeetup } = useUserStore();
   const [event, setEvent] = useState<any>(null);
   const [attendeeView, setAttendeeView] = useState<"all" | "going" | "interested">("all");
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
   
   useEffect(() => {
     const events = getEvents();
@@ -76,36 +77,6 @@ const EventLobby = () => {
     if (attendeeView === "all") return true;
     return attendee.status === attendeeView;
   });
-
-  const handleCheckIn = () => {
-    setIsCheckedIn(true);
-    toast({
-      title: "Check-in successful!",
-      description: "You've checked in to this event",
-      variant: "default",
-    });
-  };
-
-  if (!event) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="p-4 pt-6 w-full text-center">
-          <h1 className="text-2xl font-medium">
-            <span className="font-bold">i</span>mpulse
-          </h1>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <h2 className="text-xl mb-4">Event not found</h2>
-          <Button onClick={() => navigate("/events")} className="bg-primary text-primary-foreground">
-            Back to Events
-          </Button>
-        </div>
-        
-        <Navigation />
-      </div>
-    );
-  }
 
   const AttendeesList = () => (
     <div className="space-y-4">
@@ -153,6 +124,27 @@ const EventLobby = () => {
       </div>
     </div>
   );
+
+  if (!event) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="p-4 pt-6 w-full text-center">
+          <h1 className="text-2xl font-medium">
+            <span className="font-bold">i</span>mpulse
+          </h1>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <h2 className="text-xl mb-4">Event not found</h2>
+          <Button onClick={() => navigate("/events")} className="bg-primary text-primary-foreground">
+            Back to Events
+          </Button>
+        </div>
+        
+        <Navigation />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-20 min-h-screen bg-background">
@@ -258,28 +250,6 @@ const EventLobby = () => {
             </div>
           )}
         </div>
-      </div>
-
-      <Separator />
-
-      <div className="p-4 grid grid-cols-2 gap-3">
-        {isCheckedIn ? (
-          <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-            <Check className="mr-2 h-4 w-4" />
-            Checked In
-          </Button>
-        ) : (
-          <Button 
-            className="w-full bg-primary text-primary-foreground"
-            onClick={handleCheckIn}
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Check In
-          </Button>
-        )}
-        <Button variant="outline" className="w-full">
-          Interested
-        </Button>
       </div>
 
       <Navigation />

@@ -1,220 +1,144 @@
-
-import { Meetup } from "@/types/meetup";
-import { format } from "date-fns";
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Friend, Tag, sampleFriends } from "./types";
-
-// Create valid dates for the mock meetups
-const createValidDate = (year: number, month: number, day: number, hour: number, minute: number) => {
-  try {
-    const date = new Date(year, month - 1, day, hour, minute);
-    // Check if date is valid before formatting
-    if (isNaN(date.getTime())) {
-      return "Invalid date";
-    }
-    return format(date, "yyyy-MM-dd HH:mm:ss");
-  } catch (error) {
-    console.error("Error creating date:", error);
-    return "Invalid date";
-  }
-};
-
-// Mock data for meetups updated to 2025 with safer date creation
-export const meetups: Meetup[] = [
-  {
-    id: "1",
-    title: "Tech Innovators Meetup",
-    description: "Connect with fellow tech enthusiasts and discuss the latest innovations!",
-    dateTime: createValidDate(2025, 2, 15, 18, 0),
-    location: "ECSW Building, Room 2.412",
-    points: 5,
-    createdBy: "Emily Parker",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    lobbySize: 20,
-    category: "Technology",
-    attendees: [{
-      id: 1,
-      user_id: 1,
-      event_id: 1,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Emily Parker"
-    }]
-  },
-  {
-    id: "2",
-    title: "Art & Design Networking",
-    description: "A casual meetup for artists, designers, and creative minds to share ideas and inspiration.",
-    dateTime: createValidDate(2025, 3, 22, 19, 30),
-    location: "SP/N Gallery Lounge",
-    points: 3,
-    createdBy: "Marcus Chen",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    lobbySize: 15,
-    category: "Art",
-    attendees: [{
-      id: 2,
-      user_id: 2,
-      event_id: 2,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Marcus Chen"
-    }]
-  },
-  {
-    id: "3",
-    title: "Entrepreneurship Workshop",
-    description: "Learn from successful student entrepreneurs and network with like-minded peers.",
-    dateTime: createValidDate(2025, 4, 10, 16, 0),
-    location: "Blackstone LaunchPad",
-    points: 7,
-    createdBy: "Sarah Rodriguez",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/3.jpg",
-    lobbySize: 25,
-    category: "Business",
-    attendees: [{
-      id: 3,
-      user_id: 3,
-      event_id: 3,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Sarah Rodriguez"
-    }]
-  },
-  {
-    id: "4",
-    title: "Music Jam Session",
-    description: "Open mic and jam session for musicians of all skill levels.",
-    dateTime: createValidDate(2025, 5, 5, 20, 0),
-    location: "Student Union Music Room",
-    points: 4,
-    createdBy: "David Kim",
-    creatorAvatar: "https://randomuser.me/api/portraits/men/4.jpg",
-    lobbySize: 12,
-    category: "Music",
-    attendees: [{
-      id: 4,
-      user_id: 4,
-      event_id: 4,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "David Kim"
-    }]
-  },
-  {
-    id: "5",
-    title: "Wellness and Mindfulness",
-    description: "Guided meditation and stress-relief techniques for students.",
-    dateTime: createValidDate(2025, 6, 18, 17, 30),
-    location: "Recreation Center Yoga Studio",
-    points: 3,
-    createdBy: "Sofia Patel",
-    creatorAvatar: "https://randomuser.me/api/portraits/women/5.jpg",
-    lobbySize: 15,
-    category: "Wellness",
-    attendees: [{
-      id: 5,
-      user_id: 5,
-      event_id: 5,
-      joined_at: new Date().toISOString(),
-      attendance_status: "going",
-      xp_earned: null,
-      name: "Sofia Patel"
-    }]
-  }
-];
+import { MeetupType, Tag, Friend, UserActions } from './types';
 
 interface UserState {
-  joinedLobbies: string[] | null;
-  attendedMeetups: string[] | null;
-  points: number;
-  level: number;
   name: string;
   email: string;
+  points: number;
+  level: number;
+  attendedMeetups: MeetupType[];
   friends: Friend[];
   tags: Tag[];
   selectedSticker: number | null;
-  joinMeetupLobby: (meetupId: string) => void;
-  attendMeetup: (meetupId: string, points: number) => void;
-  addFriend: (friend: Friend) => void;
-  removeFriend: (friendId: string) => void;
-  updateTags: (tags: Tag[]) => void;
-  updateProfile: (name: string, email: string) => void;
-  setSelectedSticker: (sticker: number | null) => void;
-  reset: () => void;
+  // Remove avatar
+  // Add missing state properties
+  userId: string | null;
+  joinedLobbies: string[];
+  avatar: string | null;
 }
 
-export const useUserStore = create<UserState>()(
+export const useUserStore = create<UserState & UserActions>()(
   persist(
     (set) => ({
-      joinedLobbies: [],
+      name: "Temoc",
+      email: "temoc@utdallas.edu",
+      points: 22,
+      level: 2,
       attendedMeetups: [],
-      points: 0,
-      level: 1,
-      name: "John Doe",
-      email: "johndoe@example.com",
-      friends: sampleFriends,
-      tags: ["Technology", "Gaming"],
+      friends: [],
+      tags: ["Technology", "Academic", "Gaming"],
       selectedSticker: null,
-      joinMeetupLobby: (meetupId: string) =>
-        set((state) => ({
-          joinedLobbies: [...(state.joinedLobbies || []), meetupId],
-        })),
-      attendMeetup: (meetupId: string, points: number) =>
+      avatar: null,
+      // Remove avatar
+      // Initialize new state properties
+      userId: null,
+      joinedLobbies: [],
+      addAttendedMeetup: (meetup: MeetupType | string) => {
         set((state) => {
-          const newPoints = state.points + points;
-          const newLevel = Math.floor(newPoints / 10) + 1;
-          
-          return {
-            attendedMeetups: [...(state.attendedMeetups || []), meetupId],
-            points: newPoints,
-            level: newLevel,
-          };
-        }),
-      addFriend: (friend: Friend) =>
+          // Handle both MeetupType objects and string IDs
+          if (typeof meetup === 'string') {
+            const meetupObject: MeetupType = {
+              id: meetup,
+              title: "Attended Meetup",
+              description: "Attended via check-in",
+              dateTime: new Date().toISOString(),
+              location: "UTD",
+              points: 5, // Default points
+              createdBy: "System",
+              lobbySize: 0
+            };
+            return {
+              ...state,
+              attendedMeetups: [...state.attendedMeetups, meetupObject],
+              points: state.points + 5,
+              level: Math.floor((state.points + 5) / 10)
+            };
+          } else {
+            return {
+              ...state,
+              attendedMeetups: [...state.attendedMeetups, meetup],
+              points: state.points + (meetup.points || 5),
+              level: Math.floor((state.points + (meetup.points || 5)) / 10)
+            };
+          }
+        });
+      },
+      addFriend: (friend: Friend) => {
         set((state) => ({
+          ...state,
           friends: [...state.friends, friend]
-        })),
-      removeFriend: (friendId: string) =>
+        }));
+      },
+      removeFriend: (friendId: string) => {
         set((state) => ({
+          ...state,
           friends: state.friends.filter(friend => friend.id !== friendId)
-        })),
-      updateTags: (tags: Tag[]) =>
-        set(() => ({
-          tags
-        })),
-      updateProfile: (name: string, email: string) =>
-        set(() => ({
+        }));
+      },
+      updateProfile: (name: string, email: string) => {
+        set((state) => ({
+          ...state,
           name,
           email
-        })),
-      setSelectedSticker: (sticker: number | null) =>
-        set(() => ({
-          selectedSticker: sticker
-        })),
-      reset: () => set({ 
-        joinedLobbies: [], 
-        attendedMeetups: [], 
-        points: 0,
-        level: 1,
-        name: "John Doe",
-        email: "johndoe@example.com",
-        friends: [],
-        tags: [],
-        selectedSticker: null
-      }),
+        }));
+      },
+      updateTags: (tags: Tag[]) => {
+        set((state) => ({
+          ...state,
+          tags
+        }));
+      },
+      updateAvatar: (avatarUrl: string) => {
+        set((state) => ({
+          ...state,
+          avatar: avatarUrl
+        }));
+      },
+      // Remove updateAvatar method
+      setSelectedSticker: (stickerIndex: number | null) => {
+        set((state) => ({
+          ...state,
+          selectedSticker: stickerIndex
+        }));
+      },
+      // Add new actions
+      joinMeetupLobby: (meetupId: string) => {
+        set((state) => ({
+          ...state,
+          joinedLobbies: [...state.joinedLobbies, meetupId]
+        }));
+      },
+      attendMeetup: (meetupId: string, points: number) => {
+        set((state) => {
+          const meetup: MeetupType = {
+            id: meetupId,
+            title: "Attended Meetup",
+            description: "Attended via check-in",
+            dateTime: new Date().toISOString(),
+            location: "UTD",
+            points: points,
+            createdBy: "System",
+            lobbySize: 0
+          };
+          
+          return {
+            ...state,
+            attendedMeetups: [...state.attendedMeetups, meetup],
+            points: state.points + points,
+            level: Math.floor((state.points + points) / 10)
+          };
+        });
+      },
+      setUserId: (userId: string) => {
+        set((state) => ({
+          ...state,
+          userId
+        }));
+      },
     }),
     {
-      name: 'user-storage',
+      name: "user-storage"
     }
   )
 );
-
-export const getMeetups = () => {
-  return meetups;
-};

@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import BadgesPage from "./pages/BadgesPage";
 import { LevelUpProvider } from "./contexts/LevelUpContext";
 import ProfileStickers from "./components/ProfileStickers";
+import ChatBot from "./components/chatbot/ChatBot";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ProfileStickers />
+          <ChatBot />
         </BrowserRouter>
       </LevelUpProvider>
     </TooltipProvider>

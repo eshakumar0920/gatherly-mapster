@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Camera, Ban, Check } from "lucide-react";
+import { Camera, Ban, Check, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -8,11 +8,20 @@ interface QRScannerProps {
   onSuccess: (data: string) => void;
   onCancel: () => void;
   meetupId?: string;
+  mode?: "scan" | "display"; // For switching between scanning and displaying
 }
 
-const QRScanner = ({ onSuccess, onCancel, meetupId }: QRScannerProps) => {
+const QRScanner = ({ 
+  onSuccess, 
+  onCancel, 
+  meetupId,
+  mode = "scan" // Default to scan mode
+}: QRScannerProps) => {
   const [scanning, setScanning] = useState(false);
   const { toast } = useToast();
+  
+  // Generate QR code data for this meetup
+  const qrData = meetupId ? `meetup_${meetupId}` : null;
   
   // In a real implementation, we would use a library like 'react-qr-reader'
   // For this demo, we'll simulate scanning with a button press
@@ -39,9 +48,38 @@ const QRScanner = ({ onSuccess, onCancel, meetupId }: QRScannerProps) => {
     }, 1500);
   };
   
+  // Display QR code mode - with yellow background to match the app theme
+  if (mode === "display" && qrData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-4 space-y-6 bg-[#FEF7CD]">
+        <div className="relative w-full max-w-xs aspect-square bg-white rounded-lg flex items-center justify-center overflow-hidden p-4">
+          {/* Display QR code image */}
+          <div className="flex flex-col items-center space-y-4">
+            <QrCode className="h-32 w-32" />
+            <p className="text-center font-medium">Meetup #{meetupId}</p>
+          </div>
+        </div>
+        
+        <p className="text-center text-sm text-muted-foreground">
+          Show this QR code to attendees so they can check in to your meetup.
+        </p>
+        
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={onCancel}
+        >
+          <Ban className="mr-2 h-4 w-4" />
+          Close
+        </Button>
+      </div>
+    );
+  }
+  
+  // Scanner mode (default) - with yellow background
   return (
-    <div className="flex flex-col items-center justify-center p-4 space-y-6">
-      <div className="relative w-full max-w-xs aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+    <div className="flex flex-col items-center justify-center p-4 space-y-6 bg-[#FEF7CD]">
+      <div className="relative w-full max-w-xs aspect-square bg-white/90 rounded-lg flex items-center justify-center overflow-hidden">
         {scanning ? (
           <div className="animate-pulse">
             <Camera className="h-16 w-16 text-primary opacity-50" />
