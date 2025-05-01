@@ -18,12 +18,20 @@ import { useUserStore } from "@/services/meetupService";
 import { useState } from "react";
 import LocationSelector from "./LocationSelector";
 import { campusLocations, findLocationByName } from "@/utils/campusLocations";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-// Improved validation for location to ensure it's an exact match from the predefined locations
+// Modified validation schema to handle Date objects
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  dateTime: z.string().min(3, "Date and time is required"),
+  date: z.date({
+    required_error: "A date is required",
+  }),
+  time: z.string().min(1, "Time is required"),
   location: z.string().min(3, "Location is required").refine(
     (val) => campusLocations.some(loc => loc.name === val),
     { message: "Please select a valid campus location from the dropdown" }
@@ -35,7 +43,6 @@ const formSchema = z.object({
   ),
 });
 
-// Removing the normalizeLocationName helper as we want exact matches only
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateMeetupFormProps {
@@ -56,14 +63,14 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
     defaultValues: {
       title: "",
       description: "",
-      dateTime: "",
+      date: undefined,
+      time: "",
       location: "",
       category: "",
       lobbySize: 5,
     },
   });
 
-  // Updated to ensure we're getting exact coordinates from the selected location
   const handleLocationCoordinatesChange = (lat: number, lng: number) => {
     console.log(`Location coordinates selected: (${lat}, ${lng})`);
     setLocationCoordinates({ lat, lng });
@@ -141,13 +148,15 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         return;
       }
       
-      // Get exact coordinates for the selected location - improved to ensure accuracy
+      // Format the date and time into a single string
+      const formattedDateTime = format(values.date, 'MMM dd, yyyy') + ' @ ' + values.time;
+      
+      // Get exact coordinates for the selected location
       let lat = locationCoordinates.lat;
       let lng = locationCoordinates.lng;
       
       // If coordinates weren't selected directly, find the exact location from campusLocations
       if (lat === 0 && lng === 0) {
-        // Find exact match by name
         const exactLocationMatch = campusLocations.find(loc => loc.name === values.location);
         
         if (exactLocationMatch) {
@@ -155,7 +164,6 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
           lng = exactLocationMatch.lng;
           console.log(`Using exact coordinates for "${values.location}": (${lat}, ${lng})`);
         } else {
-          // Fallback to library if no match (this shouldn't happen with our validation)
           const defaultLocation = campusLocations.find(loc => loc.id === "library");
           if (defaultLocation) {
             lat = defaultLocation.lat;
@@ -166,7 +174,12 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
       }
       
       const meetupData = {
-        ...values,
+        title: values.title,
+        description: values.description,
+        dateTime: formattedDateTime,
+        location: values.location,
+        category: values.category,
+        lobbySize: values.lobbySize,
         points: 3, // Default points
         latitude: lat,
         longitude: lng
@@ -232,38 +245,90 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
         />
         
         <div className="grid grid-cols-2 gap-4">
+          {/* Date Picker */}
           <FormField
             control={form.control}
-            name="dateTime"
+            name="date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date & Time</FormLabel>
-                <FormControl>
-                  <Input placeholder="Today @2pm" {...field} />
-                </FormControl>
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "MMM dd, yyyy")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
           />
           
+          {/* Time Picker */}
           <FormField
             control={form.control}
-            name="location"
+            name="time"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
+                <FormLabel>Time</FormLabel>
                 <FormControl>
-                  <LocationSelector 
-                    value={field.value}
-                    onChange={field.onChange}
-                    onCoordinatesChange={handleLocationCoordinatesChange}
-                  />
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type="time" 
+                      className="pl-10" 
+                      {...field}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+        
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Location</FormLabel>
+              <FormControl>
+                <LocationSelector 
+                  value={field.value}
+                  onChange={field.onChange}
+                  onCoordinatesChange={handleLocationCoordinatesChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
