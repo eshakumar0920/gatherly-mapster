@@ -34,7 +34,8 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const MapView: React.FC<MapViewProps> = ({ locations, defaultLocation }) => {
-  const mapRef = useRef<MapContainer>(null);
+  // Fix: Use a more generic type instead of MapContainer itself
+  const mapRef = useRef<any>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
 
   useEffect(() => {
