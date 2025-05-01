@@ -15,11 +15,13 @@ import MeetupsList from "@/components/meetups/MeetupsList";
 import { useMeetups } from "@/hooks/useMeetups";
 import { useLeveling } from "@/hooks/useLeveling";
 import { supabase } from "@/integrations/supabase/client";
+import { MapLocation } from "@/utils/campusLocations";
 
 const Meetups = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const { points, level, setUserId } = useUserStore();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -51,6 +53,11 @@ const Meetups = () => {
     setSelectedCategory(value === "all" ? null : value);
   };
 
+  // Fix #1: Correct the viewMode type handling
+  const handleViewModeChange = (value: string) => {
+    setViewMode(value as "list" | "map");
+  };
+
   // Further filter by search term client-side
   const filteredMeetups = allMeetups.filter(meetup => {
     if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -67,6 +74,17 @@ const Meetups = () => {
   const handleViewOnMap = () => {
     navigate("/maps");
   };
+
+  // Convert meetups to map locations
+  const mapLocations: MapLocation[] = filteredMeetups
+    .filter(meetup => meetup.latitude && meetup.longitude)
+    .map(meetup => ({
+      id: meetup.id,
+      name: meetup.title,
+      lat: meetup.latitude || 0,
+      lng: meetup.longitude || 0,
+      description: meetup.description
+    }));
 
   return (
     <div className="pb-20">
@@ -117,6 +135,15 @@ const Meetups = () => {
         </Tabs>
       </div>
 
+      <div className="px-4 pb-4">
+        <Tabs defaultValue="list" onValueChange={handleViewModeChange} className="w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="map">Map View</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       <div className="px-4 pb-4 flex flex-col gap-4">
         <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Create New Meetup
@@ -128,12 +155,21 @@ const Meetups = () => {
       </div>
 
       <div className="px-4">
-        <MeetupsList 
-          meetups={filteredMeetups}
-          isLoading={isLoading}
-          onMeetupClick={handleMeetupClick}
-          showPointsClassification={true}
-        />
+        {viewMode === "list" ? (
+          <MeetupsList 
+            meetups={filteredMeetups}
+            isLoading={isLoading}
+            onMeetupClick={handleMeetupClick}
+            showPointsClassification={true}
+          />
+        ) : (
+          <div className="h-64 border rounded-md overflow-hidden">
+            {/* Fix #3: Pass the correct props to a map component */}
+            <p className="p-4 text-center">Map view coming soon</p>
+            {/* If you have a map component, you would use it like: */}
+            {/* <MapView locations={mapLocations} /> */}
+          </div>
+        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
