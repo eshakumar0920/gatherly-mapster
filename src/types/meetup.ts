@@ -34,3 +34,6 @@ export interface EventRow {
   latitude?: number;
   longitude?: number;
 }
+
+// Import MapLocation from MapView to avoid duplicate type definitions
+// import { MapLocation } from "@/components/MapView";

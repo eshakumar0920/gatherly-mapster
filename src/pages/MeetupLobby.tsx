@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Users, Clock, MapPin, Trophy, QrCode, Edit } from "lucide-react";
@@ -8,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useUserStore } from "@/services/meetupService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import MapView from "@/components/MapView";
+import MapView, { MapLocation } from "@/components/MapView";
 import QRScanner from "@/components/QRScanner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,13 +22,7 @@ interface Attendee {
   status: "attending" | "registered";
 }
 
-// Define a MapLocation type that matches what MapView expects
-interface MapLocation {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-}
+// Remove the duplicate MapLocation interface since we're importing it from MapView
 
 const MeetupLobby = () => {
   const { id } = useParams<{ id: string }>();
@@ -336,10 +329,11 @@ const MeetupLobby = () => {
 
   // Convert the map data to the format expected by MapView
   const mapLocations: MapLocation[] = [];
-  if (meetup.latitude && meetup.longitude) {
+  if (meetup?.latitude && meetup?.longitude) {
     mapLocations.push({
       id: meetup.id,
       name: meetup.title,
+      title: meetup.title, // Use both name and title for compatibility
       lat: meetup.latitude,
       lng: meetup.longitude
     });
@@ -390,17 +384,14 @@ const MeetupLobby = () => {
           
           <div className="flex items-center">
             <User className="h-5 w-5 text-muted-foreground mr-3" />
-            <div className="flex items-center">
-              <span>Created by </span>
-              <div className="flex items-center ml-1">
-                {meetup.creatorAvatar && (
-                  <Avatar className="h-6 w-6 mr-1">
-                    <AvatarImage src={meetup.creatorAvatar} alt={meetup.createdBy} />
-                    <AvatarFallback>{meetup.createdBy?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                )}
-                <span className="font-medium">{meetup.createdBy}</span>
-              </div>
+            <div className="flex items-center ml-1">
+              {meetup.creatorAvatar && (
+                <Avatar className="h-6 w-6 mr-1">
+                  <AvatarImage src={meetup.creatorAvatar} alt={meetup.createdBy} />
+                  <AvatarFallback>{meetup.createdBy?.charAt(0)}</AvatarFallback>
+                </Avatar>
+              )}
+              <span className="font-medium">{meetup.createdBy}</span>
             </div>
           </div>
           
@@ -410,9 +401,9 @@ const MeetupLobby = () => {
           </div>
         </div>
         
-        {/* Map View - updated to use locations prop instead of center/markers */}
+        {/* Map View - updated to use locations prop */}
         <div className="mb-6 h-[200px] rounded-lg overflow-hidden border">
-          {meetup.latitude && meetup.longitude ? (
+          {meetup?.latitude && meetup?.longitude ? (
             <MapView locations={mapLocations} />
           ) : (
             <div className="h-full flex items-center justify-center bg-muted">

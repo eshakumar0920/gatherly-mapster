@@ -4,9 +4,11 @@ import { MapPin, Navigation2 } from "lucide-react";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-interface MapLocation {
+// Update the MapLocation interface to include both name and title fields for compatibility
+export interface MapLocation {
   id: string;
-  title: string;
+  name?: string;
+  title?: string; // Make title optional to match the usage in MeetupLobby
   lat: number;
   lng: number;
   description?: string;
@@ -19,7 +21,8 @@ const UTD_CENTER = [32.9886, -96.7479]; // Latitude and longitude of UTD center
 const utdLocations: MapLocation[] = [
   {
     id: "src",
-    title: "Student Union",
+    name: "Student Union",
+    title: "Student Union", // Add title for compatibility
     lat: 32.98671581142176,
     lng: -96.74944890766317,
     description: "Student Union with dining options, study spaces and recreation areas"
@@ -373,3 +376,4 @@ const MapView = ({ locations = [] }: { locations?: MapLocation[] }) => {
 };
 
 export default MapView;
+
