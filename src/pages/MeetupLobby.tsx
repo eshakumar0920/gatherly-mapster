@@ -69,6 +69,7 @@ const MeetupLobby = () => {
               .single();
               
             if (!error && data) {
+              console.log("MeetupLobby creator check - Creator ID:", data.creator_id, "User ID:", userId);
               setIsCreator(data.creator_id === parseInt(userId));
             }
           } catch (err) {
@@ -301,6 +302,7 @@ const MeetupLobby = () => {
   };
 
   const handleEditClick = () => {
+    console.log("MeetupLobby edit button clicked, isCreator:", isCreator);
     setIsEditDialogOpen(true);
   };
 

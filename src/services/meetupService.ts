@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MeetupType, Tag, Friend, UserActions } from './types';
@@ -19,7 +18,7 @@ interface UserState {
 
 export const useUserStore = create<UserState & UserActions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       name: "Temoc",
       email: "temoc@utdallas.edu",
       points: 22,
@@ -106,11 +105,9 @@ export const useUserStore = create<UserState & UserActions>()(
           };
         });
       },
-      setUserId: (userId: string) => {
-        set((state) => ({
-          ...state,
-          userId
-        }));
+      setUserId: (id) => {
+        console.log("Setting userId in store to:", id);
+        set({ userId: id });
       },
       // Alias for attendMeetup to support existing code
       checkInToMeetup: (meetupId: string, points: number) => {

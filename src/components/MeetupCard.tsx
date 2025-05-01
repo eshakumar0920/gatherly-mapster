@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Clock, MapPin, User, Users, Edit } from "lucide-react";
@@ -55,6 +54,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
           .single();
           
         if (!error && data) {
+          console.log("Creator check - Event creator_id:", data.creator_id, "Current userId:", userId);
           setIsCreator(data.creator_id === parseInt(userId));
         }
       } catch (err) {
@@ -283,6 +283,7 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the card click
+    console.log("Edit button clicked, isCreator:", isCreator);
     setIsEditDialogOpen(true);
   };
   
