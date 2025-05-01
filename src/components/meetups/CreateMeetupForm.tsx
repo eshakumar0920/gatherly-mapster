@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -327,49 +326,44 @@ const CreateMeetupForm = ({ onSuccess, onClose }: CreateMeetupFormProps) => {
             )}
           />
           
-          {/* Time Picker with AM/PM format */}
+          {/* Time Picker that stores in 24h format but displays AM/PM */}
           <FormField
             control={form.control}
             name="time"
-            render={({ field }) => {
-              // Display field value in AM/PM format
-              return (
-                <FormItem>
-                  <FormLabel>Time</FormLabel>
-                  <Select 
-                    value={field.value} 
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="pl-3">
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <SelectValue placeholder="Select a time" />
-                        </div>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {/* Generate time slots every 30 minutes */}
-                      {Array.from({ length: 48 }).map((_, i) => {
-                        const hour = Math.floor(i / 2);
-                        const minute = i % 2 === 0 ? "00" : "30";
-                        const hour12 = hour % 12 || 12; // Convert 0 to 12 for 12 AM
-                        const ampm = hour < 12 ? "AM" : "PM";
-                        const timeValue = `${hour12}:${minute} ${ampm}`;
-                        const timeValueMilitary = `${hour.toString().padStart(2, '0')}:${minute}`;
-                        
-                        return (
-                          <SelectItem key={timeValueMilitary} value={timeValue}>
-                            {timeValue}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Time</FormLabel>
+                <Select 
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger className="pl-3">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <SelectValue placeholder="Select a time" />
+                      </div>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {/* Generate time slots every 30 minutes */}
+                    {Array.from({ length: 48 }).map((_, i) => {
+                      const hour = Math.floor(i / 2);
+                      const minute = i % 2 === 0 ? "00" : "30";
+                      const timeValueMilitary = `${hour.toString().padStart(2, '0')}:${minute}`;
+                      const timeValueDisplay = formatTimeToAmPm(timeValueMilitary);
+                      
+                      return (
+                        <SelectItem key={timeValueMilitary} value={timeValueMilitary}>
+                          {timeValueDisplay}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
         
