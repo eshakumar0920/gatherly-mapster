@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Search, Plus, X, Star } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
@@ -19,6 +18,7 @@ import { eventsApi } from "@/services/api";
 import { useMeetups } from "@/hooks/useMeetups";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Meetup } from "@/types/meetup";
 
 // Mock data for fallback
 import { events as mockEvents } from "@/services/eventService";
@@ -35,6 +35,26 @@ const Index = () => {
 
   // Pass the selectedCategory to the hook for filtering at the database level
   const { allMeetups, isLoading: isMeetupsLoading, setAllMeetups } = useMeetups(selectedCategory);
+
+  // Listen for meetup update events
+  useEffect(() => {
+    const handleMeetupUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ meetupId: string, updatedMeetup: Meetup }>;
+      const { meetupId, updatedMeetup } = customEvent.detail;
+      
+      setAllMeetups(prev => 
+        prev.map(meetup => 
+          meetup.id === meetupId ? updatedMeetup : meetup
+        )
+      );
+    };
+    
+    window.addEventListener('meetup-updated', handleMeetupUpdated as EventListener);
+    
+    return () => {
+      window.removeEventListener('meetup-updated', handleMeetupUpdated as EventListener);
+    };
+  }, [setAllMeetups]);
 
   // Fetch user ID if logged in
   useEffect(() => {

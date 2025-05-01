@@ -1,141 +1,92 @@
-
-import { useState, useEffect } from "react";
-import { Search, Plus, Star, MapPin } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Navigation from "@/components/Navigation";
-import { useUserStore } from "@/services/meetupService";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
-import { categories } from "@/services/eventService";
-import { useAuth } from "@/hooks/useAuth";
-import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
+import { Plus } from "lucide-react";
 import MeetupsList from "@/components/meetups/MeetupsList";
+import Navigation from "@/components/Navigation";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import CreateMeetupForm from "@/components/meetups/CreateMeetupForm";
 import { useMeetups } from "@/hooks/useMeetups";
-import { useLeveling } from "@/hooks/useLeveling";
-import { supabase } from "@/integrations/supabase/client";
+import MapView from "@/components/MapView";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserStore } from "@/services/meetupService";
+import { Meetup } from "@/types/meetup";
 
+// The component
 const Meetups = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { points, level, setUserId } = useUserStore();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  // Pass the selectedCategory to the hook for filtering at the database level
-  const { allMeetups, isLoading, setAllMeetups } = useMeetups(selectedCategory);
-  const { pointClassifications } = useLeveling();
+  const [view, setView] = useState<"list" | "map">("list");
+  const { allMeetups, isLoading, setAllMeetups } = useMeetups();
+  const { joinedLobbies, attendedMeetups } = useUserStore();
 
-  // Fetch user ID if logged in
+  // Listen for meetup update events
   useEffect(() => {
-    const fetchUserId = async () => {
-      if (user?.email) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, current_xp, current_level')
-          .eq('email', user.email)
-          .single();
-          
-        if (!error && data) {
-          setUserId(data.id.toString());
-        }
-      }
+    const handleMeetupUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ meetupId: string, updatedMeetup: Meetup }>;
+      const { meetupId, updatedMeetup } = customEvent.detail;
+      
+      setAllMeetups(prev => 
+        prev.map(meetup => 
+          meetup.id === meetupId ? updatedMeetup : meetup
+        )
+      );
     };
     
-    fetchUserId();
-  }, [user, setUserId]);
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value === "all" ? null : value);
-  };
-
-  // Further filter by search term client-side
-  const filteredMeetups = allMeetups.filter(meetup => {
-    if (searchQuery && !meetup.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
-
-  const handleMeetupClick = (meetupId: string) => {
-    navigate(`/meetups/${meetupId}`);
-  };
-
-  // View on map functionality
-  const handleViewOnMap = () => {
-    navigate("/maps");
-  };
-
+    window.addEventListener('meetup-updated', handleMeetupUpdated as EventListener);
+    
+    return () => {
+      window.removeEventListener('meetup-updated', handleMeetupUpdated as EventListener);
+    };
+  }, [setAllMeetups]);
+  
   return (
     <div className="pb-20">
+      {/* App Name */}
       <div className="p-4 pt-6 flex items-center justify-center">
         <h1 className="text-2xl font-medium">
           <span className="font-bold">i</span>mpulse
         </h1>
       </div>
 
+      {/* Header */}
       <header className="p-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Meetups</h1>
-          <p className="text-muted-foreground">Find student-organized meetups</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full">
-            <Star className="h-4 w-4 text-yellow-500 mr-1" />
-            <span className="font-medium">{points} pts</span>
-          </div>
-          <div className="px-2 py-1 bg-yellow-500/20 rounded-full">
-            <span className="font-medium">Level {level}</span>
-          </div>
+          <h1 className="text-2xl font-bold">Student Meetups</h1>
+          <p className="text-muted-foreground">Connect with fellow students and explore exciting UTD events</p>
         </div>
       </header>
 
+      {/* Create Meetup Button */}
       <div className="px-4 pb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="Search meetups..." 
-            className="pl-10 rounded-full bg-muted/50"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" /> Create New Meetup
+        </Button>
       </div>
 
+      {/* View Toggle */}
       <div className="px-4 pb-4">
-        <Tabs defaultValue="all" onValueChange={handleCategoryChange} className="w-full">
-          <TabsList className="w-full justify-start overflow-x-auto no-scrollbar">
-            <TabsTrigger value="all">All</TabsTrigger>
-            {categories.map(category => (
-              <TabsTrigger key={category.id} value={category.id}>
-                {category.name}
-              </TabsTrigger>
-            ))}
+        <Tabs defaultValue={view} className="w-full" onValueChange={setView}>
+          <TabsList className="w-full justify-start">
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="map">Map View</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <div className="px-4 pb-4 flex flex-col gap-4">
-        <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Create New Meetup
-        </Button>
-        
-        <Button variant="outline" className="w-full" onClick={handleViewOnMap}>
-          <MapPin className="h-4 w-4 mr-2" /> View All Meetups on Map
-        </Button>
-      </div>
-
+      {/* Meetups List or Map */}
       <div className="px-4">
-        <MeetupsList 
-          meetups={filteredMeetups}
-          isLoading={isLoading}
-          onMeetupClick={handleMeetupClick}
-          showPointsClassification={true}
-        />
+        {isLoading ? (
+          <p className="text-center text-muted-foreground py-4">Loading meetups...</p>
+        ) : view === "list" ? (
+          <MeetupsList meetups={allMeetups} />
+        ) : (
+          <MapView meetups={allMeetups} />
+        )}
       </div>
 
+      {/* Create Meetup Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
