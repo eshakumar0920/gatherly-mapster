@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { format, isValid, parseISO } from "date-fns";
-import { Clock, MapPin, User, Users } from "lucide-react";
+import { Clock, MapPin, User, Users, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/services/meetupService";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/useAuth";
 import { useMeetups } from "@/hooks/useMeetups";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import EditMeetupForm from "./meetups/EditMeetupForm";
 
 interface MeetupCardProps {
   meetup: Meetup;
@@ -37,6 +39,31 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const [creatorInfo, setCreatorInfo] = useState<{name: string}>({
     name: meetup.createdBy || "Anonymous"
   });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  
+  // Check if current user is the creator of this meetup
+  useEffect(() => {
+    const checkIfCreator = async () => {
+      if (!user || !userId) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('creator_id')
+          .eq('id', parseInt(meetup.id))
+          .single();
+          
+        if (!error && data) {
+          setIsCreator(data.creator_id === parseInt(userId));
+        }
+      } catch (err) {
+        console.error("Error checking meetup creator:", err);
+      }
+    };
+    
+    checkIfCreator();
+  }, [user, userId, meetup.id]);
   
   // Fetch creator info if not available
   useEffect(() => {
@@ -253,104 +280,144 @@ const MeetupCard = ({ meetup }: MeetupCardProps) => {
   const handleViewDetails = () => {
     navigate(`/meetups/${meetup.id}`);
   };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleEditSuccess = (updatedMeetup: Partial<Meetup>) => {
+    // Update the meetup in the card
+    Object.assign(meetup, updatedMeetup);
+    setIsEditDialogOpen(false);
+  };
   
   // Check if the lobby is full based on actual attendees array
   const isLobbyFull = attendees.length >= meetup.lobbySize;
   
   return (
-    <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow" onClick={handleViewDetails}>
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-base line-clamp-1">{meetup.title}</h3>
-            {meetup.category && (
-              <Badge variant="outline" className="text-xs">
-                {meetup.category}
-              </Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
-            {meetup.description}
-          </p>
-          
-          {/* Creator information - highlighted more prominently */}
-          <div className="flex items-center mt-2 text-sm border-l-2 border-primary pl-2">
-            <div className="flex items-center">
-              <User className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span className="font-medium">Created by {creatorInfo.name}</span>
+    <>
+      <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow" onClick={handleViewDetails}>
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-base line-clamp-1">{meetup.title}</h3>
+              {meetup.category && (
+                <Badge variant="outline" className="text-xs">
+                  {meetup.category}
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+              {meetup.description}
+            </p>
+            
+            {/* Creator information - highlighted more prominently */}
+            <div className="flex items-center mt-2 text-sm border-l-2 border-primary pl-2">
+              <div className="flex items-center">
+                <User className="h-4 w-4 mr-1 text-muted-foreground" />
+                <span className="font-medium">Created by {creatorInfo.name}</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full text-yellow-600 text-xs">
-          +{meetup.points} pts
-        </div>
-      </div>
-      
-      <div className="mt-3 space-y-2">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Clock className="h-4 w-4 mr-2" />
-          <span>{formattedDateTime}</span>
+          <div className="flex items-center gap-2">
+            <div className="bg-yellow-500/10 px-2 py-1 rounded-full text-yellow-600 text-xs">
+              +{meetup.points} pts
+            </div>
+            {isCreator && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-7 w-7" 
+                onClick={handleEditClick}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         
-        <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4 mr-2" />
-          <span>{meetup.location}</span>
-        </div>
-        
-        <div className="flex justify-between">
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                <Users className="h-4 w-4 mr-1" />
-                <span>{attendees.length}/{meetup.lobbySize}</span>
-              </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2" align="end">
-              <h4 className="font-medium text-sm mb-2">Attendees</h4>
-              <div className="space-y-2">
-                {attendees.length > 0 ? (
-                  attendees.map((attendee, index) => (
-                    <div key={`${attendee.id}-${index}`} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{attendee.name}</span>
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 mr-2" />
+            <span>{formattedDateTime}</span>
+          </div>
+          
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mr-2" />
+            <span>{meetup.location}</span>
+          </div>
+          
+          <div className="flex justify-between">
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="flex items-center text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  <Users className="h-4 w-4 mr-1" />
+                  <span>{attendees.length}/{meetup.lobbySize}</span>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-2" align="end">
+                <h4 className="font-medium text-sm mb-2">Attendees</h4>
+                <div className="space-y-2">
+                  {attendees.length > 0 ? (
+                    attendees.map((attendee, index) => (
+                      <div key={`${attendee.id}-${index}`} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{attendee.name}</span>
+                        </div>
+                        <Badge 
+                          variant={attendee.status === "going" ? "default" : "outline"} 
+                          className="text-xs capitalize"
+                        >
+                          {attendee.status}
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant={attendee.status === "going" ? "default" : "outline"} 
-                        className="text-xs capitalize"
-                      >
-                        {attendee.status}
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No attendees yet. Be the first!</p>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No attendees yet. Be the first!</p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <Button 
+            className="w-full flex items-center justify-center" 
+            onClick={handleJoinMeetup} 
+            variant={isJoinedLobby ? "outline" : "default"}
+            disabled={isJoinedLobby || isLobbyFull || isLoading}
+          >
+            {isLoading ? (
+              "Loading..."
+            ) : isJoinedLobby ? (
+              "In Lobby"
+            ) : isLobbyFull ? (
+              "Lobby Full"
+            ) : (
+              "Join Lobby"
+            )}
+          </Button>
         </div>
       </div>
       
-      <div className="mt-4">
-        <Button 
-          className="w-full flex items-center justify-center" 
-          onClick={handleJoinMeetup} 
-          variant={isJoinedLobby ? "outline" : "default"}
-          disabled={isJoinedLobby || isLobbyFull || isLoading}
-        >
-          {isLoading ? (
-            "Loading..."
-          ) : isJoinedLobby ? (
-            "In Lobby"
-          ) : isLobbyFull ? (
-            "Lobby Full"
-          ) : (
-            "Join Lobby"
-          )}
-        </Button>
-      </div>
-    </div>
+      {/* Edit Meetup Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Meetup</DialogTitle>
+          </DialogHeader>
+          <EditMeetupForm 
+            meetup={meetup}
+            userId={userId || ""}
+            onSuccess={handleEditSuccess}
+            onClose={() => setIsEditDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

@@ -442,12 +442,117 @@ export const useMeetups = (selectedCategory: string | null = null) => {
     }
   };
 
+  // New function to update an existing meetup
+  const updateMeetup = async (
+    meetupId: string,
+    meetupData: Partial<Meetup>,
+    userId: string
+  ): Promise<boolean> => {
+    try {
+      // Convert IDs to numbers for database operations
+      const numericMeetupId = parseInt(meetupId);
+      const numericUserId = parseInt(userId);
+      
+      // First verify that this user is the creator of the meetup
+      const { data: meetupCheck, error: checkError } = await supabase
+        .from('events')
+        .select('creator_id')
+        .eq('id', numericMeetupId)
+        .single();
+      
+      if (checkError) {
+        console.error("Error checking meetup ownership:", checkError);
+        toast({
+          title: "Error updating meetup",
+          description: "Could not verify meetup ownership",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      if (meetupCheck.creator_id !== numericUserId) {
+        toast({
+          title: "Permission denied",
+          description: "You can only edit meetups that you created",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Make sure we have coordinates if location is being updated
+      let latitude = meetupData.latitude;
+      let longitude = meetupData.longitude;
+      
+      if (meetupData.location && (!latitude || !longitude || latitude === 0 || longitude === 0)) {
+        const coords = getLocationCoordinates(meetupData.location);
+        latitude = coords.lat;
+        longitude = coords.lng;
+      }
+      
+      // Prepare update object
+      const updateObject: any = {};
+      
+      if (meetupData.title) updateObject.title = meetupData.title;
+      if (meetupData.description) updateObject.description = meetupData.description;
+      if (meetupData.dateTime) updateObject.event_date = meetupData.dateTime;
+      if (meetupData.location) updateObject.location = meetupData.location;
+      if (meetupData.category) updateObject.category = meetupData.category;
+      if (meetupData.lobbySize) updateObject.lobby_size = meetupData.lobbySize;
+      if (latitude !== undefined && longitude !== undefined) {
+        updateObject.latitude = latitude;
+        updateObject.longitude = longitude;
+      }
+      
+      // Update the meetup in Supabase
+      const { error } = await supabase
+        .from('events')
+        .update(updateObject)
+        .eq('id', numericMeetupId)
+        .eq('creator_id', numericUserId);
+      
+      if (error) {
+        console.error("Error updating meetup:", error);
+        toast({
+          title: "Error updating meetup",
+          description: error.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Update the meetup in our local state
+      setAllMeetups(prevMeetups => 
+        prevMeetups.map(meetup => 
+          meetup.id === meetupId
+            ? { ...meetup, ...meetupData }
+            : meetup
+        )
+      );
+      
+      toast({
+        title: "Meetup updated",
+        description: "Your meetup details have been successfully updated.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error updating meetup:", error);
+      toast({
+        title: "Error updating meetup",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return { 
     allMeetups, 
     isLoading, 
     setAllMeetups,
     createMeetup,
     joinMeetupLobby,
-    checkInToMeetup 
+    checkInToMeetup,
+    updateMeetup // Add the new update function to the return object
   };
 };
