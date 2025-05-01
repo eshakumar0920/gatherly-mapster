@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Dialog,
@@ -30,6 +29,8 @@ export const ProfileSticker: React.FC<ProfileStickerProps> = ({
   className = "",
   size = 'md'
 }) => {
+  // If a sticker is explicitly selected, use it
+  // Otherwise, use the highest level sticker available (defaulting to the first two badges if level is 1)
   const stickerIndex = selectedSticker !== null 
     ? selectedSticker 
     : Math.min(level - 1, stickers.length - 1);
