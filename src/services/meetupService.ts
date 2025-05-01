@@ -7,10 +7,12 @@ interface UserState {
   email: string;
   points: number;
   level: number;
-  attendedMeetups: string[]; // Changed from MeetupType[] to string[]
+  attendedMeetups: MeetupType[];
   friends: Friend[];
   tags: Tag[];
   selectedSticker: number | null;
+  // Remove avatar
+  // Add missing state properties
   userId: string | null;
   joinedLobbies: string[];
   avatar: string | null;
@@ -18,7 +20,7 @@ interface UserState {
 
 export const useUserStore = create<UserState & UserActions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       name: "Temoc",
       email: "temoc@utdallas.edu",
       points: 22,
@@ -28,23 +30,34 @@ export const useUserStore = create<UserState & UserActions>()(
       tags: ["Technology", "Academic", "Gaming"],
       selectedSticker: null,
       avatar: null,
+      // Remove avatar
+      // Initialize new state properties
       userId: null,
       joinedLobbies: [],
       addAttendedMeetup: (meetup: MeetupType | string) => {
         set((state) => {
           // Handle both MeetupType objects and string IDs
           if (typeof meetup === 'string') {
-            // Just add the ID to the attendedMeetups array
+            const meetupObject: MeetupType = {
+              id: meetup,
+              title: "Attended Meetup",
+              description: "Attended via check-in",
+              dateTime: new Date().toISOString(),
+              location: "UTD",
+              points: 5, // Default points
+              createdBy: "System",
+              lobbySize: 0
+            };
             return {
               ...state,
-              attendedMeetups: [...state.attendedMeetups, meetup],
+              attendedMeetups: [...state.attendedMeetups, meetupObject],
               points: state.points + 5,
               level: Math.floor((state.points + 5) / 10)
             };
           } else {
             return {
               ...state,
-              attendedMeetups: [...state.attendedMeetups, meetup.id],
+              attendedMeetups: [...state.attendedMeetups, meetup],
               points: state.points + (meetup.points || 5),
               level: Math.floor((state.points + (meetup.points || 5)) / 10)
             };
@@ -82,12 +95,14 @@ export const useUserStore = create<UserState & UserActions>()(
           avatar: avatarUrl
         }));
       },
+      // Remove updateAvatar method
       setSelectedSticker: (stickerIndex: number | null) => {
         set((state) => ({
           ...state,
           selectedSticker: stickerIndex
         }));
       },
+      // Add new actions
       joinMeetupLobby: (meetupId: string) => {
         set((state) => ({
           ...state,
@@ -96,30 +111,31 @@ export const useUserStore = create<UserState & UserActions>()(
       },
       attendMeetup: (meetupId: string, points: number) => {
         set((state) => {
-          // Just store the ID in the attendedMeetups array
+          const meetup: MeetupType = {
+            id: meetupId,
+            title: "Attended Meetup",
+            description: "Attended via check-in",
+            dateTime: new Date().toISOString(),
+            location: "UTD",
+            points: points,
+            createdBy: "System",
+            lobbySize: 0
+          };
+          
           return {
             ...state,
-            attendedMeetups: [...state.attendedMeetups, meetupId],
+            attendedMeetups: [...state.attendedMeetups, meetup],
             points: state.points + points,
             level: Math.floor((state.points + points) / 10)
           };
         });
       },
-      setUserId: (id) => {
-        console.log("Setting userId in store to:", id);
-        set({ userId: id });
+      setUserId: (userId: string) => {
+        set((state) => ({
+          ...state,
+          userId
+        }));
       },
-      // Alias for attendMeetup to support existing code
-      checkInToMeetup: (meetupId: string, points: number) => {
-        set((state) => {
-          return {
-            ...state,
-            attendedMeetups: [...state.attendedMeetups, meetupId],
-            points: state.points + points,
-            level: Math.floor((state.points + points) / 10)
-          };
-        });
-      }
     }),
     {
       name: "user-storage"

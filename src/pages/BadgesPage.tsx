@@ -14,6 +14,9 @@ const BadgesPage = () => {
   const navigate = useNavigate();
   const { level } = useUserStore();
   
+  // Display level starting from 1, and make sure the first two badges are available
+  const displayLevel = level;
+  
   return (
     <div className="pb-20">
       <div className="p-4 pt-6 flex justify-between items-center">
@@ -48,7 +51,8 @@ const BadgesPage = () => {
             <div className="space-y-6 pb-8">
               {stickers.map((sticker, index) => {
                 const IconComponent = sticker.icon;
-                const isUnlocked = sticker.level <= level;
+                // First two badges are always unlocked (level 1 and 2)
+                const isUnlocked = sticker.level <= displayLevel || sticker.level <= 2;
                 
                 return (
                   <Card key={index} className={`${isUnlocked ? '' : 'opacity-70'}`}>
@@ -85,7 +89,7 @@ const BadgesPage = () => {
         <TabsContent value="unlocked">
           <ScrollArea className="h-[calc(100vh-250px)] pr-4">
             <div className="space-y-6 pb-8">
-              {stickers.filter(s => s.level <= level).map((sticker, index) => {
+              {stickers.filter(s => s.level <= displayLevel || s.level <= 2).map((sticker, index) => {
                 const IconComponent = sticker.icon;
                 
                 return (
@@ -121,7 +125,7 @@ const BadgesPage = () => {
         <TabsContent value="locked">
           <ScrollArea className="h-[calc(100vh-250px)] pr-4">
             <div className="space-y-6 pb-8">
-              {stickers.filter(s => s.level > level).map((sticker, index) => {
+              {stickers.filter(s => s.level > displayLevel && s.level > 2).map((sticker, index) => {
                 const IconComponent = sticker.icon;
                 
                 return (
