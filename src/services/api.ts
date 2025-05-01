@@ -6,6 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 // Use a fallback value if the environment variable is not set
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'; 
 
+// Helper function to validate UTD email domain
+export const isValidUTDEmail = (email: string): boolean => {
+  return email.toLowerCase().endsWith('@utdallas.edu');
+};
+
 // Define types for API responses and parameters
 export interface ApiResponse<T> {
   data?: T;
@@ -105,17 +110,29 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 }
 
 export const authApi = {
-  register: (email: string, password: string, metadata?: { name?: string }) => 
-    fetchApi('/auth/register', {
+  register: (email: string, password: string, metadata?: { name?: string }) => {
+    // Validate email domain before making API call
+    if (!isValidUTDEmail(email)) {
+      return Promise.reject(new Error("Only @utdallas.edu email addresses are allowed"));
+    }
+    
+    return fetchApi('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, ...metadata }),
-    }),
+    });
+  },
   
-  login: (email: string, password: string) => 
-    fetchApi('/auth/login', {
+  login: (email: string, password: string) => {
+    // Validate email domain before making API call
+    if (!isValidUTDEmail(email)) {
+      return Promise.reject(new Error("Only @utdallas.edu email addresses are allowed"));
+    }
+    
+    return fetchApi('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    }),
+    });
+  },
   
   verifyToken: () => fetchApi('/auth/verify'),
 };

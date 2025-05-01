@@ -21,21 +21,52 @@ const AuthPage = () => {
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmailError, setLoginEmailError] = useState("");
 
   // Signup form state
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [signupEmailError, setSignupEmailError] = useState("");
 
   const clearError = () => {
     setErrorMessage("");
+    setLoginEmailError("");
+    setSignupEmailError("");
+  };
+
+  const validateUTDEmail = (email: string): boolean => {
+    return email.toLowerCase().endsWith('@utdallas.edu');
+  };
+
+  const handleLoginEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setLoginEmail(email);
+    
+    // Clear error if previously set
+    if (loginEmailError) setLoginEmailError("");
+  };
+
+  const handleSignupEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setSignupEmail(email);
+    
+    // Clear error if previously set
+    if (signupEmailError) setSignupEmailError("");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     clearError();
+    
+    // Validate UTD email
+    if (!validateUTDEmail(loginEmail)) {
+      setLoginEmailError("Please use your UTD email (@utdallas.edu)");
+      return;
+    }
+    
+    setIsLoading(true);
 
     try {
       const result = await login(loginEmail, loginPassword);
@@ -65,14 +96,22 @@ const AuthPage = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     clearError();
     
+    // Validate UTD email
+    if (!validateUTDEmail(signupEmail)) {
+      setSignupEmailError("Please use your UTD email (@utdallas.edu)");
+      return;
+    }
+    
+    if (signupPassword !== signupConfirmPassword) {
+      setErrorMessage("Passwords don't match");
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
-      if (signupPassword !== signupConfirmPassword) {
-        throw new Error("Passwords don't match");
-      }
-      
       const result = await signup(signupEmail, signupPassword, { name: signupName });
       
       if (!result.success) {
@@ -142,12 +181,15 @@ const AuthPage = () => {
                     id="email"
                     type="email" 
                     placeholder="name@utdallas.edu" 
-                    className="pl-10"
+                    className={`pl-10 ${loginEmailError ? "border-destructive" : ""}`}
                     value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    onChange={handleLoginEmailChange}
                     required
                   />
                 </div>
+                {loginEmailError && (
+                  <p className="text-xs text-destructive mt-1">{loginEmailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -161,6 +203,15 @@ const AuthPage = () => {
                         toast({
                           title: "Email required",
                           description: "Please enter your email address to reset your password",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      if (!validateUTDEmail(loginEmail)) {
+                        toast({
+                          title: "Invalid email",
+                          description: "Please enter a valid UTD email address (@utdallas.edu)",
                           variant: "destructive",
                         });
                         return;
@@ -239,12 +290,15 @@ const AuthPage = () => {
                     id="signup-email"
                     type="email" 
                     placeholder="name@utdallas.edu" 
-                    className="pl-10"
+                    className={`pl-10 ${signupEmailError ? "border-destructive" : ""}`}
                     value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
+                    onChange={handleSignupEmailChange}
                     required
                   />
                 </div>
+                {signupEmailError && (
+                  <p className="text-xs text-destructive mt-1">{signupEmailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">

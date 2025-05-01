@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 // Use an environment variable with a fallback for the auth base URL
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5000'; 
 const USE_SUPABASE_DIRECTLY = true; // Set this to true to bypass Flask and use Supabase directly
+
+// Function to validate UTD email domain
+const isValidUTDEmail = (email: string): boolean => {
+  return email.toLowerCase().endsWith('@utdallas.edu');
+};
 
 export const useAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -51,6 +55,14 @@ export const useAuth = () => {
 
   const login = async (email: string, password: string) => {
     try {
+      // Validate UTD email domain
+      if (!isValidUTDEmail(email)) {
+        return { 
+          success: false, 
+          error: new Error("Only @utdallas.edu email addresses are allowed") 
+        };
+      }
+
       setIsLoading(true);
       
       // If USE_SUPABASE_DIRECTLY is true, skip Flask attempt and go directly to Supabase
@@ -167,6 +179,14 @@ export const useAuth = () => {
 
   const signup = async (email: string, password: string, metadata?: { name?: string }) => {
     try {
+      // Validate UTD email domain
+      if (!isValidUTDEmail(email)) {
+        return { 
+          success: false, 
+          error: new Error("Only @utdallas.edu email addresses are allowed") 
+        };
+      }
+
       setIsLoading(true);
       
       // If USE_SUPABASE_DIRECTLY is true, skip Flask attempt and go directly to Supabase
