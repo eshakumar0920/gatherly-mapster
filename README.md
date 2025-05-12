@@ -14,13 +14,41 @@ impulse is a mobile-first application designed for students at the University of
 
 ## Tech Stack
 
-- **Frontend**: React Native with Capacitor
-- **Backend**: Node.js
-- **Database**: MongoDB
-- **Authentication**: Firebase Auth (UTD email-based)
-- **Hosting**: Firebase
-- **AI Services**: OpenAI or LLaMA API
-- **UI**: Tailwind CSS, shadcn-ui
+**Frontend**  
+- React + Vite  
+- TypeScript  
+- Tailwind CSS (with custom utility classes)  
+- Capacitor (used to package the app as a native Android build)  
+
+**Backend**  
+- Python  
+- Flask (modular RESTful API with JWT-based authentication)  
+
+**Database**  
+- PostgreSQL  
+- SQLAlchemy ORM  
+- Supabase (used in early development for auth and DB before migration)  
+
+**Authentication**  
+- Supabase Auth (UTD email validation using domain checks and JWTs)  
+
+**AI Services**  
+- OpenAI API (for chatbot and event recommendations)  
+
+**Maps and Visualization**  
+- Leaflet.js (interactive UTD campus map)  
+- lucide-react (icons)  
+
+**Development Tools**  
+- Visual Studio Code  
+- Android Studio Emulator  
+- Postman  
+- Ngrok  
+- GitHub  
+- Jira  
+- Figma  
+- Anaconda  
+
 
 ## Getting Started
 
